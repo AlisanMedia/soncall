@@ -5,9 +5,11 @@ import { createClient } from '@/lib/supabase/client';
 import type { Lead, PotentialLevel } from '@/types';
 import {
     Phone, MapPin, Globe, Star, MessageCircle, Calendar,
-    ArrowRight, Loader2, CheckCircle2, AlertCircle, Flame, Zap, TrendingDown
+    ArrowRight, Loader2, CheckCircle2, AlertCircle, Flame, Zap, TrendingDown, Wand2
 } from 'lucide-react';
 import { getWhatsAppUrl, formatPhoneNumber } from '@/lib/utils';
+import { playLeadTransition, playAppointment, playWhatsApp, playVictory, playError } from '@/lib/sounds';
+import VoiceRecorder from './VoiceRecorder';
 
 interface LeadCardProps {
     agentId: string;
@@ -23,7 +25,9 @@ export default function LeadCard({ agentId, onLeadProcessed, refreshKey }: LeadC
 
     const [potentialLevel, setPotentialLevel] = useState<PotentialLevel>('not_assessed');
     const [note, setNote] = useState('');
+
     const [actionTaken, setActionTaken] = useState<string>('');
+    const [isAiProcessing, setIsAiProcessing] = useState(false);
 
     const supabase = createClient();
 
@@ -54,6 +58,8 @@ export default function LeadCard({ agentId, onLeadProcessed, refreshKey }: LeadC
             if (!leads || leads.length === 0) {
                 setCurrentLead(null);
                 setLoading(false);
+                // Play victory sound when all leads are completed!
+                playVictory();
                 return;
             }
 
@@ -70,7 +76,18 @@ export default function LeadCard({ agentId, onLeadProcessed, refreshKey }: LeadC
 
             if (lockError) throw lockError;
 
+            // Log 'viewed' action for handle time tracking
+            await supabase.from('lead_activity_log').insert({
+                lead_id: lead.id,
+                agent_id: agentId,
+                action: 'viewed',
+                metadata: { source: 'agent_dashboard' }
+            });
+
             setCurrentLead(lead);
+
+            // Play sound for new lead
+            playLeadTransition();
 
             // Reset form
             setPotentialLevel('not_assessed');
@@ -84,28 +101,58 @@ export default function LeadCard({ agentId, onLeadProcessed, refreshKey }: LeadC
         }
     };
 
+    const [showAppointmentModal, setShowAppointmentModal] = useState(false);
+    const [appointmentDate, setAppointmentDate] = useState('');
+
     const handleWhatsApp = () => {
         if (!currentLead) return;
         const url = getWhatsAppUrl(currentLead.phone_number);
         window.open(url, '_blank');
         setActionTaken('whatsapp_sent');
+        playWhatsApp();
     };
 
     const handleAppointment = () => {
+        setShowAppointmentModal(true);
+    };
+
+    const confirmAppointment = () => {
+        if (!appointmentDate) {
+            alert('Lütfen bir tarih ve saat seçin!');
+            return;
+        }
+
+        const date = new Date(appointmentDate);
+        const formattedDate = new Intl.DateTimeFormat('tr-TR', {
+            dateStyle: 'full',
+            timeStyle: 'short'
+        }).format(date);
+
+        const appointmentNote = `📅 Randevu: ${formattedDate}`;
+
+        // Append to existing note or start new
+        setNote(prev => {
+            const cleanPrev = prev.trim();
+            if (cleanPrev) return cleanPrev + '\n\n' + appointmentNote;
+            return appointmentNote;
+        });
+
         setActionTaken('appointment_scheduled');
+        playAppointment();
+        setShowAppointmentModal(false);
     };
 
     const isFormValid = () => {
         return (
             potentialLevel !== 'not_assessed' &&
-            note.trim().length >= 10 &&
-            actionTaken !== ''
+            note.trim().length >= 10
         );
     };
 
     const handleNextLead = async () => {
         if (!currentLead || !isFormValid()) {
             setError('Lütfen tüm alanları doldurun! (Not en az 10 karakter olmalı)');
+            playError();
             return;
         }
 
@@ -120,7 +167,7 @@ export default function LeadCard({ agentId, onLeadProcessed, refreshKey }: LeadC
                     status: actionTaken === 'appointment_scheduled' ? 'appointment' : 'contacted',
                     potentialLevel,
                     note,
-                    actionTaken,
+                    actionTaken: actionTaken || undefined, // Send undefined if empty
                 }),
             });
 
@@ -132,12 +179,43 @@ export default function LeadCard({ agentId, onLeadProcessed, refreshKey }: LeadC
 
             // Success - notify parent and load next lead
             onLeadProcessed();
+
+            // Check if this was the last lead - will be determined in loadNextLead
+            // We'll check after loading
             await loadNextLead();
 
         } catch (err: any) {
             setError(err.message || 'İşlem sırasında bir hata oluştu');
         } finally {
             setProcessing(false);
+        }
+    };
+
+    const handleRecordingComplete = (audioUrl: string, blob: Blob) => {
+        analyzeRecording(audioUrl);
+    };
+
+    const analyzeRecording = async (audioUrl: string) => {
+        setIsAiProcessing(true);
+        try {
+            const res = await fetch('/api/ai/transcribe', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ audioUrl, leadId: currentLead?.id })
+            });
+            const data = await res.json();
+
+            if (data.success) {
+                setNote(prev => (prev ? prev + '\n\n' : '') + `[AI NOTU]:\n` + data.summary);
+                // Can play sound here
+            } else {
+                alert('Analiz hatası: ' + data.error);
+            }
+        } catch (e) {
+            console.error(e);
+            alert('Analysis error');
+        } finally {
+            setIsAiProcessing(false);
         }
     };
 
@@ -243,8 +321,8 @@ export default function LeadCard({ agentId, onLeadProcessed, refreshKey }: LeadC
                     <button
                         onClick={() => setPotentialLevel('high')}
                         className={`p-4 rounded-lg border-2 transition-all ${potentialLevel === 'high'
-                                ? 'border-green-400 bg-green-500/20 text-green-100'
-                                : 'border-white/20 bg-white/5 text-purple-200 hover:border-green-400/50'
+                            ? 'border-green-400 bg-green-500/20 text-green-100'
+                            : 'border-white/20 bg-white/5 text-purple-200 hover:border-green-400/50'
                             }`}
                     >
                         <Flame className="w-6 h-6 mx-auto mb-2" />
@@ -254,8 +332,8 @@ export default function LeadCard({ agentId, onLeadProcessed, refreshKey }: LeadC
                     <button
                         onClick={() => setPotentialLevel('medium')}
                         className={`p-4 rounded-lg border-2 transition-all ${potentialLevel === 'medium'
-                                ? 'border-yellow-400 bg-yellow-500/20 text-yellow-100'
-                                : 'border-white/20 bg-white/5 text-purple-200 hover:border-yellow-400/50'
+                            ? 'border-yellow-400 bg-yellow-500/20 text-yellow-100'
+                            : 'border-white/20 bg-white/5 text-purple-200 hover:border-yellow-400/50'
                             }`}
                     >
                         <Zap className="w-6 h-6 mx-auto mb-2" />
@@ -265,8 +343,8 @@ export default function LeadCard({ agentId, onLeadProcessed, refreshKey }: LeadC
                     <button
                         onClick={() => setPotentialLevel('low')}
                         className={`p-4 rounded-lg border-2 transition-all ${potentialLevel === 'low'
-                                ? 'border-red-400 bg-red-500/20 text-red-100'
-                                : 'border-white/20 bg-white/5 text-purple-200 hover:border-red-400/50'
+                            ? 'border-red-400 bg-red-500/20 text-red-100'
+                            : 'border-white/20 bg-white/5 text-purple-200 hover:border-red-400/50'
                             }`}
                     >
                         <TrendingDown className="w-6 h-6 mx-auto mb-2" />
@@ -274,6 +352,22 @@ export default function LeadCard({ agentId, onLeadProcessed, refreshKey }: LeadC
                     </button>
                 </div>
             </div>
+
+            {/* Voice Recorder */}
+            {currentLead && (
+                <div className="mb-4">
+                    <VoiceRecorder
+                        leadId={currentLead.id}
+                        onRecordingComplete={handleRecordingComplete}
+                    />
+                    {isAiProcessing && (
+                        <div className="mt-2 text-xs text-purple-300 flex items-center gap-2 animate-pulse">
+                            <Wand2 className="w-3 h-3" />
+                            Yapay zeka görüşmeyi analiz ediyor...
+                        </div>
+                    )}
+                </div>
+            )}
 
             {/* Note Taking */}
             <div>
@@ -287,8 +381,8 @@ export default function LeadCard({ agentId, onLeadProcessed, refreshKey }: LeadC
                     placeholder="Görüşme notlarınızı buraya yazın..."
                     rows={4}
                     className={`w-full px-4 py-3 bg-white/10 border rounded-lg text-white placeholder-purple-300/50 focus:outline-none focus:ring-2 focus:ring-purple-500 resize-none ${note.trim().length > 0 && note.trim().length < 10
-                            ? 'border-red-500'
-                            : 'border-white/20'
+                        ? 'border-red-500'
+                        : 'border-white/20'
                         }`}
                     disabled={processing}
                 />
@@ -303,8 +397,8 @@ export default function LeadCard({ agentId, onLeadProcessed, refreshKey }: LeadC
                     onClick={handleWhatsApp}
                     disabled={processing}
                     className={`py-3 px-4 rounded-lg font-semibold transition-all flex items-center justify-center gap-2 ${actionTaken === 'whatsapp_sent'
-                            ? 'bg-green-600 text-white'
-                            : 'bg-green-500/20 border-2 border-green-500 text-green-100 hover:bg-green-500/30'
+                        ? 'bg-green-600 text-white'
+                        : 'bg-green-500/20 border-2 border-green-500 text-green-100 hover:bg-green-500/30'
                         }`}
                 >
                     <MessageCircle className="w-5 h-5" />
@@ -315,8 +409,8 @@ export default function LeadCard({ agentId, onLeadProcessed, refreshKey }: LeadC
                     onClick={handleAppointment}
                     disabled={processing}
                     className={`py-3 px-4 rounded-lg font-semibold transition-all flex items-center justify-center gap-2 ${actionTaken === 'appointment_scheduled'
-                            ? 'bg-purple-600 text-white'
-                            : 'bg-purple-500/20 border-2 border-purple-500 text-purple-100 hover:bg-purple-500/30'
+                        ? 'bg-purple-600 text-white'
+                        : 'bg-purple-500/20 border-2 border-purple-500 text-purple-100 hover:bg-purple-500/30'
                         }`}
                 >
                     <Calendar className="w-5 h-5" />
@@ -342,6 +436,54 @@ export default function LeadCard({ agentId, onLeadProcessed, refreshKey }: LeadC
                     </>
                 )}
             </button>
+            {/* Appointment Modal */}
+            {showAppointmentModal && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
+                    <div className="bg-slate-900 border border-purple-500/50 rounded-2xl p-6 w-full max-w-md shadow-2xl relative">
+                        <button
+                            onClick={() => setShowAppointmentModal(false)}
+                            className="absolute top-4 right-4 text-gray-400 hover:text-white"
+                        >
+                            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M18 6 6 18" /><path d="m6 6 12 12" /></svg>
+                        </button>
+
+                        <h3 className="text-xl font-bold text-white mb-4 flex items-center gap-2">
+                            <Calendar className="w-6 h-6 text-purple-400" />
+                            Randevu Planla
+                        </h3>
+
+                        <p className="text-purple-200/80 mb-6">
+                            Lütfen geri dönüş için bir tarih ve saat seçin. Bu bilgi otomatik olarak notlara eklenecektir.
+                        </p>
+
+                        <div className="mb-6 space-y-2">
+                            <label className="text-sm font-medium text-purple-200">Tarih ve Saat</label>
+                            <input
+                                type="datetime-local"
+                                value={appointmentDate}
+                                onChange={(e) => setAppointmentDate(e.target.value)}
+                                className="w-full bg-white/10 border border-white/20 rounded-lg px-4 py-3 text-white focus:outline-none focus:ring-2 focus:ring-purple-500 [color-scheme:dark]"
+                            />
+                        </div>
+
+                        <div className="flex gap-3">
+                            <button
+                                onClick={() => setShowAppointmentModal(false)}
+                                className="flex-1 py-3 px-4 bg-white/5 hover:bg-white/10 text-white rounded-lg font-medium transition-colors"
+                            >
+                                İptal
+                            </button>
+                            <button
+                                onClick={confirmAppointment}
+                                className="flex-1 py-3 px-4 bg-purple-600 hover:bg-purple-700 text-white rounded-lg font-bold transition-all shadow-lg hover:shadow-purple-500/25 flex items-center justify-center gap-2"
+                            >
+                                <CheckCircle2 className="w-5 h-5" />
+                                Onayla ve Ekle
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
         </div>
     );
 }

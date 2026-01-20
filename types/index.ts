@@ -1,18 +1,18 @@
 // Database Types
 export type UserRole = 'manager' | 'agent';
 
-export type LeadStatus = 
-  | 'pending' 
-  | 'in_progress' 
-  | 'contacted' 
-  | 'appointment' 
-  | 'not_interested' 
+export type LeadStatus =
+  | 'pending'
+  | 'in_progress'
+  | 'contacted'
+  | 'appointment'
+  | 'not_interested'
   | 'callback';
 
-export type PotentialLevel = 
-  | 'high' 
-  | 'medium' 
-  | 'low' 
+export type PotentialLevel =
+  | 'high'
+  | 'medium'
+  | 'low'
   | 'not_assessed';
 
 export interface Profile {
@@ -22,6 +22,10 @@ export interface Profile {
   role: UserRole;
   created_at: string;
   updated_at: string;
+  avatar_url?: string;
+  nickname?: string;
+  theme_color?: string;
+  bio?: string;
 }
 
 export interface Lead {
@@ -128,4 +132,12 @@ export interface StatsResponse {
     total_assigned: number;
     remaining: number;
   };
+}
+
+export interface AgentProgress {
+  agent_id: string;
+  total_xp: number;
+  current_level: number;
+  current_streak: number;
+  last_activity_date: string;
 }

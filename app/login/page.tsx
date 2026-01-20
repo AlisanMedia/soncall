@@ -54,6 +54,11 @@ export default function LoginPage() {
             <div className="w-full max-w-md">
                 {/* Logo/Brand */}
                 <div className="text-center mb-8">
+                    <img
+                        src="/artificagent-logo.png"
+                        alt="ArtificAgent Logo"
+                        className="h-16 mx-auto mb-4 opacity-90"
+                    />
                     <h1 className="text-4xl font-bold text-white mb-2 tracking-tight">
                         ArtificAgent
                     </h1>
@@ -131,15 +136,7 @@ export default function LoginPage() {
                         </button>
                     </form>
 
-                    {/* Demo Accounts Info */}
-                    <div className="mt-6 pt-6 border-t border-white/20">
-                        <p className="text-xs text-purple-200 mb-2">Demo Hesaplar:</p>
-                        <div className="text-xs text-purple-300/80 space-y-1">
-                            <p>Manager: manager@artificagent.com</p>
-                            <p>Agent: agent1@artificagent.com</p>
-                            <p className="text-purple-400">Şifre: password123</p>
-                        </div>
-                    </div>
+
                 </div>
 
                 {/* Footer */}

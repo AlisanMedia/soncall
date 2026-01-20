@@ -18,7 +18,7 @@ export async function PATCH(
         const body = await request.json();
         const { status, potentialLevel, note, actionTaken } = body;
 
-        if (!status || !potentialLevel || !note || !actionTaken) {
+        if (!status || !potentialLevel || !note) {
             return NextResponse.json({ message: 'Missing required fields' }, { status: 400 });
         }
 
@@ -56,7 +56,7 @@ export async function PATCH(
                 lead_id: id,
                 agent_id: user.id,
                 note,
-                action_taken: actionTaken,
+                action_taken: actionTaken || null, // Make it optional
             });
 
         if (noteError) throw noteError;

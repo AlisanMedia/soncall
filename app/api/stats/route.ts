@@ -18,11 +18,15 @@ export async function GET(request: NextRequest) {
         const today = new Date();
         today.setHours(0, 0, 0, 0);
 
+        // Get 5 minutes ago
+        const fiveMinutesAgo = new Date(Date.now() - 5 * 60 * 1000);
+
         // Get leaderboard - agents with their processed count today
         const { data: leaderboardData, error: leaderboardError } = await supabase
             .from('lead_activity_log')
             .select(`
         agent_id,
+        created_at,
         profiles!lead_activity_log_agent_id_fkey (
           full_name
         )
@@ -32,28 +36,90 @@ export async function GET(request: NextRequest) {
 
         if (leaderboardError) throw leaderboardError;
 
-        // Aggregate counts per agent
-        const agentCounts: Record<string, { name: string; count: number }> = {};
+        // Get all agents and their remaining leads
+        const { data: allAgents, error: agentsError } = await supabase
+            .from('profiles')
+            .select('id, full_name')
+            .eq('role', 'agent');
 
-        leaderboardData?.forEach((log: any) => {
-            const id = log.agent_id;
-            if (!agentCounts[id]) {
-                agentCounts[id] = {
-                    name: log.profiles?.full_name || 'Unknown',
-                    count: 0,
-                };
-            }
-            agentCounts[id].count++;
+        if (agentsError) throw agentsError;
+
+        // Aggregate counts per agent
+        const agentStats: Record<string, {
+            name: string;
+            count: number;
+            activities: Date[];
+        }> = {};
+
+        // Initialize all agents
+        allAgents?.forEach((agent: any) => {
+            agentStats[agent.id] = {
+                name: agent.full_name,
+                count: 0,
+                activities: [],
+            };
         });
 
-        // Convert to array and sort
-        const leaderboard = Object.entries(agentCounts)
-            .map(([agent_id, data]) => ({
-                agent_id,
-                agent_name: data.name,
-                processed_count: data.count,
-                rank: 0, // Will be assigned below
-            }))
+        // Count processed leads
+        leaderboardData?.forEach((log: any) => {
+            const id = log.agent_id;
+            if (agentStats[id]) {
+                agentStats[id].count++;
+                agentStats[id].activities.push(new Date(log.created_at));
+            }
+        });
+
+        // Get remaining leads for each agent
+        const { data: remainingLeads, error: remainingError } = await supabase
+            .from('leads')
+            .select('assigned_to')
+            .eq('status', 'pending');
+
+        if (remainingError) throw remainingError;
+
+        const remainingCounts: Record<string, number> = {};
+        remainingLeads?.forEach((lead: any) => {
+            if (lead.assigned_to) {
+                remainingCounts[lead.assigned_to] = (remainingCounts[lead.assigned_to] || 0) + 1;
+            }
+        });
+
+        // Convert to array and calculate streaks & speed
+        const leaderboard = Object.entries(agentStats)
+            .map(([agent_id, data]) => {
+                // Calculate streak (consecutive leads in last hour)
+                const recentActivities = data.activities
+                    .filter(a => a.getTime() > Date.now() - 60 * 60 * 1000)
+                    .sort((a, b) => b.getTime() - a.getTime());
+
+                let streak = 0;
+                if (recentActivities.length > 0) {
+                    streak = 1;
+                    for (let i = 0; i < recentActivities.length - 1; i++) {
+                        const timeDiff = recentActivities[i].getTime() - recentActivities[i + 1].getTime();
+                        if (timeDiff < 15 * 60 * 1000) { // Within 15 minutes
+                            streak++;
+                        } else {
+                            break;
+                        }
+                    }
+                }
+
+                // Calculate speed (leads in last 5   minutes)
+                const last5MinActivities = data.activities.filter(
+                    a => a.getTime() > fiveMinutesAgo.getTime()
+                );
+
+                return {
+                    agent_id,
+                    agent_name: data.name,
+                    processed_count: data.count,
+                    remaining_count: remainingCounts[agent_id] || 0,
+                    streak: streak > 1 ? streak : 0,
+                    speed_last_5min: last5MinActivities.length,
+                    rank: 0, // Will be assigned below
+                };
+            })
             .sort((a, b) => b.processed_count - a.processed_count)
             .map((entry, index) => ({
                 ...entry,
@@ -65,9 +131,13 @@ export async function GET(request: NextRequest) {
             processed_today: 0,
             total_assigned: 0,
             remaining: 0,
+            streak: 0,
+            speed_last_5min: 0,
         };
 
         if (agentId) {
+            const userEntry = leaderboard.find(e => e.agent_id === agentId);
+
             // Processed today
             const { count: processedCount } = await supabase
                 .from('lead_activity_log')
@@ -93,6 +163,8 @@ export async function GET(request: NextRequest) {
                 processed_today: processedCount || 0,
                 total_assigned: totalCount || 0,
                 remaining: remainingCount || 0,
+                streak: userEntry?.streak || 0,
+                speed_last_5min: userEntry?.speed_last_5min || 0,
             };
         }
 
