@@ -89,8 +89,13 @@ export function useRealtimeMessages(options: UseRealtimeMessagesOptions = {}) {
                         return;
                     }
 
-                    // Add to messages
-                    setMessages((prev) => [...prev, newMessage]);
+                    // Add to messages if it doesn't exist
+                    setMessages((prev) => {
+                        if (prev.some((m) => m.id === newMessage.id)) {
+                            return prev;
+                        }
+                        return [...prev, newMessage];
+                    });
 
                     // Play sound if message is for current user
                     if (options.userId && newMessage.sender_id !== options.userId) {
@@ -125,6 +130,9 @@ export function useRealtimeMessages(options: UseRealtimeMessagesOptions = {}) {
             if (!response.ok) {
                 throw new Error(data.message || 'Failed to send message');
             }
+
+            // Immediately add to local state
+            setMessages((prev) => [...prev, data.message]);
 
             return data.message;
         } catch (err: any) {

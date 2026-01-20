@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { createClient } from '@/lib/supabase/client';
 import type { Lead, PotentialLevel } from '@/types';
 import {
@@ -30,6 +30,7 @@ export default function LeadCard({ agentId, onLeadProcessed, refreshKey }: LeadC
     const [isAiProcessing, setIsAiProcessing] = useState(false);
 
     const supabase = createClient();
+    const lastPlayedLeadId = useRef<string | null>(null);
 
     useEffect(() => {
         loadNextLead();
@@ -86,8 +87,11 @@ export default function LeadCard({ agentId, onLeadProcessed, refreshKey }: LeadC
 
             setCurrentLead(lead);
 
-            // Play sound for new lead
-            playLeadTransition();
+            // Play sound for new lead if not already played for this lead
+            if (lastPlayedLeadId.current !== lead.id) {
+                playLeadTransition();
+                lastPlayedLeadId.current = lead.id;
+            }
 
             // Reset form
             setPotentialLevel('not_assessed');

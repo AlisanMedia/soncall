@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { X } from 'lucide-react';
 import { playAchievement, playStreak, playEncouragement } from '@/lib/sounds';
 
@@ -17,23 +17,27 @@ interface NotificationToastProps {
 
 export default function NotificationToast({ notification, onClose }: NotificationToastProps) {
     const [isVisible, setIsVisible] = useState(false);
+    const hasPlayedSound = useRef(false);
 
     useEffect(() => {
         // Show animation
         setIsVisible(true);
 
-        // Play sound based on type
-        switch (notification.type) {
-            case 'milestone':
-            case 'achievement':
-                playAchievement();
-                break;
-            case 'streak':
-                playStreak();
-                break;
-            case 'encouragement':
-                playEncouragement();
-                break;
+        // Play sound based on type if not already played
+        if (!hasPlayedSound.current) {
+            switch (notification.type) {
+                case 'milestone':
+                case 'achievement':
+                    playAchievement();
+                    break;
+                case 'streak':
+                    playStreak();
+                    break;
+                case 'encouragement':
+                    playEncouragement();
+                    break;
+            }
+            hasPlayedSound.current = true;
         }
 
         // Auto dismiss

@@ -19,7 +19,7 @@ export default function ChatPanel({ userId, isOpen, onClose, leadId, receiverId,
     const messagesEndRef = useRef<HTMLDivElement>(null);
     const { messages, loading, sendMessage, markAllAsRead } = useRealtimeMessages({
         leadId,
-        messageType: leadId ? 'lead_comment' : receiverId ? 'direct' : undefined,
+        messageType: leadId ? 'lead_comment' : receiverId ? 'direct' : 'broadcast',
         userId
     });
 
