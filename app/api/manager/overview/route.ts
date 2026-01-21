@@ -96,6 +96,7 @@ export async function GET() {
                     .eq('assigned_to', agent.id)
                     .eq('status', 'appointment');
 
+
                 return {
                     agent_id: agent.id,
                     agent_name: agent.full_name,

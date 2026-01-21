@@ -86,15 +86,20 @@ export default function TeamMonitoring() {
                 const data = await activitiesRes.json();
                 const newActivities = data.activities || [];
 
+                // Ensure activities are unique by ID (safety check)
+                const uniqueActivities = newActivities.filter((activity: ActivityItem, index: number, self: ActivityItem[]) =>
+                    index === self.findIndex((a) => a.id === activity.id)
+                );
+
                 // Check if there's a new activity (first item changed)
-                if (activities.length > 0 && newActivities.length > 0) {
-                    if (newActivities[0].id !== activities[0].id) {
+                if (activities.length > 0 && uniqueActivities.length > 0) {
+                    if (uniqueActivities[0].id !== activities[0].id) {
                         // New activity detected! Play sound
                         playActivityNotification();
                     }
                 }
 
-                setActivities(newActivities);
+                setActivities(uniqueActivities);
             }
 
             if (batchesRes.ok) {
@@ -219,7 +224,7 @@ export default function TeamMonitoring() {
                         </div>
                     </div>
 
-                    <div className="space-y-3 max-h-[600px] overflow-y-auto pr-2 custom-scrollbar">
+                    <div className="space-y-3 overflow-y-auto pr-2 custom-scrollbar">
                         {activities.map((activity) => (
                             <div
                                 key={activity.id}

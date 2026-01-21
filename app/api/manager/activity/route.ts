@@ -57,20 +57,29 @@ export async function GET() {
 
         if (notesError) throw notesError;
 
-        // Merge notes with activities
+        // Merge notes with activities - match by closest timestamp and same agent
         const enrichedActivities = activities?.map(activity => {
-            const relatedNotes = notes?.filter(n => n.lead_id === activity.lead_id && n.agent_id === activity.agent_id) || [];
-            const latestNote = relatedNotes.length > 0 ? relatedNotes[0] : null;
+            // Find note that matches both agent AND is close in time to the activity
+            const relatedNote = notes?.find(n =>
+                n.lead_id === activity.lead_id &&
+                n.agent_id === activity.agent_id &&
+                Math.abs(new Date(n.created_at).getTime() - new Date(activity.created_at).getTime()) < 60000 // Within 1 minute
+            );
 
             return {
                 ...activity,
-                note: latestNote?.note || null,
-                action_taken: latestNote?.action_taken || activity.metadata?.action || null,
+                note: relatedNote?.note || null,
+                action_taken: relatedNote?.action_taken || activity.metadata?.action || null,
             };
         });
 
+        // Remove any duplicate activities based on ID (shouldn't happen, but safety check)
+        const uniqueActivities = enrichedActivities?.filter((activity, index, self) =>
+            index === self.findIndex((a) => a.id === activity.id)
+        );
+
         return NextResponse.json({
-            activities: enrichedActivities,
+            activities: uniqueActivities,
         });
 
     } catch (error: any) {

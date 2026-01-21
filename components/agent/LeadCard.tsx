@@ -32,8 +32,46 @@ export default function LeadCard({ agentId, onLeadProcessed, refreshKey }: LeadC
     const supabase = createClient();
     const lastPlayedLeadId = useRef<string | null>(null);
 
+    // Load lead on mount - check localStorage first for persistence across page refreshes
     useEffect(() => {
-        loadNextLead();
+        const restoreFromStorage = async () => {
+            const savedLeadId = localStorage.getItem(`agent_${agentId}_current_lead`);
+
+            if (savedLeadId && refreshKey === 0) {
+                // Try to restore the saved lead
+                try {
+                    const { data: savedLead, error } = await supabase
+                        .from('leads')
+                        .select('*')
+                        .eq('id', savedLeadId)
+                        .eq('assigned_to', agentId)
+                        .eq('status', 'pending')
+                        .single();
+
+                    if (!error && savedLead) {
+                        // Re-lock the lead (in case it was unlocked)
+                        await supabase
+                            .from('leads')
+                            .update({
+                                current_agent_id: agentId,
+                                locked_at: new Date().toISOString(),
+                            })
+                            .eq('id', savedLead.id);
+
+                        setCurrentLead(savedLead);
+                        setLoading(false);
+                        return; // Don't load new lead
+                    }
+                } catch (err) {
+                    console.error('Error restoring lead:', err);
+                }
+            }
+
+            // If no saved lead or restore failed, load next lead
+            loadNextLead();
+        };
+
+        restoreFromStorage();
     }, [refreshKey]);
 
     const loadNextLead = async () => {
@@ -57,6 +95,9 @@ export default function LeadCard({ agentId, onLeadProcessed, refreshKey }: LeadC
             if (fetchError) throw fetchError;
 
             if (!leads || leads.length === 0) {
+                // Clear localStorage since there are no more leads
+                localStorage.removeItem(`agent_${agentId}_current_lead`);
+
                 setCurrentLead(null);
                 setLoading(false);
                 // Play victory sound when all leads are completed!
@@ -86,6 +127,9 @@ export default function LeadCard({ agentId, onLeadProcessed, refreshKey }: LeadC
             });
 
             setCurrentLead(lead);
+
+            // Save to localStorage for persistence across page refreshes
+            localStorage.setItem(`agent_${agentId}_current_lead`, lead.id);
 
             // Play sound for new lead if not already played for this lead
             if (lastPlayedLeadId.current !== lead.id) {
@@ -180,6 +224,9 @@ export default function LeadCard({ agentId, onLeadProcessed, refreshKey }: LeadC
             if (!response.ok) {
                 throw new Error(data.message || 'Lead güncellenirken hata oluştu');
             }
+
+            // Clear saved lead from localStorage since it's been processed
+            localStorage.removeItem(`agent_${agentId}_current_lead`);
 
             // Success - notify parent and load next lead
             onLeadProcessed();

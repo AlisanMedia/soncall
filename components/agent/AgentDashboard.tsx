@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { Profile } from '@/types';
-import { LogOut, MessageCircle, Settings, Phone, Trophy } from 'lucide-react';
+import { LogOut, MessageCircle, Settings, Phone, Trophy, List } from 'lucide-react';
 import { createClient } from '@/lib/supabase/client';
 import { useRouter } from 'next/navigation';
 import LeadCard from './LeadCard';
@@ -13,6 +13,7 @@ import AchievementsGrid from './AchievementsGrid';
 import ChatPanel from '../chat/ChatPanel';
 import ChatNotificationBadge from '../chat/ChatNotificationBadge';
 import AgentSettings from './AgentSettings';
+import LeadHistoryView from './LeadHistoryView';
 
 interface AgentDashboardProps {
     profile: Profile;
@@ -28,7 +29,7 @@ interface Notification {
 
 export default function AgentDashboard({ profile: initialProfile }: AgentDashboardProps) {
     const [profile, setProfile] = useState<Profile>(initialProfile);
-    const [activeTab, setActiveTab] = useState<'work' | 'settings'>('work');
+    const [activeTab, setActiveTab] = useState<'work' | 'history' | 'settings'>('work');
     const [refreshKey, setRefreshKey] = useState(0);
     const [notifications, setNotifications] = useState<Notification[]>([]);
     const [chatOpen, setChatOpen] = useState(false);
@@ -153,6 +154,17 @@ export default function AgentDashboard({ profile: initialProfile }: AgentDashboa
                                     <span className="hidden sm:inline">Çağrı</span>
                                 </button>
                                 <button
+                                    onClick={() => setActiveTab('history')}
+                                    className={`p-2 sm:px-4 sm:py-2 rounded-md text-sm font-medium transition-all flex items-center gap-2 ${activeTab === 'history'
+                                        ? 'bg-purple-600 text-white shadow-lg'
+                                        : 'text-gray-300 hover:text-white hover:bg-white/5'
+                                        }`}
+                                    title="Lead Geçmişi"
+                                >
+                                    <List className="w-5 h-5 sm:w-4 sm:h-4" />
+                                    <span className="hidden sm:inline">Geçmiş</span>
+                                </button>
+                                <button
                                     onClick={() => setActiveTab('settings')}
                                     className={`p-2 sm:px-4 sm:py-2 rounded-md text-sm font-medium transition-all flex items-center gap-2 ${activeTab === 'settings'
                                         ? 'bg-purple-600 text-white shadow-lg'
@@ -204,45 +216,48 @@ export default function AgentDashboard({ profile: initialProfile }: AgentDashboa
 
             {/* Main Content */}
             <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-8">
-                {activeTab === 'work' ? (
-                    <div className="space-y-6">
-                        {/* Gamification Bar */}
-                        <div className="w-full">
-                            <GamificationBar agentId={profile.id} />
+                {/* Work Tab - Keep mounted to preserve state */}
+                <div className={`space-y-6 ${activeTab !== 'work' ? 'hidden' : ''}`}>
+                    {/* Gamification Bar */}
+                    <div className="w-full">
+                        <GamificationBar agentId={profile.id} />
+                    </div>
+
+                    <div className="flex flex-col lg:grid lg:grid-cols-4 gap-6">
+                        {/* Lead Card - Main Work Area (First on Mobile) */}
+                        <div className="lg:col-span-3 order-1 lg:order-2 space-y-6">
+                            <LeadCard
+                                agentId={profile.id}
+                                onLeadProcessed={handleLeadProcessed}
+                                refreshKey={refreshKey}
+                            />
+
+                            {/* Achievements Section */}
+                            <div className="bg-white/5 border border-white/10 rounded-2xl p-6">
+                                <h3 className="text-lg font-bold text-white mb-4 flex items-center gap-2">
+                                    <Trophy className="w-5 h-5 text-yellow-500" />
+                                    Başarım Koleksiyonu
+                                </h3>
+                                <AchievementsGrid agentId={profile.id} />
+                            </div>
                         </div>
 
-                        <div className="flex flex-col lg:grid lg:grid-cols-4 gap-6">
-                            {/* Lead Card - Main Work Area (First on Mobile) */}
-                            <div className="lg:col-span-3 order-1 lg:order-2 space-y-6">
-                                <LeadCard
-                                    agentId={profile.id}
-                                    onLeadProcessed={handleLeadProcessed}
-                                    refreshKey={refreshKey}
-                                />
-
-                                {/* Achievements Section */}
-                                <div className="bg-white/5 border border-white/10 rounded-2xl p-6">
-                                    <h3 className="text-lg font-bold text-white mb-4 flex items-center gap-2">
-                                        <Trophy className="w-5 h-5 text-yellow-500" />
-                                        Başarım Koleksiyonu
-                                    </h3>
-                                    <AchievementsGrid agentId={profile.id} />
-                                </div>
-                            </div>
-
-                            {/* Leaderboard Sidebar */}
-                            <div className="lg:col-span-1 order-2 lg:order-1">
-                                <Leaderboard agentId={profile.id} refreshKey={refreshKey} />
-                            </div>
+                        {/* Leaderboard Sidebar */}
+                        <div className="lg:col-span-1 order-2 lg:order-1">
+                            <Leaderboard agentId={profile.id} refreshKey={refreshKey} />
                         </div>
                     </div>
-                ) : (
-                    <AgentSettings userProfile={profile} />
-                )}
+                </div>
+
+                {/* History Tab */}
+                {activeTab === 'history' && <LeadHistoryView />}
+
+                {/* Settings Tab */}
+                {activeTab === 'settings' && <AgentSettings userProfile={profile} />}
             </main>
 
             {/* Floating Chat Button (Only show in Work tab) */}
-            {activeTab === 'work' && (
+            {(activeTab === 'work' || activeTab === 'history') && (
                 <button
                     onClick={() => setChatOpen(!chatOpen)}
                     className="fixed bottom-6 right-6 z-40 bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 text-white p-4 rounded-full shadow-2xl transition-all hover:scale-110 active:scale-95"

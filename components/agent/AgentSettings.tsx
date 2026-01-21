@@ -3,7 +3,7 @@
 import { useState, useRef, useEffect } from 'react';
 import { createClient } from '@/lib/supabase/client';
 import { useRouter } from 'next/navigation';
-import { Upload, User, Save, Camera, Sparkles, Trophy, Mail, Hash, AlertCircle } from 'lucide-react';
+import { Upload, User, Save, Camera, Sparkles, Trophy, Mail, Hash, AlertCircle, Phone, Lock, Eye, EyeOff, Shield } from 'lucide-react';
 
 interface Profile {
     id: string;
@@ -13,6 +13,7 @@ interface Profile {
     nickname?: string;
     theme_color?: string;
     bio?: string;
+    phone_number?: string;
     role: string;
 }
 
@@ -29,6 +30,16 @@ export default function AgentSettings({ userProfile }: { userProfile: any }) {
     const [loading, setLoading] = useState(false);
     const [file, setFile] = useState<File | null>(null);
     const [previewUrl, setPreviewUrl] = useState<string | null>(userProfile?.avatar_url || null);
+
+    // Password change state
+    const [showPasswordSection, setShowPasswordSection] = useState(false);
+    const [currentPassword, setCurrentPassword] = useState('');
+    const [newPassword, setNewPassword] = useState('');
+    const [confirmPassword, setConfirmPassword] = useState('');
+    const [showCurrentPassword, setShowCurrentPassword] = useState(false);
+    const [showNewPassword, setShowNewPassword] = useState(false);
+    const [passwordLoading, setPasswordLoading] = useState(false);
+
     const fileInputRef = useRef<HTMLInputElement>(null);
     const supabase = createClient();
     const router = useRouter();
@@ -85,6 +96,7 @@ export default function AgentSettings({ userProfile }: { userProfile: any }) {
                 avatar_url: avatarPath,
                 theme_color: profile.theme_color,
                 bio: profile.bio,
+                phone_number: profile.phone_number,
                 updated_at: new Date().toISOString(),
             };
 
@@ -122,6 +134,70 @@ export default function AgentSettings({ userProfile }: { userProfile: any }) {
         } finally {
             setLoading(false);
         }
+    };
+
+    const handlePasswordChange = async () => {
+        // Validation
+        if (!currentPassword || !newPassword || !confirmPassword) {
+            alert('❌ Lütfen tüm şifre alanlarını doldurun!');
+            return;
+        }
+
+        if (newPassword.length < 8) {
+            alert('❌ Yeni şifre en az 8 karakter olmalıdır!');
+            return;
+        }
+
+        if (newPassword !== confirmPassword) {
+            alert('❌ Yeni şifreler eşleşmiyor!');
+            return;
+        }
+
+        setPasswordLoading(true);
+        try {
+            // Update password using Supabase auth API
+            const { error } = await supabase.auth.updateUser({
+                password: newPassword
+            });
+
+            if (error) throw error;
+
+            // Clear password fields
+            setCurrentPassword('');
+            setNewPassword('');
+            setConfirmPassword('');
+            setShowPasswordSection(false);
+
+            alert('✅ Şifreniz başarıyla güncellendi!');
+        } catch (error: any) {
+            console.error('Password update error:', error);
+            alert('❌ Şifre güncellenemedi: ' + error.message);
+        } finally {
+            setPasswordLoading(false);
+        }
+    };
+
+    const formatPhoneNumber = (value: string) => {
+        // Remove all non-digits
+        const digits = value.replace(/\D/g, '');
+
+        // Format as 0XXX XXX XX XX
+        if (digits.length <= 4) return digits;
+        if (digits.length <= 7) return `${digits.slice(0, 4)} ${digits.slice(4)}`;
+        if (digits.length <= 9) return `${digits.slice(0, 4)} ${digits.slice(4, 7)} ${digits.slice(7)}`;
+        return `${digits.slice(0, 4)} ${digits.slice(4, 7)} ${digits.slice(7, 9)} ${digits.slice(9, 11)}`;
+    };
+
+    const handlePhoneChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const formatted = formatPhoneNumber(e.target.value);
+        setProfile({ ...profile, phone_number: formatted });
+    };
+
+    const getPasswordStrength = (password: string) => {
+        if (password.length === 0) return { label: '', color: '' };
+        if (password.length < 6) return { label: 'Zayıf', color: 'text-red-400' };
+        if (password.length < 10) return { label: 'Orta', color: 'text-yellow-400' };
+        return { label: 'Güçlü', color: 'text-green-400' };
     };
 
     return (
@@ -213,6 +289,23 @@ export default function AgentSettings({ userProfile }: { userProfile: any }) {
                                 placeholder="Satış benim işim..."
                             />
                         </div>
+
+                        {/* Phone Number */}
+                        <div>
+                            <label className="block text-xs font-medium text-gray-400 mb-1">Telefon Numarası</label>
+                            <div className="relative">
+                                <Phone className="absolute left-3 top-2.5 w-4 h-4 text-gray-500" />
+                                <input
+                                    type="tel"
+                                    value={profile.phone_number || ''}
+                                    onChange={handlePhoneChange}
+                                    maxLength={15}
+                                    className="w-full bg-black/20 border border-white/10 rounded-lg py-2 pl-9 pr-4 text-white placeholder-gray-600 focus:ring-1 focus:ring-purple-500 transition-all"
+                                    placeholder="0555 123 45 67"
+                                />
+                            </div>
+                            <p className="text-[10px] text-blue-400/60 mt-1">SMS bildirimleri için kullanılacak (Verimor)</p>
+                        </div>
                     </div>
 
                     {/* Theme Picker */}
@@ -228,6 +321,105 @@ export default function AgentSettings({ userProfile }: { userProfile: any }) {
                                 />
                             ))}
                         </div>
+                    </div>
+
+                    {/* Password Change Section - Collapsible */}
+                    <div className="border-t border-white/10 pt-4">
+                        <button
+                            onClick={() => setShowPasswordSection(!showPasswordSection)}
+                            className="w-full flex items-center justify-between text-white hover:text-purple-400 transition-colors"
+                        >
+                            <div className="flex items-center gap-2">
+                                <Shield className="w-4 h-4" />
+                                <span className="text-sm font-medium">Şifre Değiştir</span>
+                            </div>
+                            <Lock className={`w-4 h-4 transition-transform ${showPasswordSection ? 'rotate-180' : ''}`} />
+                        </button>
+
+                        {showPasswordSection && (
+                            <div className="mt-4 space-y-3 bg-black/20 p-4 rounded-lg border border-white/5">
+                                {/* Current Password */}
+                                <div>
+                                    <label className="block text-xs font-medium text-gray-400 mb-1">Mevcut Şifre</label>
+                                    <div className="relative">
+                                        <Lock className="absolute left-3 top-2.5 w-4 h-4 text-gray-500" />
+                                        <input
+                                            type={showCurrentPassword ? 'text' : 'password'}
+                                            value={currentPassword}
+                                            onChange={e => setCurrentPassword(e.target.value)}
+                                            className="w-full bg-black/20 border border-white/10 rounded-lg py-2 pl-9 pr-10 text-white focus:ring-1 focus:ring-purple-500 transition-all"
+                                            placeholder="********"
+                                        />
+                                        <button
+                                            type="button"
+                                            onClick={() => setShowCurrentPassword(!showCurrentPassword)}
+                                            className="absolute right-3 top-2.5 text-gray-500 hover:text-white"
+                                        >
+                                            {showCurrentPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                                        </button>
+                                    </div>
+                                </div>
+
+                                {/* New Password */}
+                                <div>
+                                    <label className="block text-xs font-medium text-gray-400 mb-1">Yeni Şifre</label>
+                                    <div className="relative">
+                                        <Lock className="absolute left-3 top-2.5 w-4 h-4 text-gray-500" />
+                                        <input
+                                            type={showNewPassword ? 'text' : 'password'}
+                                            value={newPassword}
+                                            onChange={e => setNewPassword(e.target.value)}
+                                            className="w-full bg-black/20 border border-white/10 rounded-lg py-2 pl-9 pr-10 text-white focus:ring-1 focus:ring-purple-500 transition-all"
+                                            placeholder="Min. 8 karakter"
+                                        />
+                                        <button
+                                            type="button"
+                                            onClick={() => setShowNewPassword(!showNewPassword)}
+                                            className="absolute right-3 top-2.5 text-gray-500 hover:text-white"
+                                        >
+                                            {showNewPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                                        </button>
+                                    </div>
+                                    {newPassword && (
+                                        <p className={`text-xs mt-1 ${getPasswordStrength(newPassword).color}`}>
+                                            Güvenlik: {getPasswordStrength(newPassword).label}
+                                        </p>
+                                    )}
+                                </div>
+
+                                {/* Confirm Password */}
+                                <div>
+                                    <label className="block text-xs font-medium text-gray-400 mb-1">Şifre Tekrar</label>
+                                    <div className="relative">
+                                        <Lock className="absolute left-3 top-2.5 w-4 h-4 text-gray-500" />
+                                        <input
+                                            type="password"
+                                            value={confirmPassword}
+                                            onChange={e => setConfirmPassword(e.target.value)}
+                                            className="w-full bg-black/20 border border-white/10 rounded-lg py-2 pl-9 pr-4 text-white focus:ring-1 focus:ring-purple-500 transition-all"
+                                            placeholder="Yeni şifreyi tekrar girin"
+                                        />
+                                    </div>
+                                    {confirmPassword && newPassword !== confirmPassword && (
+                                        <p className="text-xs text-red-400 mt-1">Şifreler eşleşmiyor</p>
+                                    )}
+                                </div>
+
+                                {/* Password Update Button */}
+                                <button
+                                    onClick={handlePasswordChange}
+                                    disabled={passwordLoading || !currentPassword || !newPassword || !confirmPassword}
+                                    className="w-full py-2 bg-purple-600 hover:bg-purple-700 disabled:bg-gray-600 disabled:cursor-not-allowed text-white rounded-lg font-medium text-sm flex items-center justify-center gap-2 transition-all"
+                                >
+                                    {passwordLoading ? (
+                                        <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                                    ) : (
+                                        <Shield className="w-4 h-4" />
+                                    )}
+                                    Şifreyi Güncelle
+                                </button>
+                            </div>
+                        )}
                     </div>
 
                     <button
