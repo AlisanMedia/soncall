@@ -57,7 +57,7 @@ export function ExpandableTabs({
     defaultIndex = null,
 }: ExpandableTabsProps) {
     const [selected, setSelected] = React.useState<number | null>(defaultIndex);
-    const outsideClickRef = React.useRef<HTMLDivElement | null>(null);
+    const outsideClickRef = React.useRef<any>(null);
 
     useOnClickOutside(outsideClickRef, () => {
         // Optional: Close tab on outside click if desired, but for navigation we might want to keep it selected
