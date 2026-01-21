@@ -4,7 +4,6 @@ import { createClient } from '@/lib/supabase/server';
 import OpenAI from 'openai';
 
 // Initialize OpenAI
-// Note: Requires OPENAI_API_KEY in .env.local
 const openai = new OpenAI({
     apiKey: process.env.OPENAI_API_KEY,
 });
@@ -23,119 +22,132 @@ export async function POST(request: NextRequest) {
             return NextResponse.json({ error: 'Missing audioUrl or leadId' }, { status: 400 });
         }
 
-        console.log('Processing audio:', audioUrl);
+        console.log('Processing Sales AI Analysis for lead:', leadId);
 
-        if (!process.env.OPENAI_API_KEY) {
-            console.error('OPENAI_API_KEY is missing');
-            return NextResponse.json({ error: 'Server configuration error: OpenAI API Key missing' }, { status: 500 });
-        }
-
-        // 3. Download Audio File from Supabase Storage or URL
+        // 3. Fetch Audio
         const audioResponse = await fetch(audioUrl);
-        if (!audioResponse.ok) {
-            throw new Error(`Failed to fetch audio file: ${audioResponse.statusText}`);
-        }
+        if (!audioResponse.ok) throw new Error(`Audio fetch failed: ${audioResponse.statusText}`);
 
         const audioBlob = await audioResponse.blob();
 
-        // Determine mime type from URL or fallback
-        let mimeType = audioBlob.type;
+        // Mime Type Handling
+        let mimeType = audioBlob.type || 'audio/webm';
         let fileName = 'recording.webm';
+        if (audioUrl.includes('.mp4')) { mimeType = 'audio/mp4'; fileName = 'recording.mp4'; }
+        else if (audioUrl.includes('.wav')) { mimeType = 'audio/wav'; fileName = 'recording.wav'; }
+        else if (audioUrl.includes('.ogg')) { mimeType = 'audio/ogg'; fileName = 'recording.ogg'; }
 
-        // Try to guess from URL if blob type is generic or missing or octet-stream
-        if (!mimeType || mimeType === 'application/octet-stream') {
-            if (audioUrl.includes('.mp4')) {
-                mimeType = 'audio/mp4';
-                fileName = 'recording.mp4';
-            } else if (audioUrl.includes('.ogg')) {
-                mimeType = 'audio/ogg';
-                fileName = 'recording.ogg';
-            } else if (audioUrl.includes('.wav')) {
-                mimeType = 'audio/wav';
-                fileName = 'recording.wav';
-            } else {
-                mimeType = 'audio/webm';
-                fileName = 'recording.webm';
-            }
-        } else {
-            // Set filename based on detected mimeType
-            if (mimeType.includes('mp4')) fileName = 'recording.mp4';
-            else if (mimeType.includes('ogg')) fileName = 'recording.ogg';
-            else if (mimeType.includes('wav')) fileName = 'recording.wav';
-        }
+        console.log('Transcribing file:', fileName, mimeType);
 
-        console.log(`Using mimeType: ${mimeType}, fileName: ${fileName}`);
-
+        // 4. Transcription (Whisper)
         const file = new File([audioBlob], fileName, { type: mimeType });
-
-        // 4. OpenAI Whisper (Transcription)
         const transcription = await openai.audio.transcriptions.create({
             file: file,
             model: 'whisper-1',
-            language: 'tr', // Hint Turkish
+            language: 'tr',
             response_format: 'text',
         });
 
         const transcriptText = transcription as unknown as string;
 
-        // 5. OpenAI GPT-4o (Summarization)
-        let summary = 'Özet oluşturulamadı.';
+        // 5. Sales Coach Analysis (GPT-4o)
+        console.log('Starting GPT-4o Sales Analysis...');
+
+        const systemPrompt = `
+            Sen Dünyanın en iyi Satış Koçu ve CRM Asistanısın.
+            Görevin: Bir satış temsilcisi ile müşteri arasındaki telefon görüşmesini analiz etmek ve CRM sistemi için yapılandırılmış veri çıkarmak.
+
+            Aşağıdaki JSON formatında çıktı ver:
+            {
+                "summary": "Görüşmenin profesyonel, maddeler halinde kısa özeti.",
+                "potential_level": "high" | "medium" | "low" | "not_assessed",
+                "extracted_date": "YYYY-MM-DD HH:MM" (Eğer bir randevu veya geri arama tarihi konuşulduysa, yoksa null),
+                "sentiment_score": 1-10 arası (10 çok olumlu),
+                "suggested_action": "CRM için kısa aksiyon önerisi (örn: Yarın 14:00'te ara)",
+                "key_objections": ["Fiyat", "Rakip firma" gibi itirazlar],
+                "sales_completed": boolean (Satış kapandı mı?)
+            }
+
+            Kurallar:
+            1. Tarihler için bağlama dikkat et (örn: "Yarın öğleden sonra" denildiyse bugüne 1 gün ekle ve 14:00 yap).
+            2. Potansiyel seviyesini müşterinin ses tonuna ve satın alma sinyallerine göre belirle.
+            3. Eğer transkript boş veya anlamsızsa "potential_level": "not_assessed" ver.
+        `;
+
+        const completion = await openai.chat.completions.create({
+            model: 'gpt-4o',
+            response_format: { type: "json_object" },
+            messages: [
+                { role: 'system', content: systemPrompt },
+                { role: 'user', content: `Görüşme Transkripti:\n${transcriptText}` }
+            ],
+            temperature: 0.3,
+        });
+
+        const analysisRaw = completion.choices[0].message.content;
+        let analysis;
         try {
-            const completion = await openai.chat.completions.create({
-                model: 'gpt-4o', // or gpt-3.5-turbo if 4o is not available
-                messages: [
-                    {
-                        role: 'system',
-                        content: `Sen profesyonel bir satış koçu ve CRM asistanısın. Görevin, bir satış temsilcisi ile potansiyel müşteri arasındaki telefon görüşmesinin transkriptini analiz ederek yapılandırılmış bir özet çıkarmaktır.
-
-                        Lütfen aşağıdaki kurallara SIKI SIKIYA uy:
-                        1. **Sadece Gerçek Konuşmayı Analiz Et:** Eğer transkript boşsa, çok kısaysa (örn: "Alo", "Ses", "Merhaba") veya anlamsız seslerden oluşuyorsa, ASLA bir senaryo uydurma. Sadece "Görüşme içeriği yetersiz veya ses anlaşılamadı." yaz.
-                        2. **Ürün Uydurma:** Transkriptte geçmeyen hiçbir ürün veya hizmetten (örn: yazıcı, sigorta, emlak) bahsetme. Sadece konuşmada geçen konuları not al.
-                        3. **Format:** Çıktıyı tam olarak aşağıdaki başlıklarla Türkçe olarak ver:
-                           - **Özet**: Görüşmenin 1-2 cümlelik özeti.
-                           - **Müşteri İlgisi**: (Yüksek / Orta / Düşük / Belirsiz) - Sebebiyle birlikte.
-                           - **İtirazlar**: Müşterinin dile getirdiği endişeler veya itirazlar (yoksa "Yok" yaz).
-                           - **Sonraki Adım**: Satış temsilcisi ne yapmalı?
-
-                        Unutma: Dürüst ol. Eğer konuşma yoksa, analiz yapma.`
-                    },
-                    {
-                        role: 'user',
-                        content: transcriptText
-                    }
-                ],
-                temperature: 0.3,
-            });
-            summary = completion.choices[0].message.content || 'Özet oluşturulamadı.';
-        } catch (gptError) {
-            console.error('GPT Summarization error:', gptError);
-            summary = 'Özetleme servisi şu an kullanılamıyor, ancak transkript kaydedildi.';
+            analysis = JSON.parse(analysisRaw || '{}');
+        } catch (e) {
+            console.error('JSON Parse Error:', e);
+            analysis = {
+                summary: 'Analiz format hatası.',
+                potential_level: 'not_assessed',
+                suggested_action: 'Manuel inceleme gerekli.'
+            };
         }
 
-        // 6. Save to DB (call_logs)
-        // Insert record linking to lead
-        const { error: logError } = await supabase.from('call_logs').insert({
+        console.log('AI Analysis Result:', analysis);
+
+        // 6. Database Updates (Auto-Pilot)
+
+        // A) Update Lead Status & Potential
+        // Only update if AI is confident (high/medium/low)
+        if (analysis.potential_level !== 'not_assessed') {
+            await supabase.from('leads').update({
+                potential_level: analysis.potential_level,
+                // Optional: Update status based on sales_completed logic
+                // status: analysis.sales_completed ? 'pending' : 'contacted'
+            }).eq('id', leadId);
+        }
+
+        // B) Add AI Note
+        let noteContent = `🤖 **AI Satış Analizi**\n\n`;
+        noteContent += `📌 **Özet:** ${analysis.summary}\n`;
+        noteContent += `💡 **Potansiyel:** ${analysis.potential_level.toUpperCase()} (Skor: ${analysis.sentiment_score}/10)\n`;
+        if (analysis.extracted_date) {
+            noteContent += `📅 **Algılanan Tarih:** ${analysis.extracted_date}\n`;
+        }
+        if (analysis.key_objections?.length > 0) {
+            noteContent += `⚠️ **İtirazlar:** ${analysis.key_objections.join(', ')}\n`;
+        }
+        noteContent += `🚀 **Öneri:** ${analysis.suggested_action}`;
+
+        const { error: noteError } = await supabase.from('lead_notes').insert({
+            lead_id: leadId,
+            agent_id: user.id, // Logged as the agent, but marked as AI analysis in text
+            note: noteContent,
+            action_taken: 'AI Analysis', // Special flag
+        });
+
+        // C) Save Log
+        await supabase.from('call_logs').insert({
             lead_id: leadId,
             agent_id: user.id,
             audio_url: audioUrl,
             transcription: transcriptText,
-            summary: summary,
-            duration_seconds: 0 // We don't have exact duration here easily unless passed from client
+            summary: analysis.summary,
+            duration_seconds: 0
         });
-
-        if (logError) {
-            console.error('Database insert error:', logError);
-            // Don't fail full request if just logging failed
-        }
 
         return NextResponse.json({
             success: true,
-            transcription: transcriptText,
-            summary: summary
+            analysis: analysis,
+            transcription: transcriptText
         });
 
     } catch (error: any) {
-        console.error('Transcription error:', error);
-        return NextResponse.json({ error: error.message || 'An unexpected error occurred' }, { status: 500 });
+        console.error('Sales AI Error:', error);
+        return NextResponse.json({ error: error.message }, { status: 500 });
     }
 }

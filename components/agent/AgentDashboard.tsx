@@ -14,6 +14,7 @@ import ChatPanel from '../chat/ChatPanel';
 import ChatNotificationBadge from '../chat/ChatNotificationBadge';
 import AgentSettings from './AgentSettings';
 import LeadHistoryView from './LeadHistoryView';
+import { ExpandableTabs } from '@/components/ui/expandable-tabs';
 
 interface AgentDashboardProps {
     profile: Profile;
@@ -141,39 +142,43 @@ export default function AgentDashboard({ profile: initialProfile }: AgentDashboa
                             </div>
 
                             {/* Navigation Tabs - Integrated into header for easy access */}
-                            <nav className="flex items-center gap-1 bg-black/20 p-1 rounded-lg border border-white/5">
+                            <div className="hidden sm:block">
+                                <ExpandableTabs
+                                    tabs={[
+                                        { title: "Çağrı", icon: Phone },
+                                        { title: "Geçmiş", icon: List },
+                                        { type: "separator" } as any,
+                                        { title: "Ayarlar", icon: Settings },
+                                    ]}
+                                    className="bg-black/20 border-white/5"
+                                    activeColor="text-purple-400 bg-purple-500/10"
+                                    defaultIndex={activeTab === 'work' ? 0 : activeTab === 'history' ? 1 : 3}
+                                    onChange={(index) => {
+                                        if (index === 0) setActiveTab('work');
+                                        if (index === 1) setActiveTab('history');
+                                        if (index === 3) setActiveTab('settings');
+                                    }}
+                                />
+                            </div>
+                            {/* Mobile Fallback - Simplified */}
+                            <nav className="flex sm:hidden items-center gap-1 bg-black/20 p-1 rounded-lg border border-white/5">
                                 <button
                                     onClick={() => setActiveTab('work')}
-                                    className={`p-2 sm:px-4 sm:py-2 rounded-md text-sm font-medium transition-all flex items-center gap-2 ${activeTab === 'work'
-                                        ? 'bg-purple-600 text-white shadow-lg'
-                                        : 'text-gray-300 hover:text-white hover:bg-white/5'
-                                        }`}
-                                    title="Çağrı Paneli"
+                                    className={`p-2 rounded-md transition-all ${activeTab === 'work' ? 'bg-purple-600 text-white' : 'text-gray-300'}`}
                                 >
-                                    <Phone className="w-5 h-5 sm:w-4 sm:h-4" />
-                                    <span className="hidden sm:inline">Çağrı</span>
+                                    <Phone className="w-5 h-5" />
                                 </button>
                                 <button
                                     onClick={() => setActiveTab('history')}
-                                    className={`p-2 sm:px-4 sm:py-2 rounded-md text-sm font-medium transition-all flex items-center gap-2 ${activeTab === 'history'
-                                        ? 'bg-purple-600 text-white shadow-lg'
-                                        : 'text-gray-300 hover:text-white hover:bg-white/5'
-                                        }`}
-                                    title="Lead Geçmişi"
+                                    className={`p-2 rounded-md transition-all ${activeTab === 'history' ? 'bg-purple-600 text-white' : 'text-gray-300'}`}
                                 >
-                                    <List className="w-5 h-5 sm:w-4 sm:h-4" />
-                                    <span className="hidden sm:inline">Geçmiş</span>
+                                    <List className="w-5 h-5" />
                                 </button>
                                 <button
                                     onClick={() => setActiveTab('settings')}
-                                    className={`p-2 sm:px-4 sm:py-2 rounded-md text-sm font-medium transition-all flex items-center gap-2 ${activeTab === 'settings'
-                                        ? 'bg-purple-600 text-white shadow-lg'
-                                        : 'text-gray-300 hover:text-white hover:bg-white/5'
-                                        }`}
-                                    title="Ayarlar"
+                                    className={`p-2 rounded-md transition-all ${activeTab === 'settings' ? 'bg-purple-600 text-white' : 'text-gray-300'}`}
                                 >
-                                    <Settings className="w-5 h-5 sm:w-4 sm:h-4" />
-                                    <span className="hidden sm:inline">Ayarlar</span>
+                                    <Settings className="w-5 h-5" />
                                 </button>
                             </nav>
                         </div>

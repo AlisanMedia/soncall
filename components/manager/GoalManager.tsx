@@ -137,7 +137,7 @@ export default function GoalManager() {
                     </div>
                     <div>
                         <h2 className="text-xl font-bold text-white">Hedef Yönetimi</h2>
-                        <p className="text-purple-300 text-sm">Ajanlar için aylık performans hedefleri belirleyin</p>
+                        <p className="text-purple-300 text-sm">Temsilciler için aylık performans hedefleri belirleyin</p>
                     </div>
                 </div>
 

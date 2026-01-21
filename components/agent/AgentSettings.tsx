@@ -3,6 +3,7 @@
 import { useState, useRef, useEffect } from 'react';
 import { createClient } from '@/lib/supabase/client';
 import { useRouter } from 'next/navigation';
+import { toast } from 'sonner';
 import { Upload, User, Save, Camera, Sparkles, Trophy, Mail, Hash, AlertCircle, Phone, Lock, Eye, EyeOff, Shield } from 'lucide-react';
 
 interface Profile {
@@ -126,11 +127,11 @@ export default function AgentSettings({ userProfile }: { userProfile: any }) {
             // Critical: Force refresh server components
             router.refresh();
 
-            alert(`✅ Profil başarıyla güncellendi!${emailMessage}`);
+            toast.success(`Profil başarıyla güncellendi!${emailMessage}`);
 
         } catch (error: any) {
             console.error('Error saving profile:', error);
-            alert('Hata: ' + error.message);
+            toast.error('Hata: ' + error.message);
         } finally {
             setLoading(false);
         }
@@ -139,17 +140,17 @@ export default function AgentSettings({ userProfile }: { userProfile: any }) {
     const handlePasswordChange = async () => {
         // Validation
         if (!currentPassword || !newPassword || !confirmPassword) {
-            alert('❌ Lütfen tüm şifre alanlarını doldurun!');
+            toast.error('Lütfen tüm şifre alanlarını doldurun!');
             return;
         }
 
         if (newPassword.length < 8) {
-            alert('❌ Yeni şifre en az 8 karakter olmalıdır!');
+            toast.error('Yeni şifre en az 8 karakter olmalıdır!');
             return;
         }
 
         if (newPassword !== confirmPassword) {
-            alert('❌ Yeni şifreler eşleşmiyor!');
+            toast.error('Yeni şifreler eşleşmiyor!');
             return;
         }
 
@@ -168,10 +169,10 @@ export default function AgentSettings({ userProfile }: { userProfile: any }) {
             setConfirmPassword('');
             setShowPasswordSection(false);
 
-            alert('✅ Şifreniz başarıyla güncellendi!');
+            toast.success('Şifreniz başarıyla güncellendi!');
         } catch (error: any) {
             console.error('Password update error:', error);
-            alert('❌ Şifre güncellenemedi: ' + error.message);
+            toast.error('Şifre güncellenemedi: ' + error.message);
         } finally {
             setPasswordLoading(false);
         }
@@ -203,7 +204,7 @@ export default function AgentSettings({ userProfile }: { userProfile: any }) {
     return (
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 p-4">
             {/* LEFT: Edit Form */}
-            <div className="bg-white/5 border border-white/10 rounded-2xl p-6 backdrop-blur-xl">
+            <div className="!bg-black/20 border border-white/10 rounded-2xl p-6 backdrop-blur-xl">
                 <h2 className="text-xl font-bold text-white mb-6 flex items-center gap-2">
                     <User className="w-5 h-5 text-purple-400" />
                     Profil Düzenle
@@ -412,7 +413,7 @@ export default function AgentSettings({ userProfile }: { userProfile: any }) {
                                     className="w-full py-2 bg-purple-600 hover:bg-purple-700 disabled:bg-gray-600 disabled:cursor-not-allowed text-white rounded-lg font-medium text-sm flex items-center justify-center gap-2 transition-all"
                                 >
                                     {passwordLoading ? (
-                                        <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                                        <img src="/loading-logo.png" alt="Loading" className="w-6 h-3 animate-pulse object-contain" />
                                     ) : (
                                         <Shield className="w-4 h-4" />
                                     )}
@@ -429,7 +430,7 @@ export default function AgentSettings({ userProfile }: { userProfile: any }) {
                         style={{ background: `linear-gradient(to right, var(--tw-gradient-stops))` }} // Fallback
                     >
                         <div className={`absolute inset-0 bg-gradient-to-r ${currentTheme.from} ${currentTheme.to} rounded-lg -z-10`} />
-                        {loading ? <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" /> : <Save className="w-4 h-4" />}
+                        {loading ? <img src="/loading-logo.png" alt="Loading" className="w-6 h-3 animate-pulse object-contain" /> : <Save className="w-4 h-4" />}
                         Değişiklikleri Kaydet
                     </button>
                 </div>
@@ -452,7 +453,7 @@ export default function AgentSettings({ userProfile }: { userProfile: any }) {
                             <div className="flex justify-between items-start mb-6 relative z-10">
                                 <div className="flex items-center gap-2">
                                     <Sparkles className={`w-5 h-5 ${currentTheme.bg.replace('bg-', 'text-')}-400`} />
-                                    <span className="text-xs font-bold tracking-widest text-white/80 uppercase">AGENT ID</span>
+                                    <span className="text-xs font-bold tracking-widest text-white/80 uppercase">TEMSİLCİ ID</span>
                                 </div>
                                 <div className="flex items-center gap-1 bg-white/10 px-2 py-1 rounded text-xs font-mono text-white">
                                     <span className="w-2 h-2 rounded-full bg-green-500 animate-pulse"></span>

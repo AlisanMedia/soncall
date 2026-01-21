@@ -274,8 +274,8 @@ export default function LeadCard({ agentId, onLeadProcessed, refreshKey }: LeadC
         return (
             <div className="bg-white/10 backdrop-blur-lg rounded-2xl shadow-2xl p-12 border border-white/20 flex items-center justify-center min-h-[500px]">
                 <div className="text-center">
-                    <Loader2 className="w-12 h-12 text-purple-400 animate-spin mx-auto mb-4" />
-                    <p className="text-purple-200">Lead yükleniyor...</p>
+                    <img src="/loading-logo.png" alt="Loading" className="w-24 h-8 animate-pulse mx-auto mb-4 object-contain" />
+                    <p className="text-purple-200">Sistem Hazırlanıyor...</p>
                 </div>
             </div>
         );

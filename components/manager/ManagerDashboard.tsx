@@ -17,6 +17,7 @@ import ChatPanel from '../chat/ChatPanel';
 import ChatNotificationBadge from '../chat/ChatNotificationBadge';
 import AdminPanel from './AdminPanel';
 import GoalManager from './GoalManager';
+import SalesApprovals from './SalesApprovals';
 
 interface ManagerDashboardProps {
     profile: Profile;
@@ -178,6 +179,7 @@ export default function ManagerDashboard({ profile }: ManagerDashboardProps) {
 
             {/* Tab Content */}
             <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+                <SalesApprovals />
                 {currentTab === 'monitor' && <TeamMonitoring />}
                 {currentTab === 'leads' && <LeadManagementView />}
                 {currentTab === 'analytics' && <AnalyticsView />}

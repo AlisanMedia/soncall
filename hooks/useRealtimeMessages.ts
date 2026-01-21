@@ -79,7 +79,7 @@ export function useRealtimeMessages(options: UseRealtimeMessagesOptions = {}) {
                     schema: 'public',
                     table: 'messages',
                 },
-                (payload) => {
+                async (payload) => {
                     const newMessage = payload.new as Message;
 
                     // Filter based on options
@@ -91,13 +91,66 @@ export function useRealtimeMessages(options: UseRealtimeMessagesOptions = {}) {
                         return;
                     }
 
-                    // Add to messages if it doesn't exist
+                    // 1. Fetch sender details with RETRY logic
+                    // Sometimes realtime triggers before the profile is fully queryable
+                    let senderProfile = null;
+                    if (newMessage.sender_id) {
+                        // Try up to 3 times to fetch the profile
+                        for (let i = 0; i < 3; i++) {
+                            const { data } = await supabase
+                                .from('profiles')
+                                .select('id, full_name, role, avatar_url')
+                                .eq('id', newMessage.sender_id)
+                                .single();
+
+                            if (data) {
+                                senderProfile = data;
+                                break; // Found it!
+                            }
+                            // Wait 500ms before retrying
+                            await new Promise(r => setTimeout(r, 500));
+                        }
+                    }
+
+                    // 2. Attach sender profile to message
+                    if (senderProfile) {
+                        newMessage.sender = senderProfile;
+                    } else {
+                        // Use a generic placeholder but FORCE role as 'agent' so "Duyuru" badge never shows
+                        newMessage.sender = {
+                            id: newMessage.sender_id,
+                            full_name: '...', // Loading indicator instead of 'Unknown'
+                            role: 'agent' // CRITICAL: identified as agent to hide Broadcast badge
+                        };
+                    }
+
+                    // 3. Update State
                     setMessages((prev) => {
+                        // Avoid duplicates
                         if (prev.some((m) => m.id === newMessage.id)) {
                             return prev;
                         }
                         return [...prev, newMessage];
                     });
+
+                    // If profile was missing, try fetching one last time in background and update state again
+                    if (!senderProfile && newMessage.sender_id) {
+                        setTimeout(async () => {
+                            const { data } = await supabase
+                                .from('profiles')
+                                .select('id, full_name, role, avatar_url')
+                                .eq('id', newMessage.sender_id)
+                                .single();
+
+                            if (data) {
+                                setMessages((currentMessages) =>
+                                    currentMessages.map(msg =>
+                                        msg.id === newMessage.id ? { ...msg, sender: data } : msg
+                                    )
+                                );
+                            }
+                        }, 2000);
+                    }
 
                     // Play sound if message is for current user
                     if (options.userId && newMessage.sender_id !== options.userId) {

@@ -4,6 +4,7 @@
 import { useState, useRef, useEffect } from 'react';
 import { Mic, Square, Play, Pause, Save, Loader2, UploadCloud, FileAudio } from 'lucide-react';
 import { createClient } from '@/lib/supabase/client';
+import { toast } from 'sonner';
 
 interface VoiceRecorderProps {
     leadId: string;
@@ -24,27 +25,36 @@ export default function VoiceRecorder({ leadId, onRecordingComplete }: VoiceReco
     const timerRef = useRef<NodeJS.Timeout | null>(null);
     const audioPlayerRef = useRef<HTMLAudioElement | null>(null);
 
+    // Add import at top
+    // ... Inside component
+
+    // ... Inside component
     const startRecording = async () => {
         try {
             if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
-                alert('Tarayıcınız ses kaydını desteklemiyor. Lütfen Chrome veya Edge kullanın.');
+                toast.error('Tarayıcınız ses kaydını desteklemiyor.');
                 return;
             }
 
             const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
 
-            // Determine supported mime type
+            // More comprehensive mime type check
             const mimeTypes = [
                 'audio/webm;codecs=opus',
                 'audio/webm',
                 'audio/mp4',
+                'audio/ogg;codecs=opus',
                 'audio/ogg',
-                ''
+                'audio/wav'
             ];
 
-            let mimeType = mimeTypes.find(type => MediaRecorder.isTypeSupported(type)) || '';
-            setAudioMimeType(mimeType || 'audio/webm');
-            const options = mimeType ? { mimeType } : undefined;
+            // Filter supported types
+            const supportedType = mimeTypes.find(type => MediaRecorder.isTypeSupported(type));
+            const selectedMimeType = supportedType || '';  // Let browser default if none match
+
+            setAudioMimeType(selectedMimeType || 'audio/webm'); // State for later upload
+
+            const options = selectedMimeType ? { mimeType: selectedMimeType } : undefined;
 
             const mediaRecorder = new MediaRecorder(stream, options);
             mediaRecorderRef.current = mediaRecorder;
@@ -57,16 +67,30 @@ export default function VoiceRecorder({ leadId, onRecordingComplete }: VoiceReco
             };
 
             mediaRecorder.onstop = () => {
-                // Use the same mimeType for blob creation if possible, otherwise let Blob guess or default to webm
-                const blobType = mimeType || 'audio/webm';
+                // Ensure we have data
+                if (audioChunksRef.current.length === 0) {
+                    toast.error("Ses verisi alınamadı. Mikrofonunuzu kontrol edin.");
+                    return;
+                }
+
+                // Fallback mime type for Blob creation
+                const blobType = selectedMimeType || 'audio/webm';
                 const blob = new Blob(audioChunksRef.current, { type: blobType });
+
+                // Validate blob size
+                if (blob.size < 100) {
+                    toast.error("Ses kaydı çok kısa veya boş.");
+                    return;
+                }
+
                 const url = URL.createObjectURL(blob);
                 setAudioBlob(blob);
                 setAudioUrl(url);
                 stream.getTracks().forEach(track => track.stop()); // Stop mic
             };
 
-            mediaRecorder.start();
+            // Request data every 1000ms to ensure chunks are captured
+            mediaRecorder.start(1000);
             setIsRecording(true);
             setRecordingTime(0);
 
@@ -77,11 +101,11 @@ export default function VoiceRecorder({ leadId, onRecordingComplete }: VoiceReco
         } catch (error: any) {
             console.error('Error accessing microphone:', error);
             if (error.name === 'NotAllowedError' || error.name === 'PermissionDeniedError') {
-                alert('Mikrofon erişimi reddedildi. Lütfen tarayıcı ayarlarından izni kontrol edin.');
-            } else if (error.name === 'NotFoundError' || error.name === 'DevicesNotFoundError') {
-                alert('Mikrofon bulunamadı. Lütfen bağlantınızı kontrol edin.');
+                toast.error('Mikrofon erişimi reddedildi. Tarayıcı ayarlarını kontrol edin.');
+            } else if (error.name === 'NotFoundError') {
+                toast.error('Mikrofon bulunamadı.');
             } else {
-                alert('Ses kaydı başlatılamadı: ' + error.message);
+                toast.error('Ses kaydı başlatılamadı: ' + error.message);
             }
         }
     };
@@ -223,7 +247,7 @@ export default function VoiceRecorder({ leadId, onRecordingComplete }: VoiceReco
                                 disabled={isUploading}
                                 className="bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded-lg flex items-center gap-2 transition-all font-medium disabled:opacity-50"
                             >
-                                {isUploading ? <Loader2 className="w-4 h-4 animate-spin" /> : <UploadCloud className="w-4 h-4" />}
+                                {isUploading ? <img src="/loading-logo.png" alt="Loading" className="w-8 h-4 animate-pulse object-contain" /> : <UploadCloud className="w-4 h-4" />}
                                 Analiz Et
                             </button>
 

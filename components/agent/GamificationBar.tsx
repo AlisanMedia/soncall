@@ -57,9 +57,9 @@ export default function GamificationBar({ agentId }: { agentId: string }) {
 
     // Rank Names based on level
     const getRankName = (lvl: number) => {
-        if (lvl < 5) return 'Çaylak Ajan';
+        if (lvl < 5) return 'Çaylak Temsilci';
         if (lvl < 10) return 'Satış Uzmanı';
-        if (lvl < 20) return 'Kıdemli Ajan';
+        if (lvl < 20) return 'Kıdemli Temsilci';
         if (lvl < 50) return 'Yıldız Satıcı';
         return 'Efsane';
     };

@@ -26,29 +26,42 @@ export default function ChatPanel({ userId, isOpen, onClose, leadId, receiverId,
     // Scroll to bottom logic
     const [isAtBottom, setIsAtBottom] = useState(true);
 
-    const scrollToBottom = () => {
-        messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+    const scrollToBottom = (instant = false) => {
+        if (messagesEndRef.current) {
+            messagesEndRef.current.scrollIntoView({
+                behavior: instant ? 'auto' : 'smooth',
+                block: 'end'
+            });
+        }
     };
 
     const handleScroll = (e: React.UIEvent<HTMLDivElement>) => {
         const { scrollTop, scrollHeight, clientHeight } = e.currentTarget;
-        const isBottom = Math.abs(scrollHeight - scrollTop - clientHeight) < 50;
+        const isBottom = Math.abs(scrollHeight - scrollTop - clientHeight) < 100; // Increased threshold
         setIsAtBottom(isBottom);
     };
 
-    // Auto-scroll on new messages if already at bottom
+    // Auto-scroll on new messages
     useEffect(() => {
-        if (isAtBottom) {
-            scrollToBottom();
+        // If we were at bottom, or if this is the initial load (messages just arrived)
+        if (isAtBottom || messages.length > 0) {
+            // Small timeout to ensure DOM is rendered
+            const timeoutId = setTimeout(() => {
+                scrollToBottom(true); // Instance scroll avoids "jumping" feel on load
+            }, 100);
+            return () => clearTimeout(timeoutId);
         }
-    }, [messages, isAtBottom]);
+    }, [messages, isOpen]); // Added isOpen dependency check
 
-    // Initial scroll
+    // Initial scroll when opening
     useEffect(() => {
-        if (!loading && messages.length > 0) {
-            scrollToBottom();
+        if (isOpen && !loading && messages.length > 0) {
+            const timeoutId = setTimeout(() => {
+                scrollToBottom(true);
+            }, 150);
+            return () => clearTimeout(timeoutId);
         }
-    }, [loading]);
+    }, [isOpen, loading]);
 
     // Mark messages as read when panel is open
     useEffect(() => {
@@ -87,7 +100,7 @@ export default function ChatPanel({ userId, isOpen, onClose, leadId, receiverId,
             >
                 {loading ? (
                     <div className="flex items-center justify-center h-full">
-                        <Loader2 className="w-8 h-8 text-purple-400 animate-spin" />
+                        <img src="/loading-logo.png" alt="Loading" className="w-16 h-8 animate-pulse object-contain" />
                     </div>
                 ) : messages.length === 0 ? (
                     <div className="flex flex-col items-center justify-center h-full text-center">

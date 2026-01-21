@@ -84,7 +84,7 @@ export default function AgentRankings() {
     if (loading) {
         return (
             <div className="flex items-center justify-center py-32">
-                <Loader2 className="w-12 h-12 text-purple-400 animate-spin" />
+                <img src="/loading-logo.png" alt="Loading" className="w-16 h-8 animate-pulse object-contain" />
             </div>
         );
     }
@@ -99,8 +99,8 @@ export default function AgentRankings() {
                     <button
                         onClick={() => setSortBy('today')}
                         className={`px-4 py-2 rounded-lg font-medium transition-all ${sortBy === 'today'
-                                ? 'bg-purple-600 text-white'
-                                : 'bg-white/10 text-purple-200 hover:bg-white/20'
+                            ? 'bg-purple-600 text-white'
+                            : 'bg-white/10 text-purple-200 hover:bg-white/20'
                             }`}
                     >
                         Bugün
@@ -108,8 +108,8 @@ export default function AgentRankings() {
                     <button
                         onClick={() => setSortBy('total')}
                         className={`px-4 py-2 rounded-lg font-medium transition-all ${sortBy === 'total'
-                                ? 'bg-purple-600 text-white'
-                                : 'bg-white/10 text-purple-200 hover:bg-white/20'
+                            ? 'bg-purple-600 text-white'
+                            : 'bg-white/10 text-purple-200 hover:bg-white/20'
                             }`}
                     >
                         Toplam
@@ -117,8 +117,8 @@ export default function AgentRankings() {
                     <button
                         onClick={() => setSortBy('conversion')}
                         className={`px-4 py-2 rounded-lg font-medium transition-all ${sortBy === 'conversion'
-                                ? 'bg-purple-600 text-white'
-                                : 'bg-white/10 text-purple-200 hover:bg-white/20'
+                            ? 'bg-purple-600 text-white'
+                            : 'bg-white/10 text-purple-200 hover:bg-white/20'
                             }`}
                     >
                         Conversion
@@ -131,8 +131,8 @@ export default function AgentRankings() {
                         setSelectedAgents([]);
                     }}
                     className={`px-4 py-2 rounded-lg font-medium transition-all ${compareMode
-                            ? 'bg-green-600 text-white'
-                            : 'bg-white/10 text-purple-200 hover:bg-white/20'
+                        ? 'bg-green-600 text-white'
+                        : 'bg-white/10 text-purple-200 hover:bg-white/20'
                         }`}
                 >
                     {compareMode ? 'Karşılaştırmayı Kapat' : 'Karşılaştır'}
@@ -300,7 +300,7 @@ export default function AgentRankings() {
                 <div className="bg-white/5 backdrop-blur-lg rounded-xl p-8 border border-white/10 text-center">
                     <Trophy className="w-16 h-16 text-purple-400 mx-auto mb-4" />
                     <p className="text-purple-200">
-                        Karşılaştırma için {2 - selectedAgents.length} agent daha seçin
+                        Karşılaştırma için {2 - selectedAgents.length} temsilci daha seçin
                     </p>
                 </div>
             )}

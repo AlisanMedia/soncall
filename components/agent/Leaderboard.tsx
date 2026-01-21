@@ -76,7 +76,7 @@ export default function Leaderboard({ agentId, refreshKey }: LeaderboardProps) {
         return (
             <div className="bg-white/10 backdrop-blur-lg rounded-2xl shadow-2xl p-6 border border-white/20">
                 <div className="flex items-center justify-center py-12">
-                    <Loader2 className="w-8 h-8 text-purple-400 animate-spin" />
+                    <img src="/loading-logo.png" alt="Loading" className="w-16 h-8 animate-pulse object-contain" />
                 </div>
             </div>
         );
@@ -155,8 +155,8 @@ export default function Leaderboard({ agentId, refreshKey }: LeaderboardProps) {
                             <div
                                 key={entry.agent_id}
                                 className={`relative flex items-center gap-3 p-3 rounded-lg transition-all duration-300 ${isCurrentUser
-                                        ? 'bg-purple-500/30 border-2 border-purple-400'
-                                        : 'bg-white/5 border border-white/10'
+                                    ? 'bg-purple-500/30 border-2 border-purple-400'
+                                    : 'bg-white/5 border border-white/10'
                                     } ${hasPulse ? 'ring-2 ring-green-400 scale-105' : ''}`}
                             >
                                 {/* Activity Pulse Indicator */}
