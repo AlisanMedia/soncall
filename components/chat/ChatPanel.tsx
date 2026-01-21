@@ -23,10 +23,32 @@ export default function ChatPanel({ userId, isOpen, onClose, leadId, receiverId,
         userId
     });
 
-    // Auto-scroll to bottom on new messages
-    useEffect(() => {
+    // Scroll to bottom logic
+    const [isAtBottom, setIsAtBottom] = useState(true);
+
+    const scrollToBottom = () => {
         messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-    }, [messages]);
+    };
+
+    const handleScroll = (e: React.UIEvent<HTMLDivElement>) => {
+        const { scrollTop, scrollHeight, clientHeight } = e.currentTarget;
+        const isBottom = Math.abs(scrollHeight - scrollTop - clientHeight) < 50;
+        setIsAtBottom(isBottom);
+    };
+
+    // Auto-scroll on new messages if already at bottom
+    useEffect(() => {
+        if (isAtBottom) {
+            scrollToBottom();
+        }
+    }, [messages, isAtBottom]);
+
+    // Initial scroll
+    useEffect(() => {
+        if (!loading && messages.length > 0) {
+            scrollToBottom();
+        }
+    }, [loading]);
 
     // Mark messages as read when panel is open
     useEffect(() => {
@@ -58,7 +80,11 @@ export default function ChatPanel({ userId, isOpen, onClose, leadId, receiverId,
             </div>
 
             {/* Messages */}
-            <div className="flex-1 overflow-y-auto p-4 space-y-2">
+            {/* Messages */}
+            <div
+                className="flex-1 overflow-y-auto p-4 space-y-4 scrollbar-thin scrollbar-thumb-white/10 scrollbar-track-transparent"
+                onScroll={handleScroll}
+            >
                 {loading ? (
                     <div className="flex items-center justify-center h-full">
                         <Loader2 className="w-8 h-8 text-purple-400 animate-spin" />
@@ -71,18 +97,47 @@ export default function ChatPanel({ userId, isOpen, onClose, leadId, receiverId,
                     </div>
                 ) : (
                     <>
-                        {messages.map((message) => (
-                            <MessageBubble
-                                key={message.id}
-                                message={message}
-                                isOwnMessage={message.sender_id === userId}
-                                currentUserId={userId}
-                            />
-                        ))}
+                        {messages.map((message, index) => {
+                            const isOwn = message.sender_id === userId;
+                            const showAvatar = !isOwn && (index === 0 || messages[index - 1].sender_id !== message.sender_id);
+
+                            // Date separator logic
+                            const msgDate = new Date(message.created_at).toDateString();
+                            const prevDate = index > 0 ? new Date(messages[index - 1].created_at).toDateString() : null;
+                            const showDateSeparator = msgDate !== prevDate;
+
+                            return (
+                                <div key={message.id}>
+                                    {showDateSeparator && (
+                                        <div className="flex justify-center my-4">
+                                            <span className="text-[10px] bg-white/5 text-white/40 px-2 py-1 rounded-full">
+                                                {new Date(message.created_at).toLocaleDateString('tr-TR', { day: 'numeric', month: 'long' })}
+                                            </span>
+                                        </div>
+                                    )}
+                                    <MessageBubble
+                                        message={message}
+                                        isOwnMessage={isOwn}
+                                        currentUserId={userId}
+                                        showAvatar={showAvatar}
+                                    />
+                                </div>
+                            );
+                        })}
                         <div ref={messagesEndRef} />
                     </>
                 )}
             </div>
+
+            {/* Scroll to bottom button */}
+            {!isAtBottom && (
+                <button
+                    onClick={scrollToBottom}
+                    className="absolute bottom-20 right-4 p-2 bg-purple-600 rounded-full shadow-lg hover:bg-purple-700 transition-colors z-10"
+                >
+                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-white"><path d="m6 9 6 6 6-6" /></svg>
+                </button>
+            )}
 
             {/* Input */}
             <MessageInput onSend={handleSend} />

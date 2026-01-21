@@ -16,11 +16,13 @@ export interface Message {
         id: string;
         full_name: string;
         role: string;
+        avatar_url?: string;
     };
     receiver?: {
         id: string;
         full_name: string;
         role: string;
+        avatar_url?: string;
     };
 }
 

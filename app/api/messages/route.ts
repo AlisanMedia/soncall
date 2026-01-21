@@ -21,8 +21,8 @@ export async function GET(request: NextRequest) {
             .from('messages')
             .select(`
         *,
-        sender:profiles!messages_sender_id_fkey(id, full_name, role),
-        receiver:profiles!messages_receiver_id_fkey(id, full_name, role)
+        sender:profiles!messages_sender_id_fkey(id, full_name, role, avatar_url),
+        receiver:profiles!messages_receiver_id_fkey(id, full_name, role, avatar_url)
       `)
             .order('created_at', { ascending: false })
             .limit(limit);

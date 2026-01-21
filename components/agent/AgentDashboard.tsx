@@ -268,13 +268,12 @@ export default function AgentDashboard({ profile: initialProfile }: AgentDashboa
                 </button>
             )}
 
-            {/* Chat Panel */}
+            {/* Chat Panel - Defaulting to Team Chat (Broadcast) so agents can talk to each other */}
             <ChatPanel
                 userId={profile.id}
                 isOpen={chatOpen}
                 onClose={() => setChatOpen(false)}
-                receiverId={managerId || undefined}
-                title={managerId ? "Chat with Manager" : "Team Chat"}
+                title="Team Chat"
             />
         </div>
     );

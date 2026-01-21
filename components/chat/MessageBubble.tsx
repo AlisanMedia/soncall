@@ -8,9 +8,10 @@ interface MessageBubbleProps {
     message: Message;
     isOwnMessage: boolean;
     currentUserId: string;
+    showAvatar?: boolean;
 }
 
-export default function MessageBubble({ message, isOwnMessage, currentUserId }: MessageBubbleProps) {
+export default function MessageBubble({ message, isOwnMessage, currentUserId, showAvatar = true }: MessageBubbleProps) {
     const isBroadcast = message.message_type === 'broadcast';
 
     return (
@@ -19,9 +20,24 @@ export default function MessageBubble({ message, isOwnMessage, currentUserId }: 
                 {/* Sender name (only for other's messages) */}
                 {!isOwnMessage && (
                     <div className="flex items-center gap-2 mb-1 px-2">
-                        <div className="w-6 h-6 rounded-full bg-gradient-to-br from-purple-500 to-indigo-600 flex items-center justify-center text-xs font-bold text-white">
-                            {message.sender?.full_name?.charAt(0) || '?'}
-                        </div>
+                        {showAvatar ? (
+                            <div className={`w-6 h-6 rounded-full flex items-center justify-center text-[10px] font-bold text-white shadow-sm ${message.sender?.role === 'manager'
+                                    ? 'bg-gradient-to-br from-amber-500 to-orange-600'
+                                    : 'bg-gradient-to-br from-blue-500 to-cyan-600'
+                                }`}>
+                                {message.sender?.avatar_url ? (
+                                    <img
+                                        src={message.sender.avatar_url}
+                                        alt={message.sender.full_name}
+                                        className="w-full h-full rounded-full object-cover"
+                                    />
+                                ) : (
+                                    message.sender?.full_name?.charAt(0) || '?'
+                                )}
+                            </div>
+                        ) : (
+                            <div className="w-6 h-6" /> // Placeholder for alignment
+                        )}
                         <span className="text-xs text-purple-200 font-medium">
                             {message.sender?.full_name || 'Unknown'}
                         </span>
@@ -36,10 +52,10 @@ export default function MessageBubble({ message, isOwnMessage, currentUserId }: 
                 {/* Message bubble */}
                 <div
                     className={`rounded-2xl px-4 py-2.5 ${isOwnMessage
-                            ? 'bg-gradient-to-br from-purple-600 to-indigo-600 text-white'
-                            : isBroadcast
-                                ? 'bg-yellow-500/10 border border-yellow-500/30 text-yellow-100'
-                                : 'bg-white/10 border border-white/20 text-white'
+                        ? 'bg-gradient-to-br from-purple-600 to-indigo-600 text-white'
+                        : isBroadcast
+                            ? 'bg-yellow-500/10 border border-yellow-500/30 text-yellow-100'
+                            : 'bg-white/10 border border-white/20 text-white'
                         }`}
                 >
                     <p className="text-sm whitespace-pre-wrap break-words">{message.message}</p>
