@@ -47,7 +47,7 @@ const spanVariants = {
     exit: { width: 0, opacity: 0 },
 };
 
-const transition = { delay: 0.1, type: "spring", bounce: 0, duration: 0.6 };
+const transition: any = { delay: 0.1, type: "spring", bounce: 0, duration: 0.6 };
 
 export function ExpandableTabs({
     tabs,
@@ -57,7 +57,7 @@ export function ExpandableTabs({
     defaultIndex = null,
 }: ExpandableTabsProps) {
     const [selected, setSelected] = React.useState<number | null>(defaultIndex);
-    const outsideClickRef = React.useRef<HTMLDivElement>(null);
+    const outsideClickRef = React.useRef<HTMLDivElement | null>(null);
 
     useOnClickOutside(outsideClickRef, () => {
         // Optional: Close tab on outside click if desired, but for navigation we might want to keep it selected
