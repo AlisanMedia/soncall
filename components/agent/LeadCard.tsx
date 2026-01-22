@@ -256,11 +256,30 @@ export default function LeadCard({ agentId, onLeadProcessed, refreshKey }: LeadC
             });
             const data = await res.json();
 
-            if (data.success) {
-                setNote(prev => (prev ? prev + '\n\n' : '') + `[AI NOTU]:\n` + data.summary);
-                // Can play sound here
+            if (data.success && data.analysis) {
+                // Build comprehensive AI note
+                let aiNote = `🤖 **AI SATIŞANALIZI**\n\n`;
+                aiNote += `📌 **Özet:** ${data.analysis.summary || 'Analiz yapılamadı'}\n`;
+                aiNote += `💡 **Potansiyel:** ${data.analysis.potential_level?.toUpperCase() || 'BELİRLENEMEDİ'}\n`;
+                if (data.analysis.sentiment_score) {
+                    aiNote += `📊 **Duygu Skoru:** ${data.analysis.sentiment_score}/10\n`;
+                }
+                if (data.analysis.extracted_date) {
+                    aiNote += `📅 **Çıkarılan Tarih:** ${data.analysis.extracted_date}\n`;
+                }
+                if (data.analysis.key_objections && data.analysis.key_objections.length > 0) {
+                    aiNote += `⚠️ **İtirazlar:** ${data.analysis.key_objections.join(', ')}\n`;
+                }
+                aiNote += `🚀 **Önerilen Aksiyon:** ${data.analysis.suggested_action || 'Manuel inceleme'}\n`;
+
+                setNote(prev => (prev ? prev + '\n\n' : '') + aiNote);
+
+                // Optionally set potential level if AI determined it
+                if (data.analysis.potential_level && data.analysis.potential_level !== 'not_assessed') {
+                    setPotentialLevel(data.analysis.potential_level as PotentialLevel);
+                }
             } else {
-                alert('Analiz hatası: ' + data.error);
+                alert('Analiz hatası: ' + (data.error || 'Bilinmeyen hata'));
             }
         } catch (e) {
             console.error(e);
