@@ -16,7 +16,7 @@ export default async function Home() {
     .eq('id', user.id)
     .single();
 
-  if (profile?.role === 'manager') {
+  if (['manager', 'admin', 'founder'].includes(profile?.role || '')) {
     redirect('/manager');
   } else {
     redirect('/agent');

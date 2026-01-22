@@ -18,7 +18,7 @@ export async function GET(request: NextRequest) {
             .eq('id', user.id)
             .single();
 
-        if (profile?.role !== 'manager') {
+        if (!['manager', 'admin', 'founder'].includes(profile?.role || '')) {
             return NextResponse.json({ message: 'Forbidden' }, { status: 403 });
         }
 

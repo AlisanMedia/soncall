@@ -47,7 +47,7 @@ export async function POST(request: Request) {
             .eq('id', user.id)
             .single();
 
-        if (!profile || profile.role !== 'manager') {
+        if (!profile || !['manager', 'admin', 'founder'].includes(profile.role || '')) {
             return NextResponse.json({ error: 'Forbidden: Managers only' }, { status: 403 });
         }
 

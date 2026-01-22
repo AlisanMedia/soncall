@@ -19,7 +19,7 @@ export async function POST(request: NextRequest) {
             .eq('id', user.id)
             .single();
 
-        if (profile?.role !== 'manager') {
+        if (!['manager', 'admin', 'founder'].includes(profile?.role || '')) {
             return NextResponse.json({ message: 'Forbidden - Manager only' }, { status: 403 });
         }
 
