@@ -4,7 +4,9 @@ import { useState, useEffect } from 'react';
 import { BarChart, Bar, LineChart, Line, PieChart, Pie, Cell, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 import { TrendingUp, Clock, Target, Award, Zap, Loader2 } from 'lucide-react';
 import InsightsPanel from './InsightsPanel';
+import ConversionFunnel from './ConversionFunnel';
 import QualityMetrics from './QualityMetrics';
+import AiPerformancePanel from './AiPerformancePanel';
 
 interface AnalyticsData {
     hourly: Array<{ hour: number; count: number; label: string }>;
@@ -129,6 +131,9 @@ export default function AnalyticsView() {
             {/* Quality Metrics */}
             <QualityMetrics />
 
+            {/* AI Performance Dashboard (Cortex) */}
+            <AiPerformancePanel />
+
             {/* Performance Badges */}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <div className="bg-white/10 backdrop-blur-lg rounded-xl p-6 border border-white/20">
@@ -245,30 +250,8 @@ export default function AnalyticsView() {
             {/* Charts Row 2 */}
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                 {/* Conversion Funnel */}
-                <div className="bg-white/10 backdrop-blur-lg rounded-2xl shadow-2xl p-6 border border-white/20">
-                    <h3 className="text-xl font-bold text-white mb-4 flex items-center gap-2">
-                        <Target className="w-5 h-5 text-orange-400" />
-                        Conversion Funnel
-                    </h3>
-                    <div className="space-y-4">
-                        {data.funnel.map((stage, index) => (
-                            <div key={index}>
-                                <div className="flex justify-between text-sm mb-2">
-                                    <span className="text-white font-medium">{stage.stage}</span>
-                                    <span className="text-purple-200">{stage.count} ({stage.percentage}%)</span>
-                                </div>
-                                <div className="w-full bg-white/10 rounded-full h-3">
-                                    <div
-                                        className="h-3 rounded-full transition-all duration-500"
-                                        style={{
-                                            width: `${stage.percentage}%`,
-                                            background: `linear-gradient(to right, ${COLORS[index]}, ${COLORS[index + 1] || COLORS[0]})`
-                                        }}
-                                    ></div>
-                                </div>
-                            </div>
-                        ))}
-                    </div>
+                <div className="lg:col-span-1">
+                    <ConversionFunnel />
                 </div>
 
                 {/* Category Breakdown */}

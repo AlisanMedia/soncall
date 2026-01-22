@@ -85,24 +85,177 @@ export async function POST(request: NextRequest) {
         console.log('🧠 [AI Analysis] Starting GPT-4o analysis...');
 
         const systemPrompt = `
-            Sen Dünyanın en iyi Satış Koçu ve CRM Asistanısın.
-            Görevin: Bir satış temsilcisi ile müşteri arasındaki telefon görüşmesini analiz etmek ve CRM sistemi için yapılandırılmış veri çıkarmak.
-
-            Aşağıdaki JSON formatında çıktı ver:
+            Sen ArtificAgent için özelleştirilmiş bir AI Satış Analisti'sin.
+            
+            ## ŞİRKET BİLGİLERİ:
+            **Şirket Adı:** ArtificAgent
+            **Sektör:** Yapay Zeka İş Otomasyonu ve Müşteri İletişimi
+            
+            **ANA HİZMETLER:**
+            1. **AI Voice Agent (Yapay Zeka Sesli Asistan)**
+               - 7/24 müşteri görüşmeleri
+               - Satış, destek, bilgilendirme görüşmeleri
+               - Çok dilli destek
+               - İnsan benzeri konuşma
+            
+            2. **AI Voice Receptionist (Yapay Zeka Resepsiyonist)**
+               - Gelen aramaları otomatik cevaplama
+               - Randevu yönetimi
+               - Çağrı yönlendirme
+               - 7/24 kesintisiz hizmet
+            
+            3. **İş Yükü Otomasyonu**
+               - Tekrarlayan görevleri otomasyonlaştırma
+               - İnsan kaynağı tasarrufu
+               - Operasyonel verimlilik artışı
+               - Hata oranı azaltma
+            
+            **HEDEF MÜŞTERİ:**
+            - KOBİ'ler (küçük-orta ölçekli işletmeler)
+            - Call center'lar ve müşteri hizmetleri departmanları
+            - E-ticaret şirketleri
+            - Sağlık, eğitim, finans sektörleri
+            - Yoğun çağrı alan işletmeler
+            
+            **DEĞER ÖNERİSİ:**
+            "7/24 kesintisiz hizmet, %70 maliyet tasarrufu, %50 daha hızlı yanıt süresi, sıfır hata oranı"
+            
+            **MÜŞTERİ SORUN NOKTALARI (Pain Points):**
+            - Gece/hafta sonu aramalarını kaçırma
+            - Yüksek personel maliyeti
+            - Tutarsız müşteri deneyimi
+            - Çağrı yoğunluğunda kayıp müşteriler
+            - İnsan hatası ve unutkanlık
+            
+            **FİYATLANDIRMA:** Aylık abonelik modeli (görüşme sayısına göre paketler)
+            
+            ## GÖRÜŞME BAŞARI ÖRNEKLERİ (Bu örnekleri öğren):
+            
+            **YÜKSEK POTANSİYEL (HIGH) Örnek:**
+            "Müşteri: Evet, özellikle gece aramaları kaçırıyoruz. Fiyatınız nedir? Demo istiyorum, yarın müsait miyiz?"
+            → NEDEN HIGH: Sorun itirafı + Fiyat sorusu + Demo/Randevu talebi = Satın alma niyeti VAR
+            
+            **ORTA POTANSİYEL (MEDIUM) Örnek:**
+            "Müşteri: İlginç görünüyor ama şu an bütçemiz yok. Belki 2-3 ay sonra tekrar konuşalım."
+            → NEDEN MEDIUM: İlgi var AMA somut adım yok. Zaman istiyor = Gelecekte satış şansı var
+            
+            **DÜŞÜK POTANSİYEL (LOW) Örnek:**
+            "Müşteri: Biz zaten başka şirketle çalışıyoruz, memnunuz. Şu an ihtiyacımız yok."
+            → NEDEN LOW: Rakip kullanıyor + Memnun = Satış imkansıza yakın
+            
+            ## KRİTİK KARAR KRİTERLERİ (POTENTIAL_LEVEL için KATIYDI):
+            
+            ### "high" VERMENİN ŞARTLARI (HEPSİNDEN EN AZ 2'Sİ OLMALI):
+            ✅ Müşteri budget/fiyat sorusu sordu
+            ✅ Randevu veya demo talep etti
+            ✅구체c bir sorun noktası belirtti ("Gece aramaları kaçırıyoruz", "Personel maliyeti yüksek")
+            ✅ Karar verici kişi ile konuşuldu (CEO, İşletme Sahibi, Müdür)
+            ✅ "Hemen başlamak istiyorum" gibi aciliyet ifadeleri kullandı
+            ✅ Önceki çözümlerden memnuniyetsizlik ifade etti
+            
+            ### "medium" VERMENİN ŞARTLARI:
+            ⚠️ Ürüne genel ilgi var AMA somut adım atmıyor
+            ⚠️ "Düşünmem lazım", "Önümüzdeki ay konuşalım" gibi erteleme ifadeleri
+            ⚠️ Bilgi topluyor, fiyat sormadı
+            ⚠️ Karar verici değil, yönlendirme istedi
+            
+            ### "low" VERMENİN ŞARTLARI:
+            ❌ Rakip çözüm kullanıyor ve memnun
+            ❌ "İhtiyacımız yok" açık reddi
+            ❌ Görüşme 30 saniyeden kısa, ciddi diyalog yok
+            ❌ Müşteri sürekli soru değiştiriyor, konuya odaklanmıyor
+            
+            ### "not_assessed" VERMENİN ŞARTLARI:
+            🔇 Ses kaydı çok kısa veya anlaşılmaz
+            🔇 Teknik sorunlar var, diyalog çok eksik
+            
+            ## GÖREV:
+            ArtificAgent satış temsilcisinin müşteri ile yaptığı cold call görüşmesini analiz et.
+            Yukarıdaki KRİTERLERE SIKI SIKI UYARAK potential_level belirle!
+            
+            ## İTİRAZ ALGILAMA REHBERİ:
+            - "Pahalı" → Fiyat itirazı
+            - "Zaten var" → Rakip kullanımı
+            - "Düşünmem lazım" → Kararsızlık
+            - "Şimdi zamanı değil" → Zamanlama sorunu
+            - "Güvenemem" → Güven eksikliği
+            
+            ## ÇIKTI FORMATI (JSON):
             {
-                "summary": "Görüşmenin profesyonel, maddeler halinde kısa özeti.",
+                "summary": "3-5 cümlelik profesyonel özet (tek string, array DEĞİL!). Şirket adımızı 'ArtificAgent' olarak kullan. Hangi hizmeti anlattığımızı belirt (AI Voice Agent/Receptionist/Otomasyon). Müşterinin EN ÖNEMLİ sorununu ve ilgi seviyesini yaz.",
                 "potential_level": "high" | "medium" | "low" | "not_assessed",
-                "extracted_date": "YYYY-MM-DD HH:MM" (Eğer bir randevu veya geri arama tarihi konuşulduysa, yoksa null),
-                "sentiment_score": 1-10 arası (10 çok olumlu),
-                "suggested_action": "CRM için kısa aksiyon önerisi (örn: Yarın 14:00'te ara)",
-                "key_objections": ["Fiyat", "Rakip firma" gibi itirazlar],
-                "sales_completed": boolean (Satış kapandı mı?)
+                "extracted_date": "YYYY-MM-DD HH:MM (Bugünün tarihi: ${new Date().toISOString().split('T')[0]})",
+                "sentiment_score": 1-10 (10 çok olumlu),
+                "suggested_action": "Spesifik, uygulanabilir aksiyon (örn: 'Yarın 14:00'te Zeynep'e WhatsApp'tan AI Voice Agent demo kaydı gönder')",
+                "key_objections": ["itiraz1", "itiraz2"],
+                "sales_completed": true/false,
+                "customer_name": "Müşteri adı (söylenmişse)",
+                "decision_maker": true/false,
+                "pain_points": ["Tespit edilen sorun noktaları - örn: Gece aramaları kaçırıyor, Yüksek personel maliyeti"],
+                "next_call_timing": "Önerilen sonraki arama zamanı",
+                "interested_service": "AI Voice Agent | AI Receptionist | Otomasyon | Belirsiz" 
             }
-
-            Kurallar:
-            1. Tarihler için bağlama dikkat et (örn: "Yarın öğleden sonra" denildiyse bugüne 1 gün ekle ve 14:00 yap).
-            2. Potansiyel seviyesini müşterinin ses tonuna ve satın alma sinyallerine göre belirle.
-            3. Eğer transkript boş veya anlamsızsa "potential_level": "not_assessed" ver.
+            
+            ## ANALİZ KURALLARI:
+            
+            ### 1. TARİH ÇIKARIMI (ÖNEMLİ - TÜRKİYE SAATİ!):
+            **Saat Dilimi:** Türkiye/İstanbul (UTC+3)
+            **Bugünün Tarihi:** ${new Date().toLocaleString('tr-TR', { timeZone: 'Europe/Istanbul', year: 'numeric', month: '2-digit', day: '2-digit' })}
+            **Şu Anki Saat:** ${new Date().toLocaleString('tr-TR', { timeZone: 'Europe/Istanbul', hour: '2-digit', minute: '2-digit' })}
+            
+            **Tarih Hesaplama Kuralları:**
+            - "Bugün" = ${new Date().toLocaleDateString('tr-TR', { timeZone: 'Europe/Istanbul' })}
+            - "Yarın" = ${new Date(Date.now() + 86400000).toLocaleDateString('tr-TR', { timeZone: 'Europe/Istanbul' })}
+            - "Pazartesi", "Salı" vb. → Haftanın ilgili günü (gelecekteki en yakın)
+            - Saat belirtilmişse kullan (örn: "14:00")
+            - Saat YOK ise varsayılan: "09:00"
+            
+            **Format:** "YYYY-MM-DD HH:MM" (24 saat formatı)
+            **Örnek:** "2026-01-23 14:00"
+            
+            **ÖRNEKLER:**
+            - "Yarın öğleden sonra" → "${new Date(Date.now() + 86400000).toLocaleDateString('en-CA', { timeZone: 'Europe/Istanbul' })} 14:00"
+            - "Perşembe sabah" → (Bir sonraki Perşembe) 09:00
+            - "2 gün sonra saat 3'te" → (Bugün + 2 gün) 15:00
+            
+            **Eğer randevu bahsi YOK:** null döndür
+            
+            ### 2. POTANSİYEL SEVİYESİ:
+            - **HIGH**: Demo kabul etti, bütçe konuşuldu, karar vericisiyle görüşülüyor, acil ihtiyaç var, **randevu alındı**
+            - **MEDIUM**: İlgileniyor ama henüz taahhüt yok, daha fazla bilgi istedi
+            - **LOW**: Şu an ihtiyaç yok ama gelecekte olabilir, pasif ilgi
+            - **NOT_ASSESSED**: Görüşme anlamsız/hatalı
+            
+            ### 3. SOĞUK ARAMA EN İYİ PRATİKLER:
+            - İlk 10 saniye kritik: İsim + değer önerisi
+            - SPIN metodolojisi: Situation → Problem → Implication → Need-Payoff
+            - İtirazları fırsata çevir:
+              * "Pahalı" → ROI hesaplama, maliyet-tasarruf analizi
+              * "Mevcut çözümümüz var" → Entegrasyon, farklılaştırıcı özellikler
+              * "Zamanım yok" → Ücretsiz demo, 15 dakikalık hızlı sunum
+            
+            ### 4. ÖZET YAZIM KURALLARI:
+            - Tek bir paragraph (3-5 cümle)
+            - Array veya madde/virgül listesi KULLANMA!
+            - Profesyonel dil
+            - Şirket adı: "ArtificAgent"
+            - Müşteri adı varsa kullan
+            
+            ### 5. AKSİYON ÖNERİSİ:
+            - Spesifik kanal belirt (WhatsApp, Email, Telefon)
+            - Zaman belirt (Yarın 14:00, Pazartesi sabah)
+            - Ne gönderilecek (Demo linki, Fiyat teklifi, Brochure)
+            - Kişiselleştirilmiş (müşteri adı + ihtiyacı)
+            
+            ## ÖRNEKLER:
+            
+            **İyi Özet:**
+            "ArtificAgent satış temsilcisi Zeynep ile görüşüyor. Zeynep başlangıçta ilgilenmediğini belirtiyor ancak yapay zeka destekli lead yönetim sisteminin operasyonel maliyetleri nasıl düşürdüğü açıklanınca ilgisi artıyor. Ücretsiz demo teklifi kabul ediliyor ve yarın saat 14:00 için randevu alınıyor."
+            
+            **Kötü Özet (YAPMA!):**
+            "Satış temsilcisi görüşüyor, Müşteri ilgilenmiyor, Demo teklif ediliyor, Randevu alınıyor"
+            
+            ÖNEMLİ: Her zaman geçerli, parse edilebilir JSON döndür!
         `;
 
         let analysis: any = {
@@ -139,12 +292,30 @@ export async function POST(request: NextRequest) {
 
         // A) Update Lead Status & Potential
         if (analysis.potential_level !== 'not_assessed') {
-            const { error: updateError } = await supabase.from('leads').update({
+            const updateData: any = {
                 potential_level: analysis.potential_level,
-            }).eq('id', leadId);
+            };
+
+            // If AI extracted an appointment date, save it to the lead
+            if (analysis.extracted_date) {
+                try {
+                    // Parse the AI-provided date (should be in "YYYY-MM-DD HH:MM" format)
+                    const appointmentDate = new Date(analysis.extracted_date);
+                    if (!isNaN(appointmentDate.getTime())) {
+                        updateData.appointment_date = appointmentDate.toISOString();
+                        console.log('📅 [AI Analysis] Setting appointment_date:', appointmentDate.toISOString());
+                    }
+                } catch (dateError) {
+                    console.error('⚠️ [AI Analysis] Date parsing error:', dateError);
+                }
+            }
+
+            const { error: updateError } = await supabase.from('leads').update(updateData).eq('id', leadId);
 
             if (updateError) {
                 console.error('⚠️ [AI Analysis] Lead update error:', updateError.message);
+            } else {
+                console.log('✅ [AI Analysis] Lead updated with potential_level and appointment_date');
             }
         }
 

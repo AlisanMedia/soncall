@@ -258,19 +258,47 @@ export default function LeadCard({ agentId, onLeadProcessed, refreshKey }: LeadC
 
             if (data.success && data.analysis) {
                 // Build comprehensive AI note
-                let aiNote = `🤖 **AI SATIŞANALIZI**\n\n`;
-                aiNote += `📌 **Özet:** ${data.analysis.summary || 'Analiz yapılamadı'}\n`;
+                let aiNote = `🤖 **AI SATIŞANALIZI** (ArtificAgent)\n\n`;
+                aiNote += `📌 **Özet:** ${data.analysis.summary || 'Analiz yapılamadı'}\n\n`;
+
+                // Customer info
+                if (data.analysis.customer_name) {
+                    aiNote += `👤 **Müşteri:** ${data.analysis.customer_name}`;
+                    if (data.analysis.decision_maker) {
+                        aiNote += ` (Karar Verici ✓)`;
+                    }
+                    aiNote += `\n`;
+                }
+
+                // Interested service
+                if (data.analysis.interested_service && data.analysis.interested_service !== 'Belirsiz') {
+                    aiNote += `🎯 **İlgilenilen Hizmet:** ${data.analysis.interested_service}\n`;
+                }
+
                 aiNote += `💡 **Potansiyel:** ${data.analysis.potential_level?.toUpperCase() || 'BELİRLENEMEDİ'}\n`;
+
                 if (data.analysis.sentiment_score) {
                     aiNote += `📊 **Duygu Skoru:** ${data.analysis.sentiment_score}/10\n`;
                 }
-                if (data.analysis.extracted_date) {
-                    aiNote += `📅 **Çıkarılan Tarih:** ${data.analysis.extracted_date}\n`;
+
+                // Pain points
+                if (data.analysis.pain_points && data.analysis.pain_points.length > 0) {
+                    aiNote += `⚡ **Sorun Noktaları:** ${data.analysis.pain_points.join(', ')}\n`;
                 }
+
+                if (data.analysis.extracted_date) {
+                    aiNote += `📅 **Randevu/Tarih:** ${data.analysis.extracted_date}\n`;
+                }
+
                 if (data.analysis.key_objections && data.analysis.key_objections.length > 0) {
                     aiNote += `⚠️ **İtirazlar:** ${data.analysis.key_objections.join(', ')}\n`;
                 }
-                aiNote += `🚀 **Önerilen Aksiyon:** ${data.analysis.suggested_action || 'Manuel inceleme'}\n`;
+
+                aiNote += `\n🚀 **Önerilen Aksiyon:** ${data.analysis.suggested_action || 'Manuel inceleme'}\n`;
+
+                if (data.analysis.next_call_timing) {
+                    aiNote += `⏰ **Sonraki Arama:** ${data.analysis.next_call_timing}\n`;
+                }
 
                 setNote(prev => (prev ? prev + '\n\n' : '') + aiNote);
 
@@ -338,6 +366,40 @@ export default function LeadCard({ agentId, onLeadProcessed, refreshKey }: LeadC
                     {error}
                 </div>
             )}
+
+            {/* AI INSIGHT ALERT BANNER - High Visibility Section */}
+            {currentLead.potential_level && currentLead.potential_level !== 'not_assessed' && currentLead.potential_level !== 'low' && (
+                <div className={`rounded-xl p-4 border-2 ${currentLead.potential_level === 'high'
+                        ? 'bg-gradient-to-r from-emerald-500/20 to-green-500/20 border-emerald-400 animate-pulse'
+                        : 'bg-gradient-to-r from-yellow-500/20 to-orange-500/20 border-yellow-400'
+                    }`}>
+                    <div className="flex items-start gap-3">
+                        <div className={`p-2 rounded-lg ${currentLead.potential_level === 'high' ? 'bg-emerald-500/30' : 'bg-yellow-500/30'
+                            }`}>
+                            <Wand2 className={`w-6 h-6 ${currentLead.potential_level === 'high' ? 'text-emerald-300' : 'text-yellow-300'
+                                }`} />
+                        </div>
+                        <div className="flex-1">
+                            <h3 className="text-white font-bold text-lg mb-1 flex items-center gap-2">
+                                🧠 AI TAVSİYESİ
+                                {currentLead.potential_level === 'high' && (
+                                    <span className="px-2 py-0.5 bg-emerald-500/40 text-emerald-100 text-xs rounded-full animate-pulse">
+                                        YÜKSEK POTANSİYEL!
+                                    </span>
+                                )}
+                            </h3>
+                            <p className={`text-sm ${currentLead.potential_level === 'high' ? 'text-emerald-100' : 'text-yellow-100'
+                                }`}>
+                                {currentLead.potential_level === 'high'
+                                    ? '⚡ Bu müşteri çok önemli! AI, yüksek satın alma niyeti tespit etti. Öncelikli olarak takip edin!'
+                                    : '💡 Bu müşteri potansiyel gösteriyor. AI orta seviye ilgi tespit etti. Yakın takipte kalın.'
+                                }
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            )}
+
 
             {/* Lead Info */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">

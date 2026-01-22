@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { Profile } from '@/types';
-import { LogOut, Upload, Users, BarChart3, Activity, TrendingUp, Trophy, MessageCircle, AlertTriangle, Target } from 'lucide-react';
+import { LogOut, Upload, Users, BarChart3, Activity, TrendingUp, Trophy, MessageCircle, AlertTriangle, Target, Calendar } from 'lucide-react';
 import { createClient } from '@/lib/supabase/client';
 import { useRouter } from 'next/navigation';
 import FileUpload from '@/components/manager/FileUpload';
@@ -19,13 +19,14 @@ import AdminPanel from './AdminPanel';
 import GoalManager from './GoalManager';
 import SalesApprovals from './SalesApprovals';
 import TopSellers from './TopSellers';
+import AppointmentCalendar from './AppointmentCalendar';
 
 interface ManagerDashboardProps {
     profile: Profile;
 }
 
 type Step = 'upload' | 'distribute';
-type Tab = 'upload' | 'monitor' | 'reports' | 'analytics' | 'rankings' | 'leads' | 'admin' | 'goals';
+type Tab = 'upload' | 'monitor' | 'reports' | 'analytics' | 'rankings' | 'leads' | 'admin' | 'goals' | 'calendar';
 
 export default function ManagerDashboard({ profile }: ManagerDashboardProps) {
     const [currentTab, setCurrentTab] = useState<Tab>('monitor');
@@ -165,6 +166,16 @@ export default function ManagerDashboard({ profile }: ManagerDashboardProps) {
                             <span>Admin</span>
                         </button>
                         <button
+                            onClick={() => setCurrentTab('calendar')}
+                            className={`flex-shrink-0 flex items-center gap-2 px-4 py-2 rounded-lg font-medium transition-all text-sm whitespace-nowrap ${currentTab === 'calendar'
+                                ? 'bg-purple-600 text-white shadow-lg'
+                                : 'text-purple-200 hover:bg-white/10'
+                                }`}
+                        >
+                            <Calendar className="w-4 h-4" />
+                            <span>Randevular</span>
+                        </button>
+                        <button
                             onClick={() => setCurrentTab('upload')}
                             className={`flex-shrink-0 flex items-center gap-2 px-4 py-2 rounded-lg font-medium transition-all text-sm whitespace-nowrap ${currentTab === 'upload'
                                 ? 'bg-purple-600 text-white shadow-lg'
@@ -190,6 +201,7 @@ export default function ManagerDashboard({ profile }: ManagerDashboardProps) {
                     </>
                 )}
                 {currentTab === 'monitor' && false /* Prevent duplicate render */}
+                {currentTab === 'calendar' && <AppointmentCalendar />}
                 {currentTab === 'leads' && <LeadManagementView />}
                 {currentTab === 'analytics' && <AnalyticsView />}
                 {currentTab === 'rankings' && <AgentRankings />}
