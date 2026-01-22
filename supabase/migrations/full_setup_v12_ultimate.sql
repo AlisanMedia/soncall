@@ -358,7 +358,12 @@ DROP POLICY IF EXISTS "Everyone can view achievements" ON public.agent_achieveme
 CREATE POLICY "Anyone can view profiles" ON profiles FOR SELECT USING (true);
 
 -- UPDATED: Privileged users update policy (Using role::text cast for safety)
-CREATE POLICY "Privileged users can update profiles" ON profiles FOR UPDATE USING (
+CREATE POLICY "Privileged users can update profiles" ON profiles FOR UPDATE 
+USING (
+    auth.uid() = id OR 
+    EXISTS (SELECT 1 FROM profiles p WHERE p.id = auth.uid() AND p.role::text IN ('manager', 'admin', 'founder'))
+)
+WITH CHECK (
     auth.uid() = id OR 
     EXISTS (SELECT 1 FROM profiles p WHERE p.id = auth.uid() AND p.role::text IN ('manager', 'admin', 'founder'))
 );
