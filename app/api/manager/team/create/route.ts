@@ -27,11 +27,6 @@ export async function POST(req: Request) {
         // because standard client only allows signing up YOURSELF.
         // We will fallback to using the service client strictly for this operation.
 
-        const serviceClient = createClient(
-            process.env.NEXT_PUBLIC_SUPABASE_URL!,
-            process.env.SUPABASE_SERVICE_ROLE_KEY!,
-        );
-
         // However, the standard createClient function in project might not support 2 args if custom. 
         // Let's assume standard supabase-js usage for service role if needed, OR just try signUp.
         // But signUp logs you in. 'admin.createUser' is better.
