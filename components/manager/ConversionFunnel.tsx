@@ -94,7 +94,7 @@ export default function ConversionFunnel() {
                                     borderRadius: '8px',
                                     color: '#f1f5f9'
                                 }}
-                                formatter={(value: number) => [value, 'Kişi']}
+                                formatter={(value: number | undefined) => value ? [value, 'Kişi'] : [0, 'Kişi']}
                             />
                             <Bar dataKey="value" radius={[0, 4, 4, 0]}>
                                 {data.map((entry, index) => (

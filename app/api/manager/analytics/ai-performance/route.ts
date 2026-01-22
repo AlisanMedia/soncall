@@ -68,8 +68,8 @@ export async function GET(request: Request) {
             .select('id, appointment_date')
             .not('appointment_date', 'is', null);
 
-        const appointmentDetectionRate = analyzedLeads?.length > 0
-            ? Math.round(((appointmentLeads?.length || 0) / analyzedLeads.length) * 100)
+        const appointmentDetectionRate = (analyzedLeads?.length || 0) > 0
+            ? Math.round(((appointmentLeads?.length || 0) / (analyzedLeads?.length || 1)) * 100)
             : 0;
 
         // 3. LEARNING CURVE: Weekly trend of accuracy
@@ -135,10 +135,10 @@ export async function GET(request: Request) {
         });
 
         // Count leads where agent added a note within 24h of AI note
-        notesByLead.forEach(notes => {
+        notesByLead.forEach((notes: any[]) => {
             if (notes.length >= 2) {
-                const aiNote = notes.find(n => n.note.includes('AI:'));
-                const agentNote = notes.find(n => !n.note.includes('AI:'));
+                const aiNote = notes.find((n: any) => n.note.includes('AI:'));
+                const agentNote = notes.find((n: any) => !n.note.includes('AI:'));
                 if (aiNote && agentNote) {
                     const timeDiff = new Date(agentNote.created_at).getTime() - new Date(aiNote.created_at).getTime();
                     if (timeDiff > 0 && timeDiff < 24 * 60 * 60 * 1000) {

@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { createClient } from '@/lib/supabase/client';
 import { Trophy, TrendingUp, DollarSign, Award, Calendar, Zap, ChevronDown, ChevronRight, Building2 } from 'lucide-react';
 
@@ -242,9 +242,8 @@ export default function TopSellers() {
                     </thead>
                     <tbody>
                         {data.map((agent, index) => (
-                            <>
+                            <React.Fragment key={agent.agent_id}>
                                 <tr
-                                    key={agent.agent_id}
                                     onClick={() => setExpandedAgent(expandedAgent === agent.agent_id ? null : agent.agent_id)}
                                     className="hover:bg-white/5 transition-colors cursor-pointer border-b border-white/5"
                                 >
@@ -345,7 +344,7 @@ export default function TopSellers() {
                                         </td>
                                     </tr>
                                 )}
-                            </>
+                            </React.Fragment>
                         ))}
                     </tbody>
                 </table>
