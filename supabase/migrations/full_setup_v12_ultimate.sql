@@ -380,10 +380,18 @@ CREATE POLICY "Privileged users can update leads" ON leads FOR UPDATE USING (
 
 CREATE POLICY "Agents can update assigned leads" ON leads FOR UPDATE USING (assigned_to = auth.uid());
 
+CREATE POLICY "Privileged users can delete leads" ON leads FOR DELETE USING (
+    EXISTS (SELECT 1 FROM profiles p WHERE p.id = auth.uid() AND p.role::text IN ('manager', 'admin', 'founder'))
+);
+
 CREATE POLICY "Managers can view all batches" ON upload_batches FOR SELECT USING (
     EXISTS (SELECT 1 FROM profiles p WHERE p.id = auth.uid() AND p.role::text IN ('manager', 'admin', 'founder'))
 );
 CREATE POLICY "Managers can insert batches" ON upload_batches FOR INSERT WITH CHECK (
+    EXISTS (SELECT 1 FROM profiles p WHERE p.id = auth.uid() AND p.role::text IN ('manager', 'admin', 'founder'))
+);
+
+CREATE POLICY "Privileged users can delete batches" ON upload_batches FOR DELETE USING (
     EXISTS (SELECT 1 FROM profiles p WHERE p.id = auth.uid() AND p.role::text IN ('manager', 'admin', 'founder'))
 );
 
@@ -393,8 +401,16 @@ CREATE POLICY "Agents can insert notes for assigned leads" ON lead_notes FOR INS
     agent_id = auth.uid() AND EXISTS (SELECT 1 FROM leads WHERE leads.id = lead_id AND leads.assigned_to = auth.uid())
 );
 
+CREATE POLICY "Privileged users can delete notes" ON lead_notes FOR DELETE USING (
+    EXISTS (SELECT 1 FROM profiles p WHERE p.id = auth.uid() AND p.role::text IN ('manager', 'admin', 'founder'))
+);
+
 CREATE POLICY "Anyone can view activity logs" ON lead_activity_log FOR SELECT USING (true);
 CREATE POLICY "Authenticated users can insert activity logs" ON lead_activity_log FOR INSERT WITH CHECK (auth.uid() = agent_id);
+
+CREATE POLICY "Privileged users can delete activity logs" ON lead_activity_log FOR DELETE USING (
+    EXISTS (SELECT 1 FROM profiles p WHERE p.id = auth.uid() AND p.role::text IN ('manager', 'admin', 'founder'))
+);
 
 -- 4. SALES POLICIES
 CREATE POLICY "Agents can insert their own sales" ON sales FOR INSERT WITH CHECK (auth.uid() = agent_id);
@@ -405,6 +421,10 @@ CREATE POLICY "Privileged users can view all sales" ON sales FOR SELECT USING (
 );
 
 CREATE POLICY "Privileged users can update sales" ON sales FOR UPDATE USING (
+    EXISTS (SELECT 1 FROM profiles p WHERE p.id = auth.uid() AND p.role::text IN ('manager', 'admin', 'founder'))
+);
+
+CREATE POLICY "Privileged users can delete sales" ON sales FOR DELETE USING (
     EXISTS (SELECT 1 FROM profiles p WHERE p.id = auth.uid() AND p.role::text IN ('manager', 'admin', 'founder'))
 );
 
@@ -419,6 +439,10 @@ CREATE POLICY "Privileged users can manage all goals" ON public.goals FOR ALL US
 CREATE POLICY "Agents can view own goals" ON public.goals FOR SELECT USING (agent_id = auth.uid());
 
 CREATE POLICY "Everyone can view achievements" ON public.agent_achievements FOR SELECT USING (true);
+
+CREATE POLICY "Privileged users can delete achievements" ON public.agent_achievements FOR DELETE USING (
+    EXISTS (SELECT 1 FROM profiles p WHERE p.id = auth.uid() AND p.role::text IN ('manager', 'admin', 'founder'))
+);
 
 -- 6. MESSAGING POLICIES
 DROP POLICY IF EXISTS "users_can_view_sent_messages" ON messages;
@@ -477,6 +501,10 @@ CREATE POLICY "Managers can view all call logs" ON public.call_logs FOR SELECT T
 );
 CREATE POLICY "Agents can view their own call logs" ON public.call_logs FOR SELECT TO authenticated USING (agent_id = auth.uid());
 CREATE POLICY "Agents can insert call logs" ON public.call_logs FOR INSERT TO authenticated WITH CHECK (agent_id = auth.uid());
+
+CREATE POLICY "Privileged users can delete call logs" ON public.call_logs FOR DELETE TO authenticated USING (
+    EXISTS (SELECT 1 FROM public.profiles p WHERE p.id = auth.uid() AND p.role::text IN ('manager', 'admin', 'founder'))
+);
 
 -- ============================================
 -- STORAGE SETUP (Safe)

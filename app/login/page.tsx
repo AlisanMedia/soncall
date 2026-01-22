@@ -142,7 +142,7 @@ export default function LoginPage() {
 
                 {/* Footer */}
                 <p className="text-center text-purple-300/60 text-sm mt-6">
-                    © 2024 ArtificAgent. All rights reserved.
+                    © 2026 ArtificAgent. All rights reserved.
                 </p>
             </div>
         </div>

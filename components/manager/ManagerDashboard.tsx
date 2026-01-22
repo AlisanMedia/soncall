@@ -13,7 +13,6 @@ import ReportsView from './ReportsView';
 import AnalyticsView from './AnalyticsView';
 import AgentRankings from './AgentRankings';
 import LeadManagementView from './LeadManagementView';
-import BroadcastPanel from './BroadcastPanel';
 import ChatPanel from '../chat/ChatPanel';
 import ChatNotificationBadge from '../chat/ChatNotificationBadge';
 import AdminPanel from './AdminPanel';
@@ -38,7 +37,6 @@ export default function ManagerDashboard({ profile }: ManagerDashboardProps) {
     const [batchId, setBatchId] = useState<string | null>(null);
     const [totalLeads, setTotalLeads] = useState(0);
     const [chatOpen, setChatOpen] = useState(false);
-    const [showBroadcast, setShowBroadcast] = useState(false);
     const supabase = createClient();
     const router = useRouter();
 
@@ -227,15 +225,6 @@ export default function ManagerDashboard({ profile }: ManagerDashboardProps) {
 
             {/* Floating Action Buttons */}
             <div className="fixed bottom-6 right-6 z-50 flex flex-col gap-4">
-                {/* Broadcast Button */}
-                <button
-                    onClick={() => setShowBroadcast(!showBroadcast)}
-                    className="bg-gradient-to-r from-yellow-600 to-orange-600 hover:from-yellow-700 hover:to-orange-700 text-white w-14 h-14 rounded-full shadow-2xl flex items-center justify-center transition-all hover:scale-110 active:scale-95"
-                    title="Broadcast to All Agents"
-                >
-                    <span className="text-xl">📢</span>
-                </button>
-
                 {/* Chat Button */}
                 <button
                     onClick={() => setChatOpen(!chatOpen)}
@@ -246,18 +235,6 @@ export default function ManagerDashboard({ profile }: ManagerDashboardProps) {
                     <ChatNotificationBadge userId={profile.id} />
                 </button>
             </div>
-
-            {/* Broadcast Panel Popup */}
-            {showBroadcast && (
-                <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-                    <div className="max-w-2xl w-full">
-                        <BroadcastPanel
-                            managerId={profile.id}
-                            onClose={() => setShowBroadcast(false)}
-                        />
-                    </div>
-                </div>
-            )}
 
             {/* Chat Panel */}
             <ChatPanel

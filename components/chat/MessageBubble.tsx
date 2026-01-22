@@ -74,13 +74,6 @@ export default function MessageBubble({ message, isOwnMessage, currentUserId, sh
                                         </span>
                                     </div>
                                 )}
-
-                                {/* Only show "Duyuru" badge if message is broadcast AND sender is explicitly manager (or founder) */}
-                                {isBroadcast && (message.sender?.role === 'manager' || message.sender?.role === 'founder') && (
-                                    <span className="text-[10px] leading-none px-1.5 py-0.5 bg-amber-500/20 text-amber-300 rounded border border-amber-500/30">
-                                        Duyuru
-                                    </span>
-                                )}
                             </div>
                         </div>
                     </div>
