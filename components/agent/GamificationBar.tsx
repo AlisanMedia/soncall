@@ -19,8 +19,12 @@ export default function GamificationBar({ agentId }: { agentId: string }) {
     const getNextLevelXp = (level: number) => level * 1000;
 
     useEffect(() => {
+        let channel: any;
+
         const loadProgress = async () => {
             const supabase = createClient();
+
+            // 1. Initial Load
             const { data, error } = await supabase
                 .from('agent_progress')
                 .select('*')
@@ -30,7 +34,6 @@ export default function GamificationBar({ agentId }: { agentId: string }) {
             if (data) {
                 setProgress(data);
             } else {
-                // Init if empty
                 const { data: newData } = await supabase
                     .from('agent_progress')
                     .insert({ agent_id: agentId })
@@ -39,8 +42,34 @@ export default function GamificationBar({ agentId }: { agentId: string }) {
                 setProgress(newData);
             }
             setLoading(false);
+
+            // 2. Realtime Subscription
+            channel = supabase
+                .channel('agent_xp_updates')
+                .on(
+                    'postgres_changes',
+                    {
+                        event: 'UPDATE',
+                        schema: 'public',
+                        table: 'agent_progress',
+                        filter: `agent_id=eq.${agentId}`
+                    },
+                    (payload) => {
+                        console.log('Realtime XP Update:', payload.new);
+                        setProgress(payload.new as any);
+                    }
+                )
+                .subscribe();
         };
+
         loadProgress();
+
+        return () => {
+            if (channel) {
+                const supabase = createClient();
+                supabase.removeChannel(channel);
+            }
+        };
     }, [agentId]);
 
     if (loading || !progress) return (

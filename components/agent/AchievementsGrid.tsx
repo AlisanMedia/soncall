@@ -33,28 +33,63 @@ export default function AchievementsGrid({ agentId }: { agentId: string }) {
                 .from('achievement_definitions')
                 .select('*');
 
-            // Fetch unlocked
+            // Helper to merge data
+            const mergeData = (unlocked: any[]) => {
+                if (defs) {
+                    const merged = defs.map(def => ({
+                        ...def,
+                        unlocked_at: unlocked?.find(u => u.achievement_id === def.id)?.unlocked_at
+                    }));
+                    merged.sort((a, b) => {
+                        if (a.unlocked_at && !b.unlocked_at) return -1;
+                        if (!a.unlocked_at && b.unlocked_at) return 1;
+                        return b.xp_reward - a.xp_reward;
+                    });
+                    setAchievements(merged);
+                }
+            };
+
+            // 1. Initial Load
             const { data: unlocked } = await supabase
                 .from('agent_achievements')
                 .select('achievement_id, unlocked_at')
                 .eq('agent_id', agentId);
 
-            if (defs) {
-                // Merge data
-                const merged = defs.map(def => ({
-                    ...def,
-                    unlocked_at: unlocked?.find(u => u.achievement_id === def.id)?.unlocked_at
-                }));
-                // Sort by unlocked first, then xp reward
-                merged.sort((a, b) => {
-                    if (a.unlocked_at && !b.unlocked_at) return -1;
-                    if (!a.unlocked_at && b.unlocked_at) return 1;
-                    return b.xp_reward - a.xp_reward;
-                });
-                setAchievements(merged);
-            }
+            mergeData(unlocked || []);
             setLoading(false);
+
+            // 2. Realtime Subscription
+            const channel = supabase
+                .channel('agent_achievements_updates')
+                .on(
+                    'postgres_changes',
+                    {
+                        event: 'INSERT',
+                        schema: 'public',
+                        table: 'agent_achievements',
+                        filter: `agent_id=eq.${agentId}`
+                    },
+                    (payload) => {
+                        console.log('New Achievement Unlocked:', payload.new);
+                        // Reload unlocked list to be safe or append efficiently
+                        // For simplicity re-fetch unlocked list to handle merge logic perfectly
+                        supabase
+                            .from('agent_achievements')
+                            .select('achievement_id, unlocked_at')
+                            .eq('agent_id', agentId)
+                            .then(({ data: freshUnlocked }) => {
+                                mergeData(freshUnlocked || []);
+                                // Optional: Toast notification here if we had toast imported
+                            });
+                    }
+                )
+                .subscribe();
+
+            return () => {
+                supabase.removeChannel(channel);
+            };
         };
+
         load();
     }, [agentId]);
 

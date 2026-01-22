@@ -59,7 +59,7 @@ export default function AnalyticsView() {
     if (loading) {
         return (
             <div className="flex items-center justify-center py-32">
-                <Loader2 className="w-12 h-12 text-purple-400 animate-spin" />
+                <img src="/loading-logo.png" alt="Loading" className="w-20 h-10 animate-pulse object-contain" />
             </div>
         );
     }

@@ -14,6 +14,7 @@ interface ActivityItem {
     action_taken: string | null;
     profiles: {
         full_name: string;
+        avatar_url?: string;
     };
     leads: {
         business_name: string;
@@ -86,10 +87,20 @@ export default function TeamMonitoring() {
                 const data = await activitiesRes.json();
                 const newActivities = data.activities || [];
 
-                // Ensure activities are unique by ID (safety check)
-                const uniqueActivities = newActivities.filter((activity: ActivityItem, index: number, self: ActivityItem[]) =>
-                    index === self.findIndex((a) => a.id === activity.id)
-                );
+                // ENHANCED deduplication: Use both ID and composite key (agent + lead + time window)
+                const uniqueActivities = newActivities.filter((activity: ActivityItem, index: number, self: ActivityItem[]) => {
+                    // First, filter by unique ID
+                    const firstIndexById = self.findIndex((a) => a.id === activity.id);
+                    if (index !== firstIndexById) return false;
+
+                    // Then, filter by composite key (same agent + lead within 5 seconds)
+                    const compositeKey = `${activity.agent_id}-${activity.lead_id}-${Math.floor(new Date(activity.created_at).getTime() / 5000)}`;
+                    const firstIndexByComposite = self.findIndex((a) =>
+                        `${a.agent_id}-${a.lead_id}-${Math.floor(new Date(a.created_at).getTime() / 5000)}` === compositeKey
+                    );
+
+                    return index === firstIndexByComposite;
+                });
 
                 // Check if there's a new activity (first item changed)
                 if (activities.length > 0 && uniqueActivities.length > 0) {
@@ -158,7 +169,7 @@ export default function TeamMonitoring() {
     if (loading) {
         return (
             <div className="flex items-center justify-center py-32">
-                <Loader2 className="w-12 h-12 text-purple-400 animate-spin" />
+                <img src="/loading-logo.png" alt="Loading" className="w-20 h-10 animate-pulse object-contain" />
             </div>
         );
     }
@@ -231,7 +242,23 @@ export default function TeamMonitoring() {
                                 className="bg-white/5 rounded-lg p-4 border border-white/10 hover:bg-white/10 transition-colors"
                             >
                                 <div className="flex items-start gap-3">
-                                    <div className="mt-1">
+                                    {/* Agent Avatar */}
+                                    <div className="mt-1 flex-shrink-0">
+                                        {activity.profiles.avatar_url ? (
+                                            <img
+                                                src={activity.profiles.avatar_url}
+                                                alt={activity.profiles.full_name}
+                                                className="w-10 h-10 rounded-full object-cover border-2 border-purple-400/50"
+                                            />
+                                        ) : (
+                                            <div className="w-10 h-10 rounded-full bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center text-white font-bold border-2 border-purple-400/50">
+                                                {activity.profiles.full_name.charAt(0)}
+                                            </div>
+                                        )}
+                                    </div>
+
+                                    {/* Action Icon (smaller, positioned top-right of avatar) */}
+                                    <div className="-ml-5 mt-8 z-10 bg-slate-900 rounded-full p-1">
                                         {getActionIcon(activity.action_taken)}
                                     </div>
 

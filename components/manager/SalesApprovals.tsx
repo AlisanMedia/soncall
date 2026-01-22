@@ -123,9 +123,10 @@ export default function SalesApprovals() {
         }
     };
 
-    if (loading) return <div className="p-4 flex justify-center"><Loader2 className="w-8 h-8 animate-spin text-purple-400" /></div>;
+    if (loading) return <div className="p-4 flex justify-center"><img src="/loading-logo.png" alt="Loading" className="w-16 h-8 animate-pulse object-contain" /></div>;
 
-    if (requests.length === 0) return null; // Hide completely if no pending requests
+    // Hide completely if no pending sales
+    if (requests.length === 0) return null;
 
     return (
         <div className="mb-8 animate-in slide-in-from-top duration-500">
@@ -259,8 +260,8 @@ export default function SalesApprovals() {
                                 onClick={submitAction}
                                 disabled={processingId === selectedRequest.id || (actionType === 'reject' && !managerNote)}
                                 className={`px-6 py-2 rounded-lg font-bold text-white shadow-lg transition-all flex items-center gap-2 ${actionType === 'approve'
-                                        ? 'bg-green-600 hover:bg-green-700'
-                                        : 'bg-red-600 hover:bg-red-700 disabled:opacity-50 disabled:cursor-not-allowed'
+                                    ? 'bg-green-600 hover:bg-green-700'
+                                    : 'bg-red-600 hover:bg-red-700 disabled:opacity-50 disabled:cursor-not-allowed'
                                     }`}
                             >
                                 {processingId === selectedRequest.id && <Loader2 className="w-4 h-4 animate-spin" />}

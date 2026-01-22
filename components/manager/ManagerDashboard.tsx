@@ -18,6 +18,7 @@ import ChatNotificationBadge from '../chat/ChatNotificationBadge';
 import AdminPanel from './AdminPanel';
 import GoalManager from './GoalManager';
 import SalesApprovals from './SalesApprovals';
+import TopSellers from './TopSellers';
 
 interface ManagerDashboardProps {
     profile: Profile;
@@ -180,7 +181,15 @@ export default function ManagerDashboard({ profile }: ManagerDashboardProps) {
             {/* Tab Content */}
             <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
                 <SalesApprovals />
-                {currentTab === 'monitor' && <TeamMonitoring />}
+                {currentTab === 'monitor' && (
+                    <>
+                        <div className="mb-8">
+                            <TopSellers />
+                        </div>
+                        <TeamMonitoring />
+                    </>
+                )}
+                {currentTab === 'monitor' && false /* Prevent duplicate render */}
                 {currentTab === 'leads' && <LeadManagementView />}
                 {currentTab === 'analytics' && <AnalyticsView />}
                 {currentTab === 'rankings' && <AgentRankings />}

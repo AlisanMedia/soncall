@@ -22,7 +22,19 @@ export async function GET() {
             return NextResponse.json({ message: 'Forbidden' }, { status: 403 });
         }
 
-        // Get recent activity (last 50 actions)
+        // Get recent activity (last 50 UNIQUE actions) with DISTINCT on id
+        // Using a two-step approach to ensure no duplicates from joins
+        const { data: activityIds, error: idsError } = await supabase
+            .from('lead_activity_log')
+            .select('id')
+            .order('created_at', { ascending: false })
+            .limit(50);
+
+        if (idsError) throw idsError;
+
+        const uniqueIds = [...new Set(activityIds?.map(a => a.id) || [])];
+
+        // Now fetch full data for these unique IDs
         const { data: activities, error: activitiesError } = await supabase
             .from('lead_activity_log')
             .select(`
@@ -33,7 +45,8 @@ export async function GET() {
         agent_id,
         lead_id,
         profiles!lead_activity_log_agent_id_fkey (
-          full_name
+          full_name,
+          avatar_url
         ),
         leads (
           business_name,
@@ -42,8 +55,8 @@ export async function GET() {
           potential_level
         )
       `)
-            .order('created_at', { ascending: false })
-            .limit(50);
+            .in('id', uniqueIds)
+            .order('created_at', { ascending: false });
 
         if (activitiesError) throw activitiesError;
 
@@ -73,7 +86,7 @@ export async function GET() {
             };
         });
 
-        // Remove any duplicate activities based on ID (shouldn't happen, but safety check)
+        // Final deduplication by ID (safety check)
         const uniqueActivities = enrichedActivities?.filter((activity, index, self) =>
             index === self.findIndex((a) => a.id === activity.id)
         );

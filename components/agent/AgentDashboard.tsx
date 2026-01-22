@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { Profile } from '@/types';
-import { LogOut, MessageCircle, Settings, Phone, Trophy, List } from 'lucide-react';
+import { LogOut, MessageCircle, Settings, Phone, Trophy, List, DollarSign } from 'lucide-react';
 import { createClient } from '@/lib/supabase/client';
 import { useRouter } from 'next/navigation';
 import LeadCard from './LeadCard';
@@ -14,6 +14,7 @@ import ChatPanel from '../chat/ChatPanel';
 import ChatNotificationBadge from '../chat/ChatNotificationBadge';
 import AgentSettings from './AgentSettings';
 import LeadHistoryView from './LeadHistoryView';
+import MySales from './MySales';
 import { ExpandableTabs } from '@/components/ui/expandable-tabs';
 
 interface AgentDashboardProps {
@@ -30,7 +31,7 @@ interface Notification {
 
 export default function AgentDashboard({ profile: initialProfile }: AgentDashboardProps) {
     const [profile, setProfile] = useState<Profile>(initialProfile);
-    const [activeTab, setActiveTab] = useState<'work' | 'history' | 'settings'>('work');
+    const [activeTab, setActiveTab] = useState<'work' | 'history' | 'sales' | 'settings'>('work');
     const [refreshKey, setRefreshKey] = useState(0);
     const [notifications, setNotifications] = useState<Notification[]>([]);
     const [chatOpen, setChatOpen] = useState(false);
@@ -147,16 +148,18 @@ export default function AgentDashboard({ profile: initialProfile }: AgentDashboa
                                     tabs={[
                                         { title: "Çağrı", icon: Phone },
                                         { title: "Geçmiş", icon: List },
+                                        { title: "Satışlarım", icon: DollarSign },
                                         { type: "separator" } as any,
                                         { title: "Ayarlar", icon: Settings },
                                     ]}
                                     className="bg-black/20 border-white/5"
                                     activeColor="text-purple-400 bg-purple-500/10"
-                                    defaultIndex={activeTab === 'work' ? 0 : activeTab === 'history' ? 1 : 3}
+                                    defaultIndex={activeTab === 'work' ? 0 : activeTab === 'history' ? 1 : activeTab === 'sales' ? 2 : 4}
                                     onChange={(index) => {
                                         if (index === 0) setActiveTab('work');
                                         if (index === 1) setActiveTab('history');
-                                        if (index === 3) setActiveTab('settings');
+                                        if (index === 2) setActiveTab('sales');
+                                        if (index === 4) setActiveTab('settings');
                                     }}
                                 />
                             </div>
@@ -173,6 +176,12 @@ export default function AgentDashboard({ profile: initialProfile }: AgentDashboa
                                     className={`p-2 rounded-md transition-all ${activeTab === 'history' ? 'bg-purple-600 text-white' : 'text-gray-300'}`}
                                 >
                                     <List className="w-5 h-5" />
+                                </button>
+                                <button
+                                    onClick={() => setActiveTab('sales')}
+                                    className={`p-2 rounded-md transition-all ${activeTab === 'sales' ? 'bg-purple-600 text-white' : 'text-gray-300'}`}
+                                >
+                                    <DollarSign className="w-5 h-5" />
                                 </button>
                                 <button
                                     onClick={() => setActiveTab('settings')}
@@ -256,6 +265,9 @@ export default function AgentDashboard({ profile: initialProfile }: AgentDashboa
 
                 {/* History Tab */}
                 {activeTab === 'history' && <LeadHistoryView />}
+
+                {/* Sales Tab */}
+                {activeTab === 'sales' && <MySales />}
 
                 {/* Settings Tab */}
                 {activeTab === 'settings' && <AgentSettings userProfile={profile} />}

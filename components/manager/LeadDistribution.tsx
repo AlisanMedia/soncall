@@ -119,7 +119,7 @@ export default function LeadDistribution({ batchId, totalLeads, onComplete }: Le
     if (loading) {
         return (
             <div className="flex items-center justify-center py-12">
-                <Loader2 className="w-8 h-8 text-purple-400 animate-spin" />
+                <img src="/loading-logo.png" alt="Loading" className="w-16 h-8 animate-pulse object-contain" />
             </div>
         );
     }
