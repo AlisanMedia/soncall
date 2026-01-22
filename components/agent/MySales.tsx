@@ -73,18 +73,24 @@ export default function MySales() {
             return;
         }
 
-        setSales(data || []);
+        // Transform data: Supabase returns 'lead' as array, convert to object
+        const transformedData: SaleItem[] = (data || []).map(item => ({
+            ...item,
+            lead: Array.isArray(item.lead) ? item.lead[0] : item.lead
+        }));
+
+        setSales(transformedData);
 
         // Calculate stats
         const newStats: SalesStats = {
-            total_sales: data?.length || 0,
-            approved_sales: data?.filter(s => s.status === 'approved').length || 0,
-            pending_sales: data?.filter(s => s.status === 'pending').length || 0,
-            rejected_sales: data?.filter(s => s.status === 'rejected').length || 0,
-            total_revenue: data?.reduce((sum, s) => sum + parseFloat(String(s.amount)), 0) || 0,
-            total_commission: data?.reduce((sum, s) => sum + parseFloat(String(s.commission || 0)), 0) || 0,
-            approved_revenue: data?.filter(s => s.status === 'approved').reduce((sum, s) => sum + parseFloat(String(s.amount)), 0) || 0,
-            approved_commission: data?.filter(s => s.status === 'approved').reduce((sum, s) => sum + parseFloat(String(s.commission || 0)), 0) || 0,
+            total_sales: transformedData.length,
+            approved_sales: transformedData.filter(s => s.status === 'approved').length,
+            pending_sales: transformedData.filter(s => s.status === 'pending').length,
+            rejected_sales: transformedData.filter(s => s.status === 'rejected').length,
+            total_revenue: transformedData.reduce((sum, s) => sum + parseFloat(String(s.amount)), 0),
+            total_commission: transformedData.reduce((sum, s) => sum + parseFloat(String(s.commission || 0)), 0),
+            approved_revenue: transformedData.filter(s => s.status === 'approved').reduce((sum, s) => sum + parseFloat(String(s.amount)), 0),
+            approved_commission: transformedData.filter(s => s.status === 'approved').reduce((sum, s) => sum + parseFloat(String(s.commission || 0)), 0),
         };
 
         setStats(newStats);
