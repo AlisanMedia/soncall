@@ -17,7 +17,8 @@ export default async function ManagerPage() {
         .eq('id', user.id)
         .single();
 
-    if (profile?.role !== 'manager') {
+    // Access Control: Founder, Admin, and Manager can access
+    if (!['founder', 'admin', 'manager'].includes(profile?.role)) {
         redirect('/agent');
     }
 

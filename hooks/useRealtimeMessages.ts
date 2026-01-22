@@ -17,6 +17,9 @@ export interface Message {
         full_name: string;
         role: string;
         avatar_url?: string;
+        agent_progress?: {
+            current_level: number;
+        } | null;
     };
     receiver?: {
         id: string;
@@ -99,12 +102,17 @@ export function useRealtimeMessages(options: UseRealtimeMessagesOptions = {}) {
                         for (let i = 0; i < 3; i++) {
                             const { data } = await supabase
                                 .from('profiles')
-                                .select('id, full_name, role, avatar_url')
+                                .select('id, full_name, role, avatar_url, agent_progress(current_level)')
                                 .eq('id', newMessage.sender_id)
                                 .single();
 
                             if (data) {
-                                senderProfile = data;
+                                senderProfile = {
+                                    ...data,
+                                    agent_progress: Array.isArray(data.agent_progress) && data.agent_progress.length > 0
+                                        ? data.agent_progress[0]
+                                        : null
+                                };
                                 break; // Found it!
                             }
                             // Wait 500ms before retrying
@@ -138,14 +146,21 @@ export function useRealtimeMessages(options: UseRealtimeMessagesOptions = {}) {
                         setTimeout(async () => {
                             const { data } = await supabase
                                 .from('profiles')
-                                .select('id, full_name, role, avatar_url')
+                                .select('id, full_name, role, avatar_url, agent_progress(current_level)')
                                 .eq('id', newMessage.sender_id)
                                 .single();
 
                             if (data) {
+                                const profile = {
+                                    ...data,
+                                    agent_progress: Array.isArray(data.agent_progress) && data.agent_progress.length > 0
+                                        ? data.agent_progress[0]
+                                        : null
+                                };
+
                                 setMessages((currentMessages) =>
                                     currentMessages.map(msg =>
-                                        msg.id === newMessage.id ? { ...msg, sender: data } : msg
+                                        msg.id === newMessage.id ? { ...msg, sender: profile } : msg
                                     )
                                 );
                             }

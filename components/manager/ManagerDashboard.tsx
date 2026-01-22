@@ -2,7 +2,8 @@
 
 import { useState } from 'react';
 import { Profile } from '@/types';
-import { LogOut, Upload, Users, BarChart3, Activity, TrendingUp, Trophy, MessageCircle, AlertTriangle, Target, Calendar } from 'lucide-react';
+import TeamList from '@/components/manager/TeamList';
+import { LogOut, Upload, Users, BarChart3, Activity, TrendingUp, Trophy, MessageCircle, AlertTriangle, Target, Calendar, Briefcase, Settings } from 'lucide-react';
 import { createClient } from '@/lib/supabase/client';
 import { useRouter } from 'next/navigation';
 import FileUpload from '@/components/manager/FileUpload';
@@ -20,16 +21,19 @@ import GoalManager from './GoalManager';
 import SalesApprovals from './SalesApprovals';
 import TopSellers from './TopSellers';
 import AppointmentCalendar from './AppointmentCalendar';
+import ProfileSettings from './ProfileSettings';
+
 
 interface ManagerDashboardProps {
     profile: Profile;
 }
 
 type Step = 'upload' | 'distribute';
-type Tab = 'upload' | 'monitor' | 'reports' | 'analytics' | 'rankings' | 'leads' | 'admin' | 'goals' | 'calendar';
+type Tab = 'upload' | 'monitor' | 'reports' | 'analytics' | 'rankings' | 'leads' | 'admin' | 'goals' | 'calendar' | 'team' | 'settings';
 
 export default function ManagerDashboard({ profile }: ManagerDashboardProps) {
     const [currentTab, setCurrentTab] = useState<Tab>('monitor');
+
     const [currentStep, setCurrentStep] = useState<Step>('upload');
     const [batchId, setBatchId] = useState<string | null>(null);
     const [totalLeads, setTotalLeads] = useState(0);
@@ -61,8 +65,9 @@ export default function ManagerDashboard({ profile }: ManagerDashboardProps) {
         <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 pb-20">
             {/* Header */}
             <header className="bg-white/10 backdrop-blur-lg border-b border-white/20 sticky top-0 z-50">
-                <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
-                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-2">
+                    <div className="relative flex flex-col sm:flex-row sm:items-center justify-between gap-4 h-14">
+                        {/* Left Side: Logo */}
                         <div className="flex items-center gap-3">
                             <img
                                 src="/artificagent-logo.png"
@@ -74,6 +79,41 @@ export default function ManagerDashboard({ profile }: ManagerDashboardProps) {
                                 <p className="text-xs sm:text-sm text-purple-200">Manager Dashboard</p>
                             </div>
                         </div>
+
+                        {/* Center: Navigation Items (Absolute) */}
+                        <div className="hidden md:flex absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 items-center gap-1 bg-slate-800/80 backdrop-blur-md rounded-2xl p-1.5 border border-white/10 shadow-xl z-10">
+                            {[
+                                { id: 'monitor', icon: Activity, label: 'Takım' },
+                                { id: 'team', icon: Briefcase, label: 'Personel' },
+                                { id: 'leads', icon: Users, label: 'Leads' },
+                                { id: 'analytics', icon: TrendingUp, label: 'Analytics' },
+                                { id: 'rankings', icon: Trophy, label: 'Rank' },
+                                { id: 'reports', icon: BarChart3, label: 'Rapor' },
+                                { id: 'goals', icon: Target, label: 'Hedefler' },
+                                { id: 'calendar', icon: Calendar, label: 'Randevular' },
+                                { id: 'upload', icon: Upload, label: 'Yükle' },
+                                { id: 'admin', icon: AlertTriangle, label: 'Admin' },
+                                { id: 'settings', icon: Settings, label: 'Ayarlar' },
+                            ].map((item) => (
+                                <button
+                                    key={item.id}
+                                    onClick={() => setCurrentTab(item.id as Tab)}
+                                    className={`p-2 rounded-xl transition-all relative group ${currentTab === item.id
+                                        ? 'bg-purple-600 text-white shadow-lg shadow-purple-500/25'
+                                        : 'text-purple-200 hover:bg-white/10 hover:text-white'
+                                        }`}
+                                    title={item.label}
+                                >
+                                    <item.icon className="w-5 h-5" />
+                                    {/* Tooltip */}
+                                    <span className="absolute -bottom-8 left-1/2 -translate-x-1/2 text-[10px] bg-black/80 text-white px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap pointer-events-none">
+                                        {item.label}
+                                    </span>
+                                </button>
+                            ))}
+                        </div>
+
+                        {/* Right Side: Profile & Logout */}
                         <div className="flex items-center justify-between sm:justify-end gap-4">
                             <div className="text-right">
                                 <p className="text-xs text-purple-200">Hoş geldiniz,</p>
@@ -91,101 +131,34 @@ export default function ManagerDashboard({ profile }: ManagerDashboardProps) {
                 </div>
             </header>
 
-            {/* Scrollable Tabs */}
-            <div className="sticky top-[80px] z-40 bg-slate-900/50 backdrop-blur-md border-b border-white/5 py-2">
-                <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-                    <div className="flex items-center gap-2 overflow-x-auto no-scrollbar pb-1">
+            {/* Mobile Navigation (Visible only on small screens) */}
+            <div className="md:hidden sticky top-0 z-40 bg-slate-900/50 backdrop-blur-md border-b border-white/5 overflow-x-auto">
+                <div className="flex p-2 gap-2 min-w-max">
+                    {[
+                        { id: 'monitor', icon: Activity, label: 'Takım' },
+                        { id: 'team', icon: Briefcase, label: 'Personel' },
+                        { id: 'leads', icon: Users, label: 'Leads' },
+                        { id: 'analytics', icon: TrendingUp, label: 'Analytics' },
+                        { id: 'rankings', icon: Trophy, label: 'Rank' },
+                        { id: 'reports', icon: BarChart3, label: 'Rapor' },
+                        { id: 'goals', icon: Target, label: 'Hedefler' },
+                        { id: 'calendar', icon: Calendar, label: 'Randevular' },
+                        { id: 'upload', icon: Upload, label: 'Yükle' },
+                        { id: 'admin', icon: AlertTriangle, label: 'Admin' },
+                        { id: 'settings', icon: Settings, label: 'Ayarlar' },
+                    ].map((item) => (
                         <button
-                            onClick={() => setCurrentTab('monitor')}
-                            className={`flex-shrink-0 flex items-center gap-2 px-4 py-2 rounded-lg font-medium transition-all text-sm whitespace-nowrap ${currentTab === 'monitor'
-                                ? 'bg-purple-600 text-white shadow-lg'
+                            key={item.id}
+                            onClick={() => setCurrentTab(item.id as Tab)}
+                            className={`p-2 rounded-lg flex flex-col items-center gap-1 min-w-[60px] ${currentTab === item.id
+                                ? 'bg-purple-600 text-white'
                                 : 'text-purple-200 hover:bg-white/10'
                                 }`}
                         >
-                            <Activity className="w-4 h-4" />
-                            <span>Takım</span>
+                            <item.icon className="w-5 h-5" />
+                            <span className="text-[10px]">{item.label}</span>
                         </button>
-                        <button
-                            onClick={() => setCurrentTab('leads')}
-                            className={`flex-shrink-0 flex items-center gap-2 px-4 py-2 rounded-lg font-medium transition-all text-sm whitespace-nowrap ${currentTab === 'leads'
-                                ? 'bg-purple-600 text-white shadow-lg'
-                                : 'text-purple-200 hover:bg-white/10'
-                                }`}
-                        >
-                            <Users className="w-4 h-4" />
-                            <span>Leads</span>
-                        </button>
-                        <button
-                            onClick={() => setCurrentTab('analytics')}
-                            className={`flex-shrink-0 flex items-center gap-2 px-4 py-2 rounded-lg font-medium transition-all text-sm whitespace-nowrap ${currentTab === 'analytics'
-                                ? 'bg-purple-600 text-white shadow-lg'
-                                : 'text-purple-200 hover:bg-white/10'
-                                }`}
-                        >
-                            <TrendingUp className="w-4 h-4" />
-                            <span>Analytics</span>
-                        </button>
-                        <button
-                            onClick={() => setCurrentTab('rankings')}
-                            className={`flex-shrink-0 flex items-center gap-2 px-4 py-2 rounded-lg font-medium transition-all text-sm whitespace-nowrap ${currentTab === 'rankings'
-                                ? 'bg-purple-600 text-white shadow-lg'
-                                : 'text-purple-200 hover:bg-white/10'
-                                }`}
-                        >
-                            <Trophy className="w-4 h-4" />
-                            <span>Rank</span>
-                        </button>
-                        <button
-                            onClick={() => setCurrentTab('reports')}
-                            className={`flex-shrink-0 flex items-center gap-2 px-4 py-2 rounded-lg font-medium transition-all text-sm whitespace-nowrap ${currentTab === 'reports'
-                                ? 'bg-purple-600 text-white shadow-lg'
-                                : 'text-purple-200 hover:bg-white/10'
-                                }`}
-                        >
-                            <BarChart3 className="w-4 h-4" />
-                            <span>Rapor</span>
-                        </button>
-                        <button
-                            onClick={() => setCurrentTab('goals')}
-                            className={`flex-shrink-0 flex items-center gap-2 px-4 py-2 rounded-lg font-medium transition-all text-sm whitespace-nowrap ${currentTab === 'goals'
-                                ? 'bg-purple-600 text-white shadow-lg'
-                                : 'text-purple-200 hover:bg-white/10'
-                                }`}
-                        >
-                            <Target className="w-4 h-4" />
-                            <span>Hedefler</span>
-                        </button>
-                        <button
-                            onClick={() => setCurrentTab('admin')}
-                            className={`flex-shrink-0 flex items-center gap-2 px-4 py-2 rounded-lg font-medium transition-all text-sm whitespace-nowrap ${currentTab === 'admin'
-                                ? 'bg-red-600 text-white shadow-lg'
-                                : 'text-purple-200 hover:bg-white/10'
-                                }`}
-                        >
-                            <AlertTriangle className="w-4 h-4" />
-                            <span>Admin</span>
-                        </button>
-                        <button
-                            onClick={() => setCurrentTab('calendar')}
-                            className={`flex-shrink-0 flex items-center gap-2 px-4 py-2 rounded-lg font-medium transition-all text-sm whitespace-nowrap ${currentTab === 'calendar'
-                                ? 'bg-purple-600 text-white shadow-lg'
-                                : 'text-purple-200 hover:bg-white/10'
-                                }`}
-                        >
-                            <Calendar className="w-4 h-4" />
-                            <span>Randevular</span>
-                        </button>
-                        <button
-                            onClick={() => setCurrentTab('upload')}
-                            className={`flex-shrink-0 flex items-center gap-2 px-4 py-2 rounded-lg font-medium transition-all text-sm whitespace-nowrap ${currentTab === 'upload'
-                                ? 'bg-purple-600 text-white shadow-lg'
-                                : 'text-purple-200 hover:bg-white/10'
-                                }`}
-                        >
-                            <Upload className="w-4 h-4" />
-                            <span>Yükle</span>
-                        </button>
-                    </div>
+                    ))}
                 </div>
             </div>
 
@@ -200,14 +173,16 @@ export default function ManagerDashboard({ profile }: ManagerDashboardProps) {
                         <TeamMonitoring />
                     </>
                 )}
-                {currentTab === 'monitor' && false /* Prevent duplicate render */}
+                {/* Prevent duplicate render placeholder - removed */}
                 {currentTab === 'calendar' && <AppointmentCalendar />}
+                {currentTab === 'team' && <TeamList />}
                 {currentTab === 'leads' && <LeadManagementView />}
                 {currentTab === 'analytics' && <AnalyticsView />}
                 {currentTab === 'rankings' && <AgentRankings />}
                 {currentTab === 'goals' && <GoalManager />}
                 {currentTab === 'reports' && <ReportsView managerId={profile.id} />}
                 {currentTab === 'admin' && <AdminPanel />}
+                {currentTab === 'settings' && <ProfileSettings profile={profile} />}
 
                 {currentTab === 'upload' && (
                     <>

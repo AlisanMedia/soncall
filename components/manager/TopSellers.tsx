@@ -3,6 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import { createClient } from '@/lib/supabase/client';
 import { Trophy, TrendingUp, DollarSign, Award, Calendar, Zap, ChevronDown, ChevronRight, Building2 } from 'lucide-react';
+import { SectionInfo } from '@/components/ui/section-info';
 
 interface IndividualSale {
     id: string;
@@ -165,7 +166,12 @@ export default function TopSellers() {
                         <Trophy className="w-6 h-6 text-yellow-400" />
                     </div>
                     <div>
-                        <h2 className="text-2xl font-bold text-white">Satış Liderleri</h2>
+                        <div className="flex items-center gap-2">
+                            <h2 className="text-2xl font-bold text-white">Satış Liderleri</h2>
+                            <SectionInfo
+                                text="En yüksek ciroya ve satış adedine sahip temsilcilerin sıralaması. Performans primlerini ve satış trendlerini buradan takip edebilirsiniz."
+                            />
+                        </div>
                         <p className="text-sm text-gray-400">En başarılı satış temsilcileri ve detaylar</p>
                     </div>
                 </div>
@@ -213,10 +219,10 @@ export default function TopSellers() {
                             <div className="text-center space-y-1">
                                 <div className="flex items-center gap-1 justify-center text-green-400">
                                     <DollarSign className="w-4 h-4" />
-                                    <span className="text-xl font-bold">{agent.total_revenue.toLocaleString()}₺</span>
+                                    <span className="text-xl font-bold">${agent.total_revenue.toLocaleString()}</span>
                                 </div>
                                 <p className="text-xs text-gray-400">{agent.total_sales} Satış</p>
-                                <p className="text-xs text-purple-300">+{agent.total_commission.toLocaleString()}₺ Prim</p>
+                                <p className="text-xs text-purple-300">+${agent.total_commission.toLocaleString()} Prim</p>
                             </div>
 
                             {index === 0 && <Award className="absolute top-4 right-4 w-5 h-5 text-yellow-400 animate-pulse" />}
@@ -281,11 +287,11 @@ export default function TopSellers() {
                                     <td className="px-6 py-4">
                                         <div className="flex items-center gap-1 text-green-400 font-bold">
                                             <DollarSign className="w-4 h-4" />
-                                            {agent.total_revenue.toLocaleString()}₺
+                                            ${agent.total_revenue.toLocaleString()}
                                         </div>
                                     </td>
                                     <td className="px-6 py-4">
-                                        <span className="text-purple-300 font-semibold">+{agent.total_commission.toLocaleString()}₺</span>
+                                        <span className="text-purple-300 font-semibold">+${agent.total_commission.toLocaleString()}</span>
                                     </td>
                                     <td className="px-6 py-4">
                                         <div className="flex items-center gap-1 text-gray-400 text-sm">
@@ -327,7 +333,7 @@ export default function TopSellers() {
                                                                     </div>
                                                                     <div className="flex items-center gap-1 text-green-400 font-bold text-sm">
                                                                         <DollarSign className="w-3 h-3" />
-                                                                        {sale.amount.toLocaleString()}₺
+                                                                        ${sale.amount.toLocaleString()}
                                                                     </div>
                                                                 </div>
                                                                 <div className="flex items-center justify-between text-xs text-gray-400">
@@ -335,7 +341,7 @@ export default function TopSellers() {
                                                                         <Calendar className="w-3 h-3" />
                                                                         {new Date(sale.created_at).toLocaleDateString('tr-TR')}
                                                                     </div>
-                                                                    <span className="text-purple-300">Prim: +{sale.commission.toLocaleString()}₺</span>
+                                                                    <span className="text-purple-300">Prim: +${sale.commission.toLocaleString()}</span>
                                                                 </div>
                                                             </div>
                                                         ))}

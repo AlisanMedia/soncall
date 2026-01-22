@@ -1,5 +1,5 @@
 // Database Types
-export type UserRole = 'manager' | 'agent';
+export type UserRole = 'founder' | 'admin' | 'manager' | 'agent';
 
 export type LeadStatus =
   | 'pending'
@@ -26,6 +26,12 @@ export interface Profile {
   nickname?: string;
   theme_color?: string;
   bio?: string;
+  tc_number?: string;
+  birth_date?: string;
+  city?: string;
+  district?: string;
+  commission_rate?: number;
+  phone_number?: string;
 }
 
 export interface Lead {

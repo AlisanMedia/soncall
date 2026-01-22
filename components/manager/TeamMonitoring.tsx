@@ -1,8 +1,10 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { Activity, Loader2, Phone, MessageCircle, Calendar, CheckCircle2, Package, TrendingUp } from 'lucide-react';
+import { Activity, Loader2, Phone, MessageCircle, Calendar, CheckCircle2, Package, TrendingUp, Eye } from 'lucide-react';
 import { playActivityNotification } from '@/lib/sounds';
+import { SectionInfo } from '@/components/ui/section-info';
+import ActivityDetailModal from './ActivityDetailModal';
 
 interface ActivityItem {
     id: string;
@@ -66,6 +68,7 @@ export default function TeamMonitoring() {
     const [overview, setOverview] = useState<Overview | null>(null);
     const [agentStats, setAgentStats] = useState<AgentStat[]>([]);
     const [loading, setLoading] = useState(true);
+    const [selectedActivity, setSelectedActivity] = useState<ActivityItem | null>(null);
 
     useEffect(() => {
         loadData();
@@ -182,7 +185,10 @@ export default function TeamMonitoring() {
                     <div className="bg-white/10 backdrop-blur-lg rounded-xl p-6 border border-white/20">
                         <div className="flex items-center justify-between">
                             <div>
-                                <p className="text-purple-200 text-sm">Toplam Lead</p>
+                                <div className="flex items-center gap-2">
+                                    <p className="text-purple-200 text-sm">Toplam Lead</p>
+                                    <SectionInfo text="Sisteme yüklenen ve işlenmeyi bekleyen tüm potansiyel müşteri datalarının toplam sayısı." />
+                                </div>
                                 <p className="text-3xl font-bold text-white mt-1">{overview.total_leads}</p>
                             </div>
                             <Package className="w-10 h-10 text-purple-400" />
@@ -192,7 +198,10 @@ export default function TeamMonitoring() {
                     <div className="bg-yellow-500/10 backdrop-blur-lg rounded-xl p-6 border border-yellow-500/30">
                         <div className="flex items-center justify-between">
                             <div>
-                                <p className="text-yellow-200 text-sm">Bekleyen</p>
+                                <div className="flex items-center gap-2">
+                                    <p className="text-yellow-200 text-sm">Bekleyen</p>
+                                    <SectionInfo text="Henüz aranmamış veya işlem yapılmamış lead sayısı. Temsilcilerinizin öncelikli olarak arayacağı data havuzudur." />
+                                </div>
                                 <p className="text-3xl font-bold text-yellow-300 mt-1">{overview.pending_leads}</p>
                             </div>
                             <Activity className="w-10 h-10 text-yellow-400" />
@@ -202,7 +211,10 @@ export default function TeamMonitoring() {
                     <div className="bg-green-500/10 backdrop-blur-lg rounded-xl p-6 border border-green-500/30">
                         <div className="flex items-center justify-between">
                             <div>
-                                <p className="text-green-200 text-sm">Bugün İşlenen</p>
+                                <div className="flex items-center gap-2">
+                                    <p className="text-green-200 text-sm">Bugün İşlenen</p>
+                                    <SectionInfo text="Bugün içerisinde başarılı veya başarısız sonuçlandırılan toplam arama/işlem sayısı." />
+                                </div>
                                 <p className="text-3xl font-bold text-green-300 mt-1">{overview.completed_today}</p>
                             </div>
                             <CheckCircle2 className="w-10 h-10 text-green-400" />
@@ -212,7 +224,10 @@ export default function TeamMonitoring() {
                     <div className="bg-purple-500/10 backdrop-blur-lg rounded-xl p-6 border border-purple-500/30">
                         <div className="flex items-center justify-between">
                             <div>
-                                <p className="text-purple-200 text-sm">Bugün Randevu</p>
+                                <div className="flex items-center gap-2">
+                                    <p className="text-purple-200 text-sm">Bugün Randevu</p>
+                                    <SectionInfo text="Bugün için oluşturulan onaylı satış görüşmesi ve toplantı randevularının sayısı." />
+                                </div>
                                 <p className="text-3xl font-bold text-purple-300 mt-1">{overview.appointments_today}</p>
                             </div>
                             <Calendar className="w-10 h-10 text-purple-400" />
@@ -228,6 +243,9 @@ export default function TeamMonitoring() {
                         <div className="flex items-center gap-2">
                             <Activity className="w-6 h-6 text-purple-400" />
                             <h2 className="text-xl font-bold text-white">Canlı Aktivite</h2>
+                            <SectionInfo
+                                text="Takımınızın anlık aramalarını, notlarını ve müşteri etkileşimlerini canlı olarak buradan izleyebilirsiniz."
+                            />
                         </div>
                         <div className="flex items-center gap-2">
                             <div className="w-2 h-2 bg-green-400 rounded-full animate-pulse"></div>
@@ -274,6 +292,14 @@ export default function TeamMonitoring() {
                                             <span className={`text-xs px-2 py-0.5 rounded-full border ${getPotentialColor(activity.leads.potential_level)}`}>
                                                 {getPotentialLabel(activity.leads.potential_level)}
                                             </span>
+
+                                            <button
+                                                onClick={() => setSelectedActivity(activity)}
+                                                className="ml-auto p-1.5 hover:bg-white/10 rounded-lg text-purple-300 hover:text-white transition-colors group"
+                                                title="Detay Görüntüle"
+                                            >
+                                                <Eye className="w-4 h-4 group-hover:scale-110 transition-transform" />
+                                            </button>
                                         </div>
 
                                         {activity.note && (
@@ -305,6 +331,9 @@ export default function TeamMonitoring() {
                     <div className="flex items-center gap-2 mb-6">
                         <TrendingUp className="w-6 h-6 text-purple-400" />
                         <h2 className="text-xl font-bold text-white">Agent İstatistikleri</h2>
+                        <SectionInfo
+                            text="Her bir agent'ın günlük performansını, tamamlama oranlarını ve randevu sayılarını gösterir."
+                        />
                     </div>
 
                     <div className="space-y-3">
@@ -345,6 +374,9 @@ export default function TeamMonitoring() {
                 <div className="flex items-center gap-2 mb-6">
                     <Package className="w-6 h-6 text-purple-400" />
                     <h2 className="text-xl font-bold text-white">Batch İlerlemesi</h2>
+                    <SectionInfo
+                        text="Yüklediğiniz veri setlerinin (Excel/CSV) işlenme durumunu ve doluluk oranlarını takip edin."
+                    />
                 </div>
 
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -396,6 +428,12 @@ export default function TeamMonitoring() {
                     )}
                 </div>
             </div>
+
+            <ActivityDetailModal
+                isOpen={!!selectedActivity}
+                onClose={() => setSelectedActivity(null)}
+                activity={selectedActivity}
+            />
 
             <style jsx>{`
         .custom-scrollbar::-webkit-scrollbar {

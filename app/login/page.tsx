@@ -36,7 +36,7 @@ export default function LoginPage() {
                     .single();
 
                 // Redirect based on role
-                if (profile?.role === 'manager') {
+                if (['manager', 'admin', 'founder'].includes(profile?.role)) {
                     router.push('/manager');
                 } else {
                     router.push('/agent');

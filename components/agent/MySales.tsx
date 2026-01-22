@@ -161,7 +161,7 @@ export default function MySales() {
                     <div className="flex items-center justify-between">
                         <div>
                             <p className="text-blue-200 text-sm font-medium">Toplam Ciro</p>
-                            <p className="text-2xl font-bold text-white mt-1">{stats.approved_revenue.toLocaleString()}₺</p>
+                            <p className="text-2xl font-bold text-white mt-1">${stats.approved_revenue.toLocaleString()}</p>
                         </div>
                         <TrendingUp className="w-10 h-10 text-blue-400" />
                     </div>
@@ -171,7 +171,7 @@ export default function MySales() {
                     <div className="flex items-center justify-between">
                         <div>
                             <p className="text-yellow-200 text-sm font-medium">Kazandığım Prim</p>
-                            <p className="text-2xl font-bold text-white mt-1">{stats.approved_commission.toLocaleString()}₺</p>
+                            <p className="text-2xl font-bold text-white mt-1">${stats.approved_commission.toLocaleString()}</p>
                         </div>
                         <DollarSign className="w-10 h-10 text-yellow-400" />
                     </div>
@@ -213,11 +213,11 @@ export default function MySales() {
                                 <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-3">
                                     <div className="bg-blue-500/10 rounded-lg p-2 border border-blue-500/20">
                                         <p className="text-xs text-blue-300 mb-1">Satış Tutarı</p>
-                                        <p className="text-lg font-bold text-blue-200">{parseFloat(String(sale.amount)).toLocaleString()}₺</p>
+                                        <p className="text-lg font-bold text-blue-200">${parseFloat(String(sale.amount)).toLocaleString()}</p>
                                     </div>
                                     <div className="bg-yellow-500/10 rounded-lg p-2 border border-yellow-500/20">
                                         <p className="text-xs text-yellow-300 mb-1">Prim</p>
-                                        <p className="text-lg font-bold text-yellow-200">+{parseFloat(String(sale.commission || 0)).toLocaleString()}₺</p>
+                                        <p className="text-lg font-bold text-yellow-200">+${parseFloat(String(sale.commission || 0)).toLocaleString()}</p>
                                     </div>
                                     <div className="bg-purple-500/10 rounded-lg p-2 border border-purple-500/20">
                                         <p className="text-xs text-purple-300 mb-1">Tarih</p>
@@ -256,7 +256,7 @@ export default function MySales() {
                             {stats.pending_sales} satışınız onay bekliyor
                         </p>
                         <p className="text-yellow-300 text-sm">
-                            Toplam {(stats.total_revenue - stats.approved_revenue).toLocaleString()}₺ ciro onay süreci
+                            Toplam ${(stats.total_revenue - stats.approved_revenue).toLocaleString()} ciro onay süreci
                         </p>
                     </div>
                 </div>

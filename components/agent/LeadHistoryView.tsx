@@ -140,26 +140,37 @@ export default function LeadHistoryView() {
         if (!selectedLead || !newNote.trim()) return;
         setIsSaving(true);
 
-        const newNoteObj = {
-            note: newNote,
-            action_taken: 'Manual Update',
-            created_at: new Date().toISOString()
-        };
-
-        const updatedNotes = [...(selectedLead.lead_notes || []), newNoteObj];
-
         try {
-            const { error } = await supabase
-                .from('leads')
-                .update({ lead_notes: updatedNotes })
-                .eq('id', selectedLead.id);
+            // Get current user
+            const { data: { user } } = await supabase.auth.getUser();
+            if (!user) throw new Error('Oturum bulunamadı');
+
+            // Insert into lead_notes table (separate table, not a column in leads)
+            const { data: insertedNote, error } = await supabase
+                .from('lead_notes')
+                .insert({
+                    lead_id: selectedLead.id,
+                    agent_id: user.id,
+                    note: newNote,
+                    action_taken: 'Manual Update'
+                })
+                .select()
+                .single();
 
             if (error) throw error;
 
             toast.success('Not eklendi');
             setNewNote('');
-            setSelectedLead(prev => prev ? ({ ...prev, lead_notes: updatedNotes }) : null);
-            setLeads(prev => prev.map(l => l.id === selectedLead.id ? { ...l, lead_notes: updatedNotes } : l));
+
+            // Update local state with new note
+            const newNoteObj = {
+                note: insertedNote.note,
+                action_taken: insertedNote.action_taken,
+                created_at: insertedNote.created_at
+            };
+
+            setSelectedLead(prev => prev ? ({ ...prev, lead_notes: [...(prev.lead_notes || []), newNoteObj] }) : null);
+            setLeads(prev => prev.map(l => l.id === selectedLead.id ? { ...l, lead_notes: [...(l.lead_notes || []), newNoteObj] } : l));
 
         } catch (error: any) {
             console.error('Note add error:', error);

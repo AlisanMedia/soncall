@@ -21,7 +21,7 @@ export async function GET(request: NextRequest) {
             .from('messages')
             .select(`
         *,
-        sender:profiles!messages_sender_id_fkey(id, full_name, role, avatar_url),
+        sender:profiles!messages_sender_id_fkey(id, full_name, role, avatar_url, agent_progress(current_level)),
         receiver:profiles!messages_receiver_id_fkey(id, full_name, role, avatar_url)
       `)
             .order('created_at', { ascending: false })
@@ -112,7 +112,7 @@ export async function POST(request: NextRequest) {
             })
             .select(`
         *,
-        sender:profiles!messages_sender_id_fkey(id, full_name, role)
+        sender:profiles!messages_sender_id_fkey(id, full_name, role, agent_progress(current_level))
       `)
             .single();
 
@@ -190,6 +190,68 @@ export async function PATCH(request: NextRequest) {
         console.error('Bulk message update error:', error);
         return NextResponse.json(
             { message: error.message || 'Failed to update messages' },
+            { status: 500 }
+        );
+    }
+}
+
+export async function DELETE(request: NextRequest) {
+    try {
+        const supabase = await createClient();
+
+        // Verify authentication
+        const { data: { user } } = await supabase.auth.getUser();
+        if (!user) {
+            return NextResponse.json({ message: 'Unauthorized' }, { status: 401 });
+        }
+
+        // Check if user is manager, admin or founder
+        const { data: profile } = await supabase
+            .from('profiles')
+            .select('role')
+            .eq('id', user.id)
+            .single();
+
+        if (!['manager', 'admin', 'founder'].includes(profile?.role || '')) {
+            return NextResponse.json(
+                { message: 'Bu işlem için yetkiniz yok' },
+                { status: 403 }
+            );
+        }
+
+        const { searchParams } = new URL(request.url);
+        const leadId = searchParams.get('leadId');
+        const receiverId = searchParams.get('receiverId'); // For direct messages
+        const messageType = searchParams.get('type'); // 'direct', 'broadcast', 'lead_comment'
+
+        let query = supabase.from('messages').delete();
+
+        if (messageType === 'broadcast') {
+            // Delete all broadcasts sent by this user (or all if we want total clear?)
+            // Usually clearing chat means clearing the current view.
+            query = query.eq('message_type', 'broadcast');
+        } else if (messageType === 'direct' && receiverId) {
+            // Clear conversation between me and receiver
+            query = query.or(`and(sender_id.eq.${user.id},receiver_id.eq.${receiverId}),and(sender_id.eq.${receiverId},receiver_id.eq.${user.id})`);
+        } else if (messageType === 'lead_comment' && leadId) {
+            query = query.eq('lead_id', leadId).eq('message_type', 'lead_comment');
+        } else {
+            return NextResponse.json(
+                { message: 'Invalid parameters for deletion' },
+                { status: 400 }
+            );
+        }
+
+        const { error } = await query;
+
+        if (error) throw error;
+
+        return NextResponse.json({ success: true });
+
+    } catch (error: any) {
+        console.error('Delete messages error:', error);
+        return NextResponse.json(
+            { message: error.message || 'Failed to delete messages' },
             { status: 500 }
         );
     }

@@ -173,7 +173,7 @@ export default function SalesApprovals() {
                                     <div className="flex items-center gap-6">
                                         <div className="flex items-center gap-2 bg-green-500/10 px-3 py-1 rounded-lg border border-green-500/20">
                                             <DollarSign className="w-4 h-4 text-green-400" />
-                                            <span className="text-green-400 font-bold text-lg">{request.amount.toLocaleString()} ₺</span>
+                                            <span className="text-green-400 font-bold text-lg">${request.amount.toLocaleString()}</span>
                                         </div>
                                         <div className="flex items-center gap-2 text-gray-400 text-xs">
                                             <Calendar className="w-3 h-3" />
@@ -215,7 +215,7 @@ export default function SalesApprovals() {
                                 {actionType === 'approve' ? 'Satışı Onayla' : 'Satışı Reddet'}
                             </h3>
                             <p className="text-gray-400 text-sm mt-1">
-                                {selectedRequest.lead.business_name} - {selectedRequest.amount.toLocaleString()} ₺
+                                {selectedRequest.lead.business_name} - ${selectedRequest.amount.toLocaleString()}
                             </p>
                         </div>
 

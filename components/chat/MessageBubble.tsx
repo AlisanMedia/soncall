@@ -38,17 +38,51 @@ export default function MessageBubble({ message, isOwnMessage, currentUserId, sh
                         ) : (
                             <div className="w-6 h-6" /> // Placeholder for alignment
                         )}
-                        <span className="text-xs text-purple-200 font-medium">
-                            {message.sender?.full_name && message.sender.full_name !== '...'
-                                ? message.sender.full_name
-                                : <span className="animate-pulse">...</span>}
-                        </span>
-                        {/* Only show "Duyuru" badge if message is broadcast AND sender is explicitly manager */}
-                        {isBroadcast && message.sender?.role === 'manager' && (
-                            <span className="text-[10px] px-1.5 py-0.5 bg-amber-500/20 text-amber-300 rounded border border-amber-500/30">
-                                Duyuru
-                            </span>
-                        )}
+                        <div className="flex flex-col items-start gap-0.5">
+                            <div className="flex items-center gap-1.5">
+                                <span className="text-xs text-purple-200 font-medium">
+                                    {message.sender?.full_name && message.sender.full_name !== '...'
+                                        ? message.sender.full_name
+                                        : <span className="animate-pulse">...</span>}
+                                </span>
+
+                                {/* ROLE BADGES */}
+                                {/* Manager is now disguised as FOUNDER */}
+                                {(message.sender?.role === 'manager' || message.sender?.role === 'founder') && (
+                                    <span className="text-[10px] leading-none px-1.5 py-0.5 bg-purple-500/20 text-purple-300 rounded border border-purple-500/30 font-semibold shadow-[0_0_10px_rgba(168,85,247,0.3)]">
+                                        FOUNDER
+                                    </span>
+                                )}
+                                {message.sender?.role === 'admin' && (
+                                    <span className="text-[10px] leading-none px-1.5 py-0.5 bg-red-500/20 text-red-300 rounded border border-red-500/30">
+                                        Admin
+                                    </span>
+                                )}
+
+                                {/* AGENT LEVEL BADGE */}
+                                {message.sender?.role === 'agent' && (
+                                    <div className="flex items-center gap-1">
+                                        <span className="text-[10px] leading-none px-1.5 py-0.5 bg-cyan-500/20 text-cyan-300 rounded border border-cyan-500/30">
+                                            Agent
+                                        </span>
+                                        <span className="text-[10px] leading-none px-1.5 py-0.5 bg-blue-500/20 text-blue-300 rounded border border-blue-500/30 flex items-center gap-0.5">
+                                            <span className="text-[8px] opacity-70">LVL</span>
+                                            {/* Handle array response from Supabase safely */}
+                                            {Array.isArray(message.sender.agent_progress) && message.sender.agent_progress.length > 0
+                                                ? message.sender.agent_progress[0].current_level
+                                                : (message.sender.agent_progress as any)?.current_level || 1}
+                                        </span>
+                                    </div>
+                                )}
+
+                                {/* Only show "Duyuru" badge if message is broadcast AND sender is explicitly manager (or founder) */}
+                                {isBroadcast && (message.sender?.role === 'manager' || message.sender?.role === 'founder') && (
+                                    <span className="text-[10px] leading-none px-1.5 py-0.5 bg-amber-500/20 text-amber-300 rounded border border-amber-500/30">
+                                        Duyuru
+                                    </span>
+                                )}
+                            </div>
+                        </div>
                     </div>
                 )}
 
