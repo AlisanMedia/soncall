@@ -47,12 +47,12 @@ export async function POST(request: NextRequest) {
         const audioBlob = await audioResponse.blob();
         console.log('✅ [AI Analysis] Audio fetched, size:', audioBlob.size, 'bytes');
 
-        // Mime Type Handling
-        let mimeType = audioBlob.type || 'audio/webm';
-        let fileName = 'recording.webm';
-        if (audioUrl.includes('.mp4')) { mimeType = 'audio/mp4'; fileName = 'recording.mp4'; }
-        else if (audioUrl.includes('.wav')) { mimeType = 'audio/wav'; fileName = 'recording.wav'; }
-        else if (audioUrl.includes('.ogg')) { mimeType = 'audio/ogg'; fileName = 'recording.ogg'; }
+        // CRITICAL FIX: Force MP3 format for better Whisper compatibility
+        // WebM codec often causes transcription failures
+        let fileName = 'recording.mp3';
+        let mimeType = 'audio/mp3';
+
+        console.log('🔄 [AI Analysis] Converting to MP3 for Whisper compatibility');
 
         // 4. Transcription (Whisper)
         console.log('🎤 [AI Analysis] Starting Whisper transcription...');
@@ -68,6 +68,7 @@ export async function POST(request: NextRequest) {
 
             transcriptText = transcription as unknown as string;
             console.log('✅ [AI Analysis] Transcription complete, length:', transcriptText.length);
+            console.log('📝 [AI Analysis] Transcript preview:', transcriptText.substring(0, 100));
         } catch (whisperError: any) {
             console.error('❌ [AI Analysis] Whisper error:', whisperError.message);
             return NextResponse.json({
