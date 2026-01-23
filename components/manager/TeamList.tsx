@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
-import { Plus, Search, User, MoreHorizontal, Shield, BadgePercent, Pencil, Trophy } from 'lucide-react';
+import { Plus, Search, User, MoreHorizontal, Shield, BadgePercent, Pencil, Trophy, Trash2 } from 'lucide-react';
+import { toast } from 'sonner';
 import AddMemberModal from './AddMemberModal';
 import { Profile } from '@/types';
 
@@ -142,6 +143,27 @@ export default function TeamList() {
                                                 className="p-2 hover:bg-white/10 rounded-lg text-gray-400 hover:text-white transition-colors"
                                             >
                                                 <Pencil className="w-4 h-4" />
+                                            </button>
+                                            <button
+                                                onClick={async () => {
+                                                    if (window.confirm(`${member.full_name} isimli kullanıcıyı silmek istediğinize emin misiniz?`)) {
+                                                        try {
+                                                            const res = await fetch(`/api/manager/team/delete?id=${member.id}`, { method: 'DELETE' });
+                                                            if (!res.ok) {
+                                                                const data = await res.json();
+                                                                throw new Error(data.error || 'Silme işlemi başarısız');
+                                                            }
+                                                            toast.success('Kullanıcı başarıyla silindi');
+                                                            loadTeam();
+                                                        } catch (error: any) {
+                                                            toast.error(error.message);
+                                                        }
+                                                    }
+                                                }}
+                                                className="p-2 hover:bg-red-500/20 rounded-lg text-gray-400 hover:text-red-400 transition-colors ml-1"
+                                                title="Sil"
+                                            >
+                                                <Trash2 className="w-4 h-4" />
                                             </button>
                                         </td>
                                     </tr>

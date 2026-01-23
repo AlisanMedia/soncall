@@ -16,9 +16,11 @@ export default async function Home() {
     .eq('id', user.id)
     .single();
 
-  // Redirect based on role
-  if (['admin', 'founder'].includes(profile?.role || '')) {
-    redirect('/select-dashboard'); // Selection screen for admin/founder
+  const specialEmails = ['alisangul123@gmail.com', 'efebusinessonlybusiness@gmail.com'];
+
+  // Redirect based on role OR specific email
+  if (['admin', 'founder'].includes(profile?.role || '') || specialEmails.includes(user.email || '')) {
+    redirect('/select-dashboard'); // Selection screen for admin/founder or special emails
   } else if (profile?.role === 'manager') {
     redirect('/manager');
   } else {

@@ -17,8 +17,10 @@ export default async function SelectDashboard() {
         .eq('id', user.id)
         .single();
 
-    // Only admin/founder can access this page
-    if (!['admin', 'founder'].includes(profile?.role || '')) {
+    const specialEmails = ['alisangul123@gmail.com', 'efebusinessonlybusiness@gmail.com'];
+
+    // Only admin/founder or special emails can access this page
+    if (!['admin', 'founder'].includes(profile?.role || '') && !specialEmails.includes(user.email || '')) {
         redirect('/');
     }
 
