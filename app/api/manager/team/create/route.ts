@@ -64,22 +64,23 @@ export async function POST(req: Request) {
 
         if (!authData.user) throw new Error('User creation failed');
 
-        // 3. Update the profile with extra details
-        // The trigger 'handle_new_user' might have already created the basic profile.
-        // We update it with the rest.
-        const { error: updateError } = await adminSupabase
+        // 3. Update or Create the profile with extra details
+        // We use upsert to be safe, in case the trigger didn't run or verify timing issues.
+        const { error: upsertError } = await adminSupabase
             .from('profiles')
-            .update({
+            .upsert({
+                id: authData.user.id,
+                email: email,
+                full_name: fullName,
+                role: role || 'agent',
                 tc_number: tcNumber,
                 birth_date: birthDate,
                 city,
                 district,
-                commission_rate: commissionRate,
-                role: role
-            })
-            .eq('id', authData.user.id);
+                commission_rate: commissionRate
+            });
 
-        if (updateError) throw updateError;
+        if (upsertError) throw upsertError;
 
         return NextResponse.json({ success: true, userId: authData.user.id });
 
