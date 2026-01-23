@@ -65,15 +65,15 @@ export default function ManagerDashboard({ profile }: ManagerDashboardProps) {
             {/* Header */}
             <header className="bg-white/10 backdrop-blur-lg border-b border-white/20 sticky top-0 z-50">
                 <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-2">
-                    <div className="relative flex flex-col sm:flex-row sm:items-center justify-between gap-4 h-14">
+                    <div className="flex items-center justify-between gap-2 min-h-[56px]">
                         {/* Left Side: Logo */}
-                        <div className="flex items-center gap-3">
+                        <div className="flex items-center gap-2 sm:gap-3 flex-shrink-0">
                             <img
                                 src="/artificagent-logo.png"
                                 alt="ArtificAgent"
                                 className="h-8 opacity-90"
                             />
-                            <div>
+                            <div className="hidden sm:block">
                                 <h1 className="text-xl sm:text-2xl font-bold text-white">ArtificAgent</h1>
                                 <p className="text-xs sm:text-sm text-purple-200">Manager Dashboard</p>
                             </div>
@@ -113,10 +113,10 @@ export default function ManagerDashboard({ profile }: ManagerDashboardProps) {
                         </div>
 
                         {/* Right Side: Profile & Logout */}
-                        <div className="flex items-center justify-between sm:justify-end gap-4">
-                            <div className="text-right">
+                        <div className="flex items-center gap-2 sm:gap-3 flex-shrink-0">
+                            <div className="hidden sm:block text-right">
                                 <p className="text-xs text-purple-200">Hoş geldiniz,</p>
-                                <p className="text-sm font-semibold text-white">{profile.full_name}</p>
+                                <p className="text-sm font-semibold text-white truncate max-w-[120px]">{profile.full_name}</p>
                             </div>
                             <button
                                 onClick={handleLogout}
