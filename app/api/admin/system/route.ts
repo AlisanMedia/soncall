@@ -91,13 +91,56 @@ export async function POST(request: Request) {
                 break;
 
             case 'delete_leads':
+                // Delete in proper order to avoid foreign key constraint violations
+
+                // 1. Delete sales records (foreign key to leads)
+                const { error: salesDeleteError } = await supabaseAdmin
+                    .from('sales')
+                    .delete()
+                    .not('lead_id', 'is', null);
+
+                if (salesDeleteError) throw salesDeleteError;
+
+                // 2. Delete lead notes
+                const { error: notesDeleteError } = await supabaseAdmin
+                    .from('lead_notes')
+                    .delete()
+                    .not('lead_id', 'is', null);
+
+                if (notesDeleteError) throw notesDeleteError;
+
+                // 3. Delete lead activity logs
+                const { error: activityDeleteError } = await supabaseAdmin
+                    .from('lead_activity_log')
+                    .delete()
+                    .not('lead_id', 'is', null);
+
+                if (activityDeleteError) throw activityDeleteError;
+
+                // 4. Delete call logs related to leads
+                const { error: callLogsDeleteError } = await supabaseAdmin
+                    .from('call_logs')
+                    .delete()
+                    .not('lead_id', 'is', null);
+
+                if (callLogsDeleteError) throw callLogsDeleteError;
+
+                // 5. Delete lead-related messages
+                const { error: messagesDeleteError } = await supabaseAdmin
+                    .from('messages')
+                    .delete()
+                    .eq('message_type', 'lead_comment');
+
+                if (messagesDeleteError) throw messagesDeleteError;
+
+                // 6. Finally, delete all leads
                 const { error: deleteError } = await supabaseAdmin
                     .from('leads')
                     .delete()
                     .neq('id', '00000000-0000-0000-0000-000000000000');
 
                 if (deleteError) throw deleteError;
-                result.message = 'Tüm lead veritabanı silindi.';
+                result.message = 'Tüm lead veritabanı ve ilişkili kayıtlar silindi.';
                 break;
 
             case 'cleanup_logs':

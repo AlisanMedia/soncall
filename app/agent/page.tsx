@@ -21,8 +21,8 @@ export default async function AgentPage() {
         redirect('/login');
     }
 
-    // Agents can access, managers/admins/founders will be redirected
-    if (['manager', 'admin', 'founder'].includes(profile.role || '')) {
+    // Only regular managers get redirected - admin/founder can access both dashboards
+    if (profile.role === 'manager') {
         redirect('/manager');
     }
 

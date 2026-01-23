@@ -16,7 +16,10 @@ export default async function Home() {
     .eq('id', user.id)
     .single();
 
-  if (['manager', 'admin', 'founder'].includes(profile?.role || '')) {
+  // Redirect based on role
+  if (['admin', 'founder'].includes(profile?.role || '')) {
+    redirect('/select-dashboard'); // Selection screen for admin/founder
+  } else if (profile?.role === 'manager') {
     redirect('/manager');
   } else {
     redirect('/agent');

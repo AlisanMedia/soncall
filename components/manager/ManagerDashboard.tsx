@@ -16,6 +16,7 @@ import LeadManagementView from './LeadManagementView';
 import ChatPanel from '../chat/ChatPanel';
 import ChatNotificationBadge from '../chat/ChatNotificationBadge';
 import AdminPanel from './AdminPanel';
+import DashboardSwitcher from '../shared/DashboardSwitcher';
 import GoalManager from './GoalManager';
 import SalesApprovals from './SalesApprovals';
 import TopSellers from './TopSellers';

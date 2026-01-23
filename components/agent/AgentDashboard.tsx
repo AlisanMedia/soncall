@@ -16,6 +16,7 @@ import AgentSettings from './AgentSettings';
 import LeadHistoryView from './LeadHistoryView';
 import MySales from './MySales';
 import { ExpandableTabs } from '@/components/ui/expandable-tabs';
+import DashboardSwitcher from '../shared/DashboardSwitcher';
 
 interface AgentDashboardProps {
     profile: Profile;

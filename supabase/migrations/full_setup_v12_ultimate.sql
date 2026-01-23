@@ -121,8 +121,8 @@ CREATE TABLE IF NOT EXISTS lead_activity_log (
 -- ============================================
 CREATE TABLE IF NOT EXISTS sales (
   id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
-  lead_id UUID REFERENCES leads(id),
-  agent_id UUID REFERENCES profiles(id),
+  lead_id UUID REFERENCES leads(id) ON DELETE CASCADE,
+  agent_id UUID REFERENCES profiles(id) ON DELETE CASCADE,
   amount DECIMAL NOT NULL,
   commission DECIMAL,
   status TEXT DEFAULT 'pending',
