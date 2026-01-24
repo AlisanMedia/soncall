@@ -24,9 +24,10 @@ export default function SystemMaintenance() {
             if (!response.ok) throw new Error(data.error);
 
             alert(`✅ İşlem Başarılı: ${data.message}`);
-        } catch (error: any) {
+        } catch (error: unknown) {
             console.error('System action failed:', error);
-            alert(`❌ Hata: ${error.message}`);
+            const message = error instanceof Error ? error.message : 'Unknown error';
+            alert(`❌ Hata: ${message}`);
         } finally {
             setLoading(null);
             setConfirmAction(null);
@@ -99,8 +100,8 @@ export default function SystemMaintenance() {
                     >
                         <div className="flex items-center gap-3 mb-3">
                             <div className={`p-2 rounded-lg ${action.color === 'red' ? 'bg-red-500/20 text-red-400' :
-                                    action.color === 'yellow' ? 'bg-yellow-500/20 text-yellow-400' :
-                                        'bg-blue-500/20 text-blue-400'
+                                action.color === 'yellow' ? 'bg-yellow-500/20 text-yellow-400' :
+                                    'bg-blue-500/20 text-blue-400'
                                 }`}>
                                 <action.icon className="w-5 h-5" />
                             </div>
@@ -110,8 +111,8 @@ export default function SystemMaintenance() {
                         <button
                             onClick={() => setConfirmAction({ id: action.id, title: action.title, desc: action.description })}
                             className={`w-full py-2.5 rounded-lg font-medium transition-all flex items-center justify-center gap-2 ${action.dangerous
-                                    ? 'bg-red-500/10 text-red-400 hover:bg-red-500 hover:text-white'
-                                    : 'bg-white/10 text-white hover:bg-white/20'
+                                ? 'bg-red-500/10 text-red-400 hover:bg-red-500 hover:text-white'
+                                : 'bg-white/10 text-white hover:bg-white/20'
                                 }`}
                         >
                             {action.title}

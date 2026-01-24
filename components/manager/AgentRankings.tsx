@@ -1,11 +1,16 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { Trophy, TrendingUp, TrendingDown, Award, Zap, Target, Loader2 } from 'lucide-react';
+import { Trophy, TrendingUp, TrendingDown, Award, Zap, Target, ArrowRight, Star } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
+import { SectionInfo } from '@/components/ui/section-info';
 
 interface AgentPerformance {
     agent_id: string;
     agent_name: string;
+    avatar_url?: string;
+    level: number;
+    rank: string;
     today_count: number;
     yesterday_count: number;
     growth_percentage: number;
@@ -63,28 +68,39 @@ export default function AgentRankings() {
         }
     };
 
-    const getRankColor = (index: number) => {
+    const getRankStyle = (index: number) => {
         switch (index) {
-            case 0: return 'from-yellow-600 to-yellow-500';
-            case 1: return 'from-gray-500 to-gray-400';
-            case 2: return 'from-amber-700 to-amber-600';
-            default: return 'from-purple-600 to-indigo-600';
-        }
-    };
-
-    const getRankIcon = (index: number) => {
-        switch (index) {
-            case 0: return <Trophy className="w-6 h-6 text-yellow-300" />;
-            case 1: return <Award className="w-6 h-6 text-gray-300" />;
-            case 2: return <Award className="w-6 h-6 text-amber-400" />;
-            default: return null;
+            case 0: return {
+                border: 'border-yellow-500/50',
+                glow: 'shadow-[0_0_15px_-3px_rgba(234,179,8,0.3)]',
+                icon: <Trophy className="w-5 h-5 text-yellow-400" />,
+                text: 'text-yellow-400'
+            };
+            case 1: return {
+                border: 'border-gray-400/50',
+                glow: 'shadow-[0_0_15px_-3px_rgba(156,163,175,0.3)]',
+                icon: <Award className="w-5 h-5 text-gray-300" />,
+                text: 'text-gray-300'
+            };
+            case 2: return {
+                border: 'border-amber-700/50',
+                glow: 'shadow-[0_0_15px_-3px_rgba(180,83,9,0.3)]',
+                icon: <Award className="w-5 h-5 text-amber-600" />,
+                text: 'text-amber-600'
+            };
+            default: return {
+                border: 'border-white/5',
+                glow: '',
+                icon: <span className="text-sm font-bold text-gray-500">#{index + 1}</span>,
+                text: 'text-gray-500'
+            };
         }
     };
 
     if (loading) {
         return (
-            <div className="flex items-center justify-center py-32">
-                <img src="/loading-logo.png" alt="Loading" className="w-16 h-8 animate-pulse object-contain" />
+            <div className="flex items-center justify-center py-20">
+                <div className="w-8 h-8 rounded-full border-2 border-purple-500 border-t-transparent animate-spin" />
             </div>
         );
     }
@@ -93,217 +109,204 @@ export default function AgentRankings() {
 
     return (
         <div className="space-y-6">
-            {/* Controls */}
-            <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                    <button
-                        onClick={() => setSortBy('today')}
-                        className={`px-4 py-2 rounded-lg font-medium transition-all ${sortBy === 'today'
-                            ? 'bg-purple-600 text-white'
-                            : 'bg-white/10 text-purple-200 hover:bg-white/20'
-                            }`}
-                    >
-                        Bugün
-                    </button>
-                    <button
-                        onClick={() => setSortBy('total')}
-                        className={`px-4 py-2 rounded-lg font-medium transition-all ${sortBy === 'total'
-                            ? 'bg-purple-600 text-white'
-                            : 'bg-white/10 text-purple-200 hover:bg-white/20'
-                            }`}
-                    >
-                        Toplam
-                    </button>
-                    <button
-                        onClick={() => setSortBy('conversion')}
-                        className={`px-4 py-2 rounded-lg font-medium transition-all ${sortBy === 'conversion'
-                            ? 'bg-purple-600 text-white'
-                            : 'bg-white/10 text-purple-200 hover:bg-white/20'
-                            }`}
-                    >
-                        Conversion
-                    </button>
+            {/* Header Controls */}
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-4 bg-white/5 backdrop-blur-xl rounded-2xl border border-white/10">
+                <div className="flex items-center gap-4">
+                    <div className="p-2 bg-purple-500/10 rounded-lg">
+                        <Trophy className="w-5 h-5 text-purple-400" />
+                    </div>
+                    <div>
+                        <h2 className="text-lg font-bold text-white flex items-center gap-2">
+                            Liderlik Tablosu
+                            <SectionInfo text="Takım üyelerinin performans sıralaması. Sıralama kriterini butonlarla değiştirebilirsiniz." />
+                        </h2>
+                        <p className="text-xs text-purple-300">Anlık performans takibi</p>
+                    </div>
                 </div>
 
-                <button
-                    onClick={() => {
-                        setCompareMode(!compareMode);
-                        setSelectedAgents([]);
-                    }}
-                    className={`px-4 py-2 rounded-lg font-medium transition-all ${compareMode
-                        ? 'bg-green-600 text-white'
-                        : 'bg-white/10 text-purple-200 hover:bg-white/20'
-                        }`}
-                >
-                    {compareMode ? 'Karşılaştırmayı Kapat' : 'Karşılaştır'}
-                </button>
+                <div className="flex items-center gap-2 bg-black/20 p-1 rounded-xl overflow-x-auto">
+                    {(['today', 'total', 'conversion'] as const).map((mode) => (
+                        <button
+                            key={mode}
+                            onClick={() => setSortBy(mode)}
+                            className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all whitespace-nowrap ${sortBy === mode
+                                ? 'bg-purple-600 text-white shadow-lg'
+                                : 'text-purple-200 hover:text-white hover:bg-white/5'
+                                }`}
+                        >
+                            {mode === 'today' ? 'Bugün' : mode === 'total' ? 'Toplam' : 'Conversion'}
+                        </button>
+                    ))}
+                    <div className="w-px h-6 bg-white/10 mx-1" />
+                    <button
+                        onClick={() => {
+                            setCompareMode(!compareMode);
+                            setSelectedAgents([]);
+                        }}
+                        className={`p-1.5 rounded-lg transition-all ${compareMode
+                            ? 'bg-green-500/20 text-green-400 border border-green-500/30'
+                            : 'text-purple-200 hover:text-white hover:bg-white/5'
+                            }`}
+                        title="Karşılaştır"
+                    >
+                        <Target className="w-4 h-4" />
+                    </button>
+                </div>
             </div>
 
-            {/* Leaderboard */}
-            <div className="grid grid-cols-1 gap-4">
-                {sortedAgents.map((agent, index) => (
-                    <div
-                        key={agent.agent_id}
-                        onClick={() => compareMode && toggleAgentSelection(agent.agent_id)}
-                        className={`bg-gradient-to-r ${getRankColor(index)} rounded-xl p-6 border border-white/20 transition-all ${compareMode ? 'cursor-pointer hover:scale-[1.02]' : ''
-                            } ${selectedAgents.includes(agent.agent_id) ? 'ring-4 ring-green-400' : ''
-                            }`}
-                    >
-                        <div className="flex items-center gap-4">
-                            {/* Rank */}
-                            <div className="flex flex-col items-center">
-                                <div className="text-4xl font-bold text-white">#{index + 1}</div>
-                                {getRankIcon(index)}
-                            </div>
+            {/* List View */}
+            <div className="space-y-3">
+                <AnimatePresence mode="popLayout">
+                    {sortedAgents.map((agent, index) => {
+                        const style = getRankStyle(index);
+                        const isSelected = selectedAgents.includes(agent.agent_id);
 
-                            {/* Agent Info */}
-                            <div className="flex-1">
-                                <h3 className="text-2xl font-bold text-white mb-2">{agent.agent_name}</h3>
-
-                                <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                                    <div>
-                                        <p className="text-white/70 text-sm">Bugün</p>
-                                        <p className="text-2xl font-bold text-white">{agent.today_count}</p>
-                                    </div>
-
-                                    <div>
-                                        <p className="text-white/70 text-sm">Toplam</p>
-                                        <p className="text-2xl font-bold text-white">{agent.total_processed}</p>
-                                    </div>
-
-                                    <div>
-                                        <p className="text-white/70 text-sm">Randevu</p>
-                                        <p className="text-2xl font-bold text-white">{agent.total_appointments}</p>
-                                    </div>
-
-                                    <div>
-                                        <p className="text-white/70 text-sm">Conversion</p>
-                                        <p className="text-2xl font-bold text-white">{agent.conversion_rate}%</p>
-                                    </div>
-                                </div>
-                            </div>
-
-                            {/* Growth Indicator */}
-                            <div className="text-right">
-                                {agent.growth_percentage !== 0 && (
-                                    <div className={`flex items-center gap-1 ${agent.growth_percentage > 0 ? 'text-green-300' : 'text-red-300'
-                                        }`}>
-                                        {agent.growth_percentage > 0 ? (
-                                            <TrendingUp className="w-6 h-6" />
-                                        ) : (
-                                            <TrendingDown className="w-6 h-6" />
-                                        )}
-                                        <span className="text-2xl font-bold">
-                                            {agent.growth_percentage > 0 ? '+' : ''}{agent.growth_percentage}%
-                                        </span>
-                                    </div>
+                        return (
+                            <motion.div
+                                layout
+                                initial={{ opacity: 0, y: 20 }}
+                                animate={{ opacity: 1, y: 0 }}
+                                exit={{ opacity: 0, scale: 0.95 }}
+                                transition={{ type: 'spring', stiffness: 500, damping: 30 }}
+                                key={agent.agent_id}
+                                onClick={() => compareMode && toggleAgentSelection(agent.agent_id)}
+                                className={`
+                                    relative group p-3 rounded-xl border backdrop-blur-md transition-all duration-300
+                                    ${compareMode ? 'cursor-pointer' : ''}
+                                    ${isSelected
+                                        ? 'bg-green-500/10 border-green-500/50 ring-1 ring-green-500/30'
+                                        : `bg-white/5 hover:bg-white/10 ${style.border} ${style.glow}`
+                                    }
+                                `}
+                            >
+                                {/* Background glow for top 3 */}
+                                {index < 3 && (
+                                    <div className={`absolute inset-0 rounded-xl opacity-0 group-hover:opacity-10 transition-opacity bg-gradient-to-r ${index === 0 ? 'from-yellow-500 to-transparent' :
+                                            index === 1 ? 'from-gray-400 to-transparent' :
+                                                'from-amber-600 to-transparent'
+                                        }`} />
                                 )}
-                                <p className="text-white/70 text-sm mt-1">vs. dün</p>
-                            </div>
-                        </div>
-                    </div>
-                ))}
-            </div>
 
-            {/* Comparison View */}
-            {compareMode && comparedAgents.length === 2 && (
-                <div className="bg-white/10 backdrop-blur-lg rounded-2xl shadow-2xl p-6 border border-white/20">
-                    <h3 className="text-2xl font-bold text-white mb-6 flex items-center gap-2">
-                        <Target className="w-6 h-6 text-purple-400" />
-                        Head-to-Head Karşılaştırma
-                    </h3>
+                                <div className="relative flex items-center gap-4">
+                                    {/* Rank Indicator */}
+                                    <div className={`w-8 flex justify-center items-center font-bold ${index < 3 ? 'scale-110' : ''}`}>
+                                        {index < 3 ? style.icon : <span className="text-gray-500 text-sm">#{index + 1}</span>}
+                                    </div>
 
-                    <div className="grid grid-cols-2 gap-6">
-                        {comparedAgents.map((agent, idx) => (
-                            <div key={agent.agent_id} className={`${idx === 0 ? 'border-r border-white/20 pr-6' : 'pl-6'}`}>
-                                <h4 className="text-xl font-bold text-white mb-4">{agent.agent_name}</h4>
-
-                                <div className="space-y-4">
-                                    <div>
-                                        <div className="flex justify-between text-sm mb-2">
-                                            <span className="text-purple-200">Bugün</span>
-                                            <span className="text-white font-bold">{agent.today_count}</span>
+                                    {/* Avatar */}
+                                    <div className="relative shrink-0">
+                                        <div className={`w-10 h-10 rounded-full flex items-center justify-center text-sm font-bold border ${isSelected ? 'border-green-400' : 'border-white/10'} overflow-hidden
+                                            ${!agent.avatar_url ? 'bg-gradient-to-br from-indigo-500 to-purple-600 text-white' : ''}
+                                        `}>
+                                            {agent.avatar_url ? (
+                                                <img src={agent.avatar_url} alt={agent.agent_name} className="w-full h-full object-cover" />
+                                            ) : (
+                                                agent.agent_name.charAt(0)
+                                            )}
                                         </div>
-                                        <div className="w-full bg-white/10 rounded-full h-3">
-                                            <div
-                                                className="bg-gradient-to-r from-purple-600 to-indigo-600 h-3 rounded-full"
-                                                style={{
-                                                    width: `${(agent.today_count / Math.max(comparedAgents[0].today_count, comparedAgents[1].today_count)) * 100}%`
-                                                }}
-                                            ></div>
+                                        <div className="absolute -bottom-1 -right-1 flex justify-center">
+                                            <span className="text-[9px] font-bold px-1 rounded-full bg-slate-900 border border-white/20 text-gray-300">
+                                                L{agent.level}
+                                            </span>
                                         </div>
                                     </div>
 
-                                    <div>
-                                        <div className="flex justify-between text-sm mb-2">
-                                            <span className="text-purple-200">Toplam İşlenen</span>
-                                            <span className="text-white font-bold">{agent.total_processed}</span>
+                                    {/* Name & Role */}
+                                    <div className="flex-1 min-w-0">
+                                        <div className="flex items-center gap-2">
+                                            <h3 className="font-semibold text-white text-sm truncate">{agent.agent_name}</h3>
+                                            {index === 0 && <Star className="w-3 h-3 text-yellow-500 fill-yellow-500 animate-pulse" />}
                                         </div>
-                                        <div className="w-full bg-white/10 rounded-full h-3">
-                                            <div
-                                                className="bg-gradient-to-r from-green-600 to-emerald-600 h-3 rounded-full"
-                                                style={{
-                                                    width: `${(agent.total_processed / Math.max(comparedAgents[0].total_processed, comparedAgents[1].total_processed)) * 100}%`
-                                                }}
-                                            ></div>
+                                        <p className="text-xs text-stone-400 truncate">{agent.rank}</p>
+                                    </div>
+
+                                    {/* Stats Grid */}
+                                    <div className="flex items-center gap-6 sm:gap-8 text-right">
+                                        <div className="hidden sm:block">
+                                            <p className="text-[10px] text-gray-500 uppercase tracking-wider">Bugün</p>
+                                            <p className="text-sm font-bold text-white">{agent.today_count}</p>
+                                        </div>
+                                        <div className="hidden sm:block">
+                                            <p className="text-[10px] text-gray-500 uppercase tracking-wider">Randevu</p>
+                                            <p className="text-sm font-bold text-purple-300">{agent.total_appointments}</p>
+                                        </div>
+                                        <div>
+                                            <p className="text-[10px] text-gray-500 uppercase tracking-wider">Conv.</p>
+                                            <div className="flex items-center justify-end gap-1">
+                                                <p className="text-sm font-bold text-white">{agent.conversion_rate}%</p>
+                                            </div>
                                         </div>
                                     </div>
 
-                                    <div>
-                                        <div className="flex justify-between text-sm mb-2">
-                                            <span className="text-purple-200">Randevu</span>
-                                            <span className="text-white font-bold">{agent.total_appointments}</span>
-                                        </div>
-                                        <div className="w-full bg-white/10 rounded-full h-3">
-                                            <div
-                                                className="bg-gradient-to-r from-yellow-600 to-orange-600 h-3 rounded-full"
-                                                style={{
-                                                    width: `${(agent.total_appointments / Math.max(comparedAgents[0].total_appointments, comparedAgents[1].total_appointments)) * 100}%`
-                                                }}
-                                            ></div>
-                                        </div>
-                                    </div>
-
-                                    <div>
-                                        <div className="flex justify-between text-sm mb-2">
-                                            <span className="text-purple-200">Conversion Rate</span>
-                                            <span className="text-white font-bold">{agent.conversion_rate}%</span>
-                                        </div>
-                                        <div className="w-full bg-white/10 rounded-full h-3">
-                                            <div
-                                                className="bg-gradient-to-r from-blue-600 to-cyan-600 h-3 rounded-full"
-                                                style={{
-                                                    width: `${(agent.conversion_rate / Math.max(comparedAgents[0].conversion_rate, comparedAgents[1].conversion_rate)) * 100}%`
-                                                }}
-                                            ></div>
-                                        </div>
+                                    {/* Trend */}
+                                    <div className={`w-16 text-right text-xs font-bold flex justify-end items-center gap-0.5 ${agent.growth_percentage > 0 ? 'text-emerald-400' : agent.growth_percentage < 0 ? 'text-red-400' : 'text-gray-500'
+                                        }`}>
+                                        {agent.growth_percentage !== 0 && (
+                                            agent.growth_percentage > 0 ? <TrendingUp className="w-3 h-3" /> : <TrendingDown className="w-3 h-3" />
+                                        )}
+                                        {agent.growth_percentage > 0 ? '+' : ''}{agent.growth_percentage}%
                                     </div>
                                 </div>
+                            </motion.div>
+                        );
+                    })}
+                </AnimatePresence>
+            </div>
+
+            {/* Comparison Overlay */}
+            <AnimatePresence>
+                {compareMode && comparedAgents.length > 0 && (
+                    <motion.div
+                        initial={{ opacity: 0, y: 20 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        exit={{ opacity: 0, y: 20 }}
+                        className="fixed bottom-6 right-6 z-50 p-4 rounded-2xl bg-slate-900/95 backdrop-blur-xl border border-white/20 shadow-2xl w-80 lg:w-96"
+                    >
+                        <div className="flex items-center justify-between mb-4">
+                            <h3 className="font-bold text-white flex items-center gap-2">
+                                <Target className="w-4 h-4 text-green-400" />
+                                Karşılaştırma
+                            </h3>
+                            <span className="text-xs text-slate-400">{comparedAgents.length}/2 seçildi</span>
+                        </div>
+
+                        {comparedAgents.length === 2 ? (
+                            <div className="space-y-4">
+                                <div className="flex justify-between items-center text-sm">
+                                    <span className="text-white font-medium">{comparedAgents[0].agent_name}</span>
+                                    <span className="text-slate-500 mx-2">vs</span>
+                                    <span className="text-white font-medium">{comparedAgents[1].agent_name}</span>
+                                </div>
+                                <div className="space-y-2">
+                                    <div className="h-1.5 w-full bg-white/10 rounded-full overflow-hidden flex">
+                                        <div
+                                            className="h-full bg-indigo-500"
+                                            style={{ width: `${(comparedAgents[0].today_count / (comparedAgents[0].today_count + comparedAgents[1].today_count)) * 100}%` }}
+                                        />
+                                        <div
+                                            className="h-full bg-emerald-500"
+                                            style={{ width: `${(comparedAgents[1].today_count / (comparedAgents[0].today_count + comparedAgents[1].today_count)) * 100}%` }}
+                                        />
+                                    </div>
+                                    <div className="flex justify-between text-xs text-slate-400">
+                                        <span>{comparedAgents[0].today_count} lead</span>
+                                        <span>{comparedAgents[1].today_count} lead</span>
+                                    </div>
+                                </div>
+                                <p className="text-center text-xs text-yellow-400 font-bold mt-2">
+                                    {comparedAgents[0].today_count > comparedAgents[1].today_count
+                                        ? `🏆 ${comparedAgents[0].agent_name} önde!`
+                                        : `🏆 ${comparedAgents[1].agent_name} önde!`}
+                                </p>
                             </div>
-                        ))}
-                    </div>
-
-                    {/* Winner Declaration */}
-                    <div className="mt-6 p-4 bg-gradient-to-r from-yellow-600 to-orange-600 rounded-lg text-center">
-                        <p className="text-white font-bold text-lg">
-                            {comparedAgents[0].today_count > comparedAgents[1].today_count
-                                ? `🏆 ${comparedAgents[0].agent_name} bugün önde!`
-                                : comparedAgents[1].today_count > comparedAgents[0].today_count
-                                    ? `🏆 ${comparedAgents[1].agent_name} bugün önde!`
-                                    : '🤝 Bugün eşitler!'}
-                        </p>
-                    </div>
-                </div>
-            )}
-
-            {compareMode && comparedAgents.length < 2 && (
-                <div className="bg-white/5 backdrop-blur-lg rounded-xl p-8 border border-white/10 text-center">
-                    <Trophy className="w-16 h-16 text-purple-400 mx-auto mb-4" />
-                    <p className="text-purple-200">
-                        Karşılaştırma için {2 - selectedAgents.length} temsilci daha seçin
-                    </p>
-                </div>
-            )}
+                        ) : (
+                            <p className="text-sm text-slate-400 text-center py-4">
+                                Bir kişi daha seçin...
+                            </p>
+                        )}
+                    </motion.div>
+                )}
+            </AnimatePresence>
         </div>
     );
 }

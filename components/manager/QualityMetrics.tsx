@@ -6,6 +6,7 @@ import {
     TrendingUp, TrendingDown, HelpCircle, Loader2
 } from 'lucide-react';
 import { ResponsiveContainer, BarChart, Bar, XAxis, YAxis, Tooltip, CartesianGrid } from 'recharts';
+import { SectionInfo } from '@/components/ui/section-info';
 
 interface QualityData {
     metrics: {
@@ -69,6 +70,7 @@ export default function QualityMetrics() {
             <div className="flex items-center gap-2 mb-4">
                 <Award className="w-6 h-6 text-purple-400" />
                 <h2 className="text-xl font-bold text-white">Kalite Skorlaması & Metrikler</h2>
+                <SectionInfo text="Takımın ve bireysel agentların görüşme kalitesi, not detayları ve işlem sürelerinin analizi." />
             </div>
 
             {/* Team Summary Cards */}
@@ -79,7 +81,10 @@ export default function QualityMetrics() {
                         <Award className="w-12 h-12" />
                     </div>
                     <div className="flex flex-col">
-                        <span className="text-sm text-purple-200">Takım Kalite Skoru</span>
+                        <span className="text-sm text-purple-200 flex items-center gap-1">
+                            Takım Kalite Skoru
+                            <SectionInfo text="Yapay zeka tarafından değerlendirilen tüm görüşmelerin ortalama başarı puanı." />
+                        </span>
                         <div className={`text-3xl font-bold mt-1 ${getScoreColor(data.team.quality_score)}`}>
                             {data.team.quality_score}/100
                         </div>
@@ -97,6 +102,7 @@ export default function QualityMetrics() {
                     <div className="flex items-center gap-2 mb-2">
                         <FileText className="w-4 h-4 text-blue-400" />
                         <span className="text-sm text-purple-200">Ort. Not Uzunluğu</span>
+                        <SectionInfo text="Görüşme sonrası girilen notların ortalama karakter sayısı. Detaylı notlar kaliteyi artırır." />
                     </div>
                     <div className="text-2xl font-bold text-white">
                         {data.team.avg_note_length} <span className="text-sm font-normal text-white/50">karakter</span>
@@ -109,6 +115,7 @@ export default function QualityMetrics() {
                     <div className="flex items-center gap-2 mb-2">
                         <Clock className="w-4 h-4 text-purple-400" />
                         <span className="text-sm text-purple-200">Ort. İşlem Süresi</span>
+                        <SectionInfo text="Bir leadin açılıp kapatılması arasında geçen ortalama süre." />
                     </div>
                     <div className="text-2xl font-bold text-white">
                         {data.team.avg_handle_time} <span className="text-sm font-normal text-white/50">sn</span>
@@ -121,6 +128,7 @@ export default function QualityMetrics() {
                     <div className="flex items-center gap-2 mb-2">
                         <RotateCcw className="w-4 h-4 text-orange-400" />
                         <span className="text-sm text-purple-200">Tekrar Açılma</span>
+                        <SectionInfo text="Tamamlandı olarak işaretlenen leadlerin tekrar işleme alınma oranı." />
                     </div>
                     <div className="text-2xl font-bold text-white">
                         %{data.team.re_open_rate}
@@ -161,8 +169,8 @@ export default function QualityMetrics() {
                                     </td>
                                     <td className="p-4 text-center">
                                         <span className={`inline-block px-2 py-0.5 rounded font-bold ${agent.quality_score >= 80 ? 'bg-green-500/20 text-green-300' :
-                                                agent.quality_score >= 60 ? 'bg-yellow-500/20 text-yellow-300' :
-                                                    'bg-red-500/20 text-red-300'
+                                            agent.quality_score >= 60 ? 'bg-yellow-500/20 text-yellow-300' :
+                                                'bg-red-500/20 text-red-300'
                                             }`}>
                                             {agent.quality_score}
                                         </span>

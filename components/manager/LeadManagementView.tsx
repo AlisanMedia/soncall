@@ -6,6 +6,7 @@ import { Search, Filter, ShieldAlert, ArrowRightLeft, CheckSquare, Square } from
 import TransferModal from './TransferModal';
 import StuckLeadsPanel from './StuckLeadsPanel';
 import { createClient } from '@/lib/supabase/client';
+import { SectionInfo } from '@/components/ui/section-info';
 import type { Profile } from '@/types';
 
 // Simplified type for this view
@@ -100,7 +101,10 @@ export default function LeadManagementView() {
                 <StuckLeadsPanel onActionComplete={loadData} />
 
                 <div className="bg-white/5 border border-white/10 rounded-xl p-6">
-                    <h3 className="text-lg font-bold text-white mb-2">Hızlı Filtre</h3>
+                    <div className="flex items-center gap-2 mb-2">
+                        <h3 className="text-lg font-bold text-white">Hızlı Filtre</h3>
+                        <SectionInfo text="Belirli bir satış temsilcisine atanmış veya havuzda bekleyen leadleri buradan filtreleyebilirsiniz." />
+                    </div>
                     <div className="flex gap-4">
                         <select
                             className="bg-black/20 border border-white/10 rounded-lg p-2 text-white flex-1"
@@ -129,6 +133,7 @@ export default function LeadManagementView() {
                     <div className="flex items-center gap-3 text-red-200">
                         <ShieldAlert className="w-5 h-5" />
                         <span className="font-semibold">{agents.find(a => a.id === agentFilter)?.full_name}</span> üzerindeki yetkiler
+                        <SectionInfo text="Seçili temsilcinin üzerindeki TÜM bekleyen leadleri tek tıkla havuza geri alır. Acil durumlar içindir." />
                     </div>
                     <button
                         onClick={() => handleEmergencyRevoke(agentFilter)}
@@ -168,10 +173,30 @@ export default function LeadManagementView() {
                                             : <Square className="w-5 h-5 text-gray-500" />}
                                     </button>
                                 </th>
-                                <th className="p-4">İşletme</th>
-                                <th className="p-4">Mevcut Agent</th>
-                                <th className="p-4">Durum</th>
-                                <th className="p-4">Oluşturma</th>
+                                <th className="p-4">
+                                    <div className="flex items-center gap-2">
+                                        İşletme
+                                        <SectionInfo text="Müşterinin ticari ünvanı veya kayıtlı adı." />
+                                    </div>
+                                </th>
+                                <th className="p-4">
+                                    <div className="flex items-center gap-2">
+                                        Mevcut Agent
+                                        <SectionInfo text="Bu leadin şu anda atandığı satış temsilcisi. 'Havuzda' ise kimseye atanmamıştır." />
+                                    </div>
+                                </th>
+                                <th className="p-4">
+                                    <div className="flex items-center gap-2">
+                                        Durum
+                                        <SectionInfo text="Leadin anlık durumu (Örn: Beklemede, Arandı, Randevu)." />
+                                    </div>
+                                </th>
+                                <th className="p-4">
+                                    <div className="flex items-center gap-2">
+                                        Oluşturma
+                                        <SectionInfo text="Leadin sisteme ilk yüklendiği tarih." />
+                                    </div>
+                                </th>
                             </tr>
                         </thead>
                         <tbody className="divide-y divide-white/5">

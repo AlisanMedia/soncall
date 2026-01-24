@@ -1,0 +1,25 @@
+﻿
+> soncall@0.1.0 build
+> next build
+
+Ôû▓ Next.js 16.1.3 (Turbopack)
+- Environments: .env.local
+
+node.exe : 
+At line:1 char:1
++ & "C:\Program Files\nodejs/node.exe" 
+"C:\Program Files\nodejs/node_mo ...
++ ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified 
+   : (:String) [], RemoteException
+    + FullyQualifiedErrorId : NativeComman 
+   dError
+ 
+> Build error occurred
+Error: Both middleware file 
+"./middleware.ts" and proxy file 
+"./proxy.ts" are detected. Please use 
+"./proxy.ts" only. Learn more: https://next
+js.org/docs/messages/middleware-to-proxy
+    at ignore-listed frames

@@ -7,6 +7,7 @@ import InsightsPanel from './InsightsPanel';
 import ConversionFunnel from './ConversionFunnel';
 import QualityMetrics from './QualityMetrics';
 import AiPerformancePanel from './AiPerformancePanel';
+import { SectionInfo } from '@/components/ui/section-info';
 
 interface AnalyticsData {
     hourly: Array<{ hour: number; count: number; label: string }>;
@@ -86,7 +87,10 @@ export default function AnalyticsView() {
                 <div className="bg-gradient-to-br from-purple-600 to-indigo-600 rounded-xl p-6 border border-white/20">
                     <div className="flex items-center justify-between">
                         <div>
-                            <p className="text-purple-100 text-sm">Bugün İşlenen</p>
+                            <div className="flex items-center gap-1">
+                                <p className="text-purple-100 text-sm">Bugün İşlenen</p>
+                                <SectionInfo text="Bugün sistem üzerinden aranan, mesaj atılan veya durumu değiştirilen toplam lead sayısı." />
+                            </div>
                             <p className="text-4xl font-bold text-white mt-1">{data.todayStats.processed}</p>
                         </div>
                         <Target className="w-12 h-12 text-white/30" />
@@ -96,7 +100,10 @@ export default function AnalyticsView() {
                 <div className="bg-gradient-to-br from-green-600 to-emerald-600 rounded-xl p-6 border border-white/20">
                     <div className="flex items-center justify-between">
                         <div>
-                            <p className="text-green-100 text-sm">Bugün Randevu</p>
+                            <div className="flex items-center gap-1">
+                                <p className="text-green-100 text-sm">Bugün Randevu</p>
+                                <SectionInfo text="Bugün oluşturulan toplam kesinleşmiş randevu sayısı." />
+                            </div>
                             <p className="text-4xl font-bold text-white mt-1">{data.todayStats.appointments}</p>
                         </div>
                         <Award className="w-12 h-12 text-white/30" />
@@ -106,7 +113,10 @@ export default function AnalyticsView() {
                 <div className="bg-gradient-to-br from-orange-600 to-red-600 rounded-xl p-6 border border-white/20">
                     <div className="flex items-center justify-between">
                         <div>
-                            <p className="text-orange-100 text-sm">Conversion Rate</p>
+                            <div className="flex items-center gap-1">
+                                <p className="text-orange-100 text-sm">Conversion Rate</p>
+                                <SectionInfo text="Toplam leadler içinden satışa veya randevuya dönüşenlerin yüzdesi." />
+                            </div>
                             <p className="text-4xl font-bold text-white mt-1">
                                 {data.funnel[2].percentage}%
                             </p>
@@ -118,7 +128,10 @@ export default function AnalyticsView() {
                 <div className="bg-gradient-to-br from-blue-600 to-cyan-600 rounded-xl p-6 border border-white/20">
                     <div className="flex items-center justify-between">
                         <div>
-                            <p className="text-blue-100 text-sm">Peak Saat</p>
+                            <div className="flex items-center gap-1">
+                                <p className="text-blue-100 text-sm">Peak Saat</p>
+                                <SectionInfo text="Gün içinde en çok işlemin yapıldığı ve verimin en yüksek olduğu saat aralığı." />
+                            </div>
                             <p className="text-2xl font-bold text-white mt-1">
                                 {data.peakHours[0]?.label.split(' - ')[0] || 'N/A'}
                             </p>
@@ -142,6 +155,7 @@ export default function AnalyticsView() {
                             <Award className="w-6 h-6 text-yellow-400" />
                         </div>
                         <h3 className="font-semibold text-white">Top Performer</h3>
+                        <SectionInfo text="Bugün en çok lead işleyen ve aktivite gösteren takım üyesi." />
                     </div>
                     {topPerformers[0] && (
                         <div>
@@ -157,6 +171,7 @@ export default function AnalyticsView() {
                             <TrendingUp className="w-6 h-6 text-green-400" />
                         </div>
                         <h3 className="font-semibold text-white">Most Improved</h3>
+                        <SectionInfo text="Düne göre performansını oransal olarak en çok artıran takım üyesi." />
                     </div>
                     {mostImproved && (
                         <div>
@@ -174,6 +189,7 @@ export default function AnalyticsView() {
                             <Zap className="w-6 h-6 text-purple-400" />
                         </div>
                         <h3 className="font-semibold text-white">Best Converter</h3>
+                        <SectionInfo text="İşlediği lead başına en yüksek randevu/satış oranına sahip takım üyesi." />
                     </div>
                     {bestConverter && (
                         <div>
@@ -191,6 +207,7 @@ export default function AnalyticsView() {
                     <h3 className="text-xl font-bold text-white mb-4 flex items-center gap-2">
                         <Clock className="w-5 h-5 text-purple-400" />
                         Saatlik Aktivite (Son 24 Saat)
+                        <SectionInfo text="Son 24 saat içindeki tüm aktivitelerin saat dilimlerine göre dağılımı." />
                     </h3>
                     <ResponsiveContainer width="100%" height={300}>
                         <BarChart data={data.hourly}>
@@ -220,6 +237,7 @@ export default function AnalyticsView() {
                     <h3 className="text-xl font-bold text-white mb-4 flex items-center gap-2">
                         <TrendingUp className="w-5 h-5 text-green-400" />
                         Günlük Trend (Son 7 Gün)
+                        <SectionInfo text="Son 7 gündeki toplam işlem hacminin günlük bazda değişimi." />
                     </h3>
                     <ResponsiveContainer width="100%" height={300}>
                         <LineChart data={data.daily}>
@@ -256,7 +274,10 @@ export default function AnalyticsView() {
 
                 {/* Category Breakdown */}
                 <div className="bg-white/10 backdrop-blur-lg rounded-2xl shadow-2xl p-6 border border-white/20">
-                    <h3 className="text-xl font-bold text-white mb-4">Top Kategoriler</h3>
+                    <div className="flex items-center gap-2 mb-4">
+                        <h3 className="text-xl font-bold text-white">Top Kategoriler</h3>
+                        <SectionInfo text="İşlenen leadlerin sektörel veya kategorik dağılımı." />
+                    </div>
                     <ResponsiveContainer width="100%" height={300}>
                         <PieChart>
                             <Pie
@@ -264,7 +285,7 @@ export default function AnalyticsView() {
                                 cx="50%"
                                 cy="50%"
                                 labelLine={false}
-                                label={(entry: any) => `${entry.category} (${entry.percentage}%)`}
+                                label={({ payload }: { payload?: { category: string; percentage: number } }) => payload ? `${payload.category} (${payload.percentage}%)` : ''}
                                 outerRadius={100}
                                 fill="#8884d8"
                                 dataKey="count"

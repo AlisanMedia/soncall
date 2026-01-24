@@ -54,6 +54,9 @@ interface Overview {
 interface AgentStat {
     agent_id: string;
     agent_name: string;
+    avatar_url?: string;
+    rank?: string;
+    level?: number;
     total_assigned: number;
     completed_today: number;
     total_completed: number;
@@ -166,6 +169,16 @@ export default function TeamMonitoring() {
             case 'medium': return 'Orta';
             case 'low': return 'Düşük';
             default: return 'Değerlendirilmedi';
+        }
+    };
+
+    const getRankColor = (rank?: string) => {
+        switch (rank) {
+            case 'Godlike': return 'text-red-400 border-red-500/30 bg-red-500/10';
+            case 'Efsane': return 'text-yellow-400 border-yellow-500/30 bg-yellow-500/10';
+            case 'Usta': return 'text-purple-400 border-purple-500/30 bg-purple-500/10';
+            case 'Uzman': return 'text-blue-400 border-blue-500/30 bg-blue-500/10';
+            default: return 'text-gray-400 border-gray-500/30 bg-gray-500/10';
         }
     };
 
@@ -340,11 +353,32 @@ export default function TeamMonitoring() {
                         {agentStats.map((agent) => (
                             <div
                                 key={agent.agent_id}
-                                className="bg-white/5 rounded-lg p-4 border border-white/10"
+                                className="bg-white/5 rounded-lg p-4 border border-white/10 hover:bg-white/10 transition-colors"
                             >
-                                <div className="flex items-center justify-between mb-2">
-                                    <span className="font-semibold text-white">{agent.agent_name}</span>
-                                    <span className="text-xs text-purple-300">{agent.completion_rate}%</span>
+                                <div className="flex items-center justify-between mb-4">
+                                    <div className="flex items-center gap-3">
+                                        <div className="relative">
+                                            {agent.avatar_url ? (
+                                                <img src={agent.avatar_url} alt={agent.agent_name} className="w-10 h-10 rounded-full object-cover border border-white/20" />
+                                            ) : (
+                                                <div className="w-10 h-10 rounded-full bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center text-white font-bold border border-white/20">
+                                                    {agent.agent_name.charAt(0)}
+                                                </div>
+                                            )}
+                                            <div className="absolute -bottom-1 -right-1 bg-black/80 text-white text-[9px] px-1 py-0.5 rounded-full border border-white/20 font-mono">
+                                                Lvl {agent.level || 1}
+                                            </div>
+                                        </div>
+                                        <div>
+                                            <div className="font-semibold text-white text-sm">{agent.agent_name}</div>
+                                            <span className={`text-[10px] px-1.5 py-0.5 rounded border ${getRankColor(agent.rank)} font-medium uppercase tracking-wider`}>
+                                                {agent.rank || 'Çaylak'}
+                                            </span>
+                                        </div>
+                                    </div>
+                                    <span className="text-xs text-purple-300 font-mono bg-purple-500/10 px-2 py-1 rounded border border-purple-500/20">
+                                        {agent.completion_rate}%
+                                    </span>
                                 </div>
 
                                 <div className="grid grid-cols-2 gap-2">

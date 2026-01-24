@@ -54,7 +54,7 @@ export async function GET() {
         // Get all agents with their stats
         const { data: agents, error: agentsError } = await supabase
             .from('profiles')
-            .select('id, full_name')
+            .select('id, full_name, avatar_url')
             .eq('role', 'agent');
 
         if (agentsError) throw agentsError;
@@ -82,7 +82,7 @@ export async function GET() {
                     .eq('assigned_to', agent.id)
                     .eq('status', 'pending');
 
-                // Total completed ever
+                // Total completed ever (Lifetime) - Used for XP/Level
                 const { count: totalCompleted } = await supabase
                     .from('lead_activity_log')
                     .select('*', { count: 'exact', head: true })
@@ -96,13 +96,25 @@ export async function GET() {
                     .eq('assigned_to', agent.id)
                     .eq('status', 'appointment');
 
+                // Calculate Dynamic Level & Rank
+                const processedCount = totalCompleted || 0;
+                const level = Math.floor(processedCount / 50) + 1;
+
+                let rank = 'Çaylak'; // Junior
+                if (level >= 5) rank = 'Uzman';
+                if (level >= 10) rank = 'Usta';
+                if (level >= 20) rank = 'Efsane';
+                if (level >= 50) rank = 'Godlike';
 
                 return {
                     agent_id: agent.id,
                     agent_name: agent.full_name,
+                    avatar_url: agent.avatar_url,
+                    level,
+                    rank,
                     total_assigned: assigned || 0,
                     completed_today: completedToday || 0,
-                    total_completed: totalCompleted || 0,
+                    total_completed: processedCount,
                     pending: pending || 0,
                     appointments: appointments || 0,
                     completion_rate: assigned ? Math.round(((totalCompleted || 0) / assigned) * 100) : 0,

@@ -1,0 +1,54 @@
+﻿
+> soncall@0.1.0 build
+> next build
+
+Ôû▓ Next.js 16.1.3 (Turbopack)
+- Environments: .env.local
+
+node.exe : ÔÜá The "middleware" file 
+convention is deprecated. Please use 
+"proxy" instead. Learn more: https://nextjs
+.org/docs/messages/middleware-to-proxy
+At line:1 char:1
++ & "C:\Program Files\nodejs/node.exe" 
+"C:\Program Files\nodejs/node_mo ...
++ ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified 
+   : (ÔÜá The "middle...leware-to-proxy:S  
+  tring) [], RemoteException
+    + FullyQualifiedErrorId : NativeComman 
+   dError
+ 
+  Creating an optimized production build ...
+Ô£ô Compiled successfully in 5.5s
+  Running TypeScript ...
+Failed to compile.
+
+.next/dev/types/validator.ts:5:50
+Type error: Module '"./routes.js"' has no 
+exported member 'AppRouteHandlerRoutes'.
+
+[0m [90m 3 |[39m [90m// This file 
+validates that all pages and layouts 
+export the correct types[39m
+ [90m 4 |[39m
+[31m[1m>[22m[39m[90m 5 |[39m 
+[36mimport[39m type { 
+[33mAppRoutes[39m[33m,[39m 
+[33mLayoutRoutes[39m[33m,[39m 
+[33mParamMap[39m[33m,[39m 
+[33mAppRouteHandlerRoutes[39m } 
+[36mfrom[39m [32m"./routes.js"[39m
+ [90m   |[39m                            
+                      [31m[1m^[22m[39m
+ [90m 6 |[39m [36mimport[39m type { 
+[33mResolvingMetadata[39m[33m,[39m 
+[33mResolvingViewport[39m } 
+[36mfrom[39m [32m"next/types.js"[39m
+ [90m 7 |[39m [36mimport[39m type { 
+[33mNextRequest[39m } [36mfrom[39m 
+[32m'next/server.js'[39m
+ [90m 8 |[39m[0m
+Next.js build worker exited with code: 1 
+and signal: null

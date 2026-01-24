@@ -18,6 +18,26 @@ import MySales from './MySales';
 import { ExpandableTabs } from '@/components/ui/expandable-tabs';
 import DashboardSwitcher from '../shared/DashboardSwitcher';
 
+const getRankColor = (rank?: string) => {
+    switch (rank) {
+        case 'Godlike': return 'bg-red-500/20 text-red-300 border-red-500/30';
+        case 'Efsane': return 'bg-yellow-500/20 text-yellow-300 border-yellow-500/30';
+        case 'Usta': return 'bg-purple-500/20 text-purple-300 border-purple-500/30';
+        case 'Uzman': return 'bg-blue-500/20 text-blue-300 border-blue-500/30';
+        default: return 'bg-gray-500/20 text-gray-300 border-gray-500/30'; // Çaylak
+    }
+};
+
+const calculateLevelAndRank = (processedCount: number) => {
+    const level = Math.floor(processedCount / 50) + 1;
+    let rank = 'Çaylak';
+    if (level >= 5) rank = 'Uzman';
+    if (level >= 10) rank = 'Usta';
+    if (level >= 20) rank = 'Efsane';
+    if (level >= 50) rank = 'Godlike';
+    return { level, rank };
+};
+
 interface AgentDashboardProps {
     profile: Profile;
 }
@@ -37,6 +57,7 @@ export default function AgentDashboard({ profile: initialProfile }: AgentDashboa
     const [notifications, setNotifications] = useState<Notification[]>([]);
     const [chatOpen, setChatOpen] = useState(false);
     const [managerId, setManagerId] = useState<string | null>(null);
+    const [stats, setStats] = useState({ level: 1, rank: 'Çaylak' });
     const supabase = createClient();
     const router = useRouter();
 
@@ -45,6 +66,16 @@ export default function AgentDashboard({ profile: initialProfile }: AgentDashboa
         const getProfile = async () => {
             const { data } = await supabase.from('profiles').select('*').eq('id', initialProfile.id).single();
             if (data) setProfile(data);
+
+            // Calculate level
+            const { count } = await supabase
+                .from('lead_activity_log')
+                .select('*', { count: 'exact', head: true })
+                .eq('agent_id', initialProfile.id)
+                .eq('action', 'completed');
+
+            const { level, rank } = calculateLevelAndRank(count || 0);
+            setStats({ level, rank });
         };
         getProfile();
     }, [initialProfile.id]);
@@ -150,7 +181,7 @@ export default function AgentDashboard({ profile: initialProfile }: AgentDashboa
                                         { title: "Çağrı", icon: Phone },
                                         { title: "Geçmiş", icon: List },
                                         { title: "Satışlarım", icon: DollarSign },
-                                        { type: "separator" } as any,
+                                        { type: "separator" },
                                         { title: "Ayarlar", icon: Settings },
                                     ]}
                                     className="bg-black/20 border-white/5"
@@ -206,6 +237,12 @@ export default function AgentDashboard({ profile: initialProfile }: AgentDashboa
                                         alt="Avatar"
                                         className="w-full h-full object-cover"
                                     />
+                                </div>
+                                <div className="absolute -bottom-2 -right-2 bg-black/80 text-white text-[10px] px-1.5 py-0.5 rounded-full border border-white/20 font-mono z-10">
+                                    Lvl {stats.level}
+                                </div>
+                                <div className={`absolute -bottom-8 right-0 text-[10px] uppercase font-bold px-1.5 py-0.5 rounded border ${getRankColor(stats.rank)}`}>
+                                    {stats.rank}
                                 </div>
                             </div>
                             <button

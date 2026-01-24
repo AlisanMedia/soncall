@@ -1,6 +1,7 @@
 import { createClient } from '@/lib/supabase/server';
 import { NextResponse } from 'next/server';
 import { generateManagerInsights } from '@/lib/insights';
+import { fetchManagerAnalytics } from '@/lib/analytics';
 
 export async function GET() {
     try {
@@ -23,16 +24,12 @@ export async function GET() {
             return NextResponse.json({ message: 'Forbidden' }, { status: 403 });
         }
 
-        // Fetch analytics data (reuse existing endpoint logic)
-        const analyticsResponse = await fetch(`${process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000'}/api/manager/analytics`, {
-            headers: {
-                cookie: `sb-access-token=${(await supabase.auth.getSession()).data.session?.access_token}`,
-            },
-        });
-
+        // Fetch analytics data using shared logic
         let analyticsData = null;
-        if (analyticsResponse.ok) {
-            analyticsData = await analyticsResponse.json();
+        try {
+            analyticsData = await fetchManagerAnalytics(supabase);
+        } catch (err) {
+            console.error('Failed to fetch analytics for insights:', err);
         }
 
         // Generate insights using rule-based engine

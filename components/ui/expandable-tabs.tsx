@@ -47,7 +47,7 @@ const spanVariants = {
     exit: { width: 0, opacity: 0 },
 };
 
-const transition: any = { delay: 0.1, type: "spring", bounce: 0, duration: 0.6 };
+const transition = { delay: 0.1, type: "spring" as const, bounce: 0, duration: 0.6 };
 
 export function ExpandableTabs({
     tabs,
@@ -57,9 +57,9 @@ export function ExpandableTabs({
     defaultIndex = null,
 }: ExpandableTabsProps) {
     const [selected, setSelected] = React.useState<number | null>(defaultIndex);
-    const outsideClickRef = React.useRef<any>(null);
+    const outsideClickRef = React.useRef<HTMLDivElement>(null);
 
-    useOnClickOutside(outsideClickRef, () => {
+    useOnClickOutside(outsideClickRef as React.RefObject<HTMLDivElement>, () => {
         // Optional: Close tab on outside click if desired, but for navigation we might want to keep it selected
         // For now, let's keep it selected if it's acting as a nav.
         // However, the original code resets it. Let's stick to user request but maybe make it optional behavior.

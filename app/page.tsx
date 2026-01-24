@@ -19,8 +19,10 @@ export default async function Home() {
   const specialEmails = ['alisangul123@gmail.com', 'efebusinessonlybusiness@gmail.com'];
 
   // Redirect based on role OR specific email
+  // UPDATED: Privileged users go DIRECTLY to manager dashboard.
+  // No intermediate selection screen.
   if (['admin', 'founder'].includes(profile?.role || '') || specialEmails.includes(user.email || '')) {
-    redirect('/select-dashboard'); // Selection screen for admin/founder or special emails
+    redirect('/manager');
   } else if (profile?.role === 'manager') {
     redirect('/manager');
   } else {

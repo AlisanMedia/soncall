@@ -42,7 +42,7 @@ export interface Lead {
   category: string;
   website: string | null;
   rating: number | null;
-  raw_data: Record<string, any>;
+  raw_data: Record<string, unknown>;
   status: LeadStatus;
   potential_level: PotentialLevel;
   assigned_to: string | null;
@@ -68,7 +68,7 @@ export interface LeadActivityLog {
   lead_id: string;
   agent_id: string;
   action: string;
-  metadata: Record<string, any>;
+  metadata: Record<string, unknown>;
   created_at: string;
 }
 

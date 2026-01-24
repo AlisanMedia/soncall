@@ -15,12 +15,13 @@ export default function LoginPage() {
 
     const router = useRouter();
 
+    const specialSelectionEmails = [
+        'alisangul123@gmail.com',
+        'efebusinessonlybusiness@gmail.com'
+    ];
+
     // Check email for special dashboard selection privileges
     useEffect(() => {
-        const specialSelectionEmails = [
-            'alisangul123@gmail.com',
-            'efebusinessonlybusiness@gmail.com'
-        ];
         if (specialSelectionEmails.includes(email.trim().toLowerCase())) {
             setShowDashboardSelector(true);
             // Default select manager if not selected
@@ -63,7 +64,10 @@ export default function LoginPage() {
                 }
 
                 // 3. FALLBACK: Normal role based redirect
-                if (profile?.role === 'manager') {
+                // If special email or admin/founder didn't select a dashboard up top, default to manager.
+                if (['admin', 'founder'].includes(profile?.role) || specialSelectionEmails.includes(userEmail || '')) {
+                    router.push('/manager');
+                } else if (profile?.role === 'manager') {
                     router.push('/manager');
                 } else {
                     router.push('/agent');

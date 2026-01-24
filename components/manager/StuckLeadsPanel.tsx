@@ -1,6 +1,7 @@
 
 import { useState } from 'react';
 import { AlertOctagon, RotateCcw, Loader2 } from 'lucide-react';
+import { SectionInfo } from '@/components/ui/section-info';
 
 interface StuckLeadsPanelProps {
     onActionComplete: () => void;
@@ -45,6 +46,7 @@ export default function StuckLeadsPanel({ onActionComplete }: StuckLeadsPanelPro
             <h3 className="text-lg font-bold text-white flex items-center gap-2 mb-2">
                 <AlertOctagon className="w-5 h-5 text-red-500" />
                 Stuck Lead Monitor
+                <SectionInfo text="Sıkışmış veya unutulmuş leadleri buradan otomatik olarak yönetebilirsiniz." />
             </h3>
             <p className="text-gray-400 text-sm mb-4">
                 24 saatten uzun süredir işlem görmeyen "Pending" lead'leri otomatik tespit et ve havuza geri gönder.

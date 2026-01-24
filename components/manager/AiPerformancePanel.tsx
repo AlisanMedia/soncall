@@ -11,6 +11,7 @@ import {
     LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
     PieChart, Pie, Cell
 } from 'recharts';
+import { SectionInfo } from '@/components/ui/section-info';
 
 interface AiPerformanceData {
     oracle: {
@@ -149,6 +150,7 @@ export default function AiPerformancePanel() {
                                 <span className="text-xs px-2 py-1 bg-cyan-500/20 text-cyan-300 rounded-full border border-cyan-400/30">
                                     v2.0
                                 </span>
+                                <SectionInfo text="Cortex Yapay Zeka motorunun anlık sağlık durumu ve sistem performansı." />
                             </h2>
                             <p className="text-cyan-300 text-sm">Yapay Zeka Performans Merkezi</p>
                         </div>
@@ -189,6 +191,7 @@ export default function AiPerformancePanel() {
                             <h3 className="font-semibold text-white">Kahin Skoru</h3>
                             <p className="text-xs text-purple-300">Oracle Accuracy</p>
                         </div>
+                        <SectionInfo text="Yapay zekanın satış ve randevu tahminlerindeki doğruluk oranı." />
                     </div>
 
                     <div className="text-center mb-4">
@@ -244,6 +247,7 @@ export default function AiPerformancePanel() {
                             <h3 className="font-semibold text-white">Öğrenme Eğrisi</h3>
                             <p className="text-xs text-cyan-300">Son 4 Hafta</p>
                         </div>
+                        <SectionInfo text="Yapay zekanın zaman içindeki öğrenme ve iyileşme grafiği." />
                     </div>
 
                     <ResponsiveContainer width="100%" height={200}>
@@ -298,6 +302,7 @@ export default function AiPerformancePanel() {
                             <h3 className="font-semibold text-white">Sinerji Endeksi</h3>
                             <p className="text-xs text-emerald-300">Agent-AI Uyumu</p>
                         </div>
+                        <SectionInfo text="Satış temsilcilerinin yapay zeka önerilerini ne kadar dikkate alıp uyguladığının skoru." />
                     </div>
 
                     <div className="text-center mb-4">
@@ -361,6 +366,7 @@ export default function AiPerformancePanel() {
                                 <h3 className="font-semibold text-white">Randevu Dedektörü</h3>
                                 <p className="text-xs text-orange-300">Zaman Bükücü Sistemi</p>
                             </div>
+                            <SectionInfo text="Ses kayıtlarındaki tarih ve saat ifadelerini algılama başarısı." />
                         </div>
                         <div className="text-right">
                             <div className="text-2xl font-bold text-orange-400">{data.appointmentDetection.rate}%</div>
@@ -397,6 +403,7 @@ export default function AiPerformancePanel() {
                             <h3 className="font-semibold text-white">Tahmin Dağılımı</h3>
                             <p className="text-xs text-pink-300">Breakdown</p>
                         </div>
+                        <SectionInfo text="Yapılan tüm tahminlerin kategorik dağılımı (Doğru, Yanlış, Fırsat)." />
                     </div>
 
                     <ResponsiveContainer width="100%" height={180}>
@@ -425,7 +432,7 @@ export default function AiPerformancePanel() {
                         </PieChart>
                     </ResponsiveContainer>
                 </motion.div>
-            </div>
-        </div>
+            </div >
+        </div >
     );
 }

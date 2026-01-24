@@ -142,8 +142,9 @@ export default function LeadCard({ agentId, onLeadProcessed, refreshKey }: LeadC
             setNote('');
             setActionTaken('');
 
-        } catch (err: any) {
-            setError(err.message || 'Lead yüklenirken bir hata oluştu');
+        } catch (err: unknown) {
+            const message = err instanceof Error ? err.message : 'Lead yüklenirken bir hata oluştu';
+            setError(message);
         } finally {
             setLoading(false);
         }
@@ -235,8 +236,9 @@ export default function LeadCard({ agentId, onLeadProcessed, refreshKey }: LeadC
             // We'll check after loading
             await loadNextLead();
 
-        } catch (err: any) {
-            setError(err.message || 'İşlem sırasında bir hata oluştu');
+        } catch (err: unknown) {
+            const message = err instanceof Error ? err.message : 'İşlem sırasında bir hata oluştu';
+            setError(message);
         } finally {
             setProcessing(false);
         }
@@ -370,8 +372,8 @@ export default function LeadCard({ agentId, onLeadProcessed, refreshKey }: LeadC
             {/* AI INSIGHT ALERT BANNER - High Visibility Section */}
             {currentLead.potential_level && currentLead.potential_level !== 'not_assessed' && currentLead.potential_level !== 'low' && (
                 <div className={`rounded-xl p-4 border-2 ${currentLead.potential_level === 'high'
-                        ? 'bg-gradient-to-r from-emerald-500/20 to-green-500/20 border-emerald-400 animate-pulse'
-                        : 'bg-gradient-to-r from-yellow-500/20 to-orange-500/20 border-yellow-400'
+                    ? 'bg-gradient-to-r from-emerald-500/20 to-green-500/20 border-emerald-400 animate-pulse'
+                    : 'bg-gradient-to-r from-yellow-500/20 to-orange-500/20 border-yellow-400'
                     }`}>
                     <div className="flex items-start gap-3">
                         <div className={`p-2 rounded-lg ${currentLead.potential_level === 'high' ? 'bg-emerald-500/30' : 'bg-yellow-500/30'

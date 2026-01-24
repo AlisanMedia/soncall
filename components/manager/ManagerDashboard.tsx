@@ -2,26 +2,31 @@
 
 import { useState } from 'react';
 import { Profile } from '@/types';
-import TeamList from '@/components/manager/TeamList';
+import dynamic from 'next/dynamic';
+
+const TeamList = dynamic(() => import('@/components/manager/TeamList'));
+const FileUpload = dynamic(() => import('@/components/manager/FileUpload'));
+const LeadDistribution = dynamic(() => import('@/components/manager/LeadDistribution'));
+const ReportsView = dynamic(() => import('./ReportsView'));
+const AnalyticsView = dynamic(() => import('./AnalyticsView'));
+const AgentRankings = dynamic(() => import('./AgentRankings'));
+const LeadManagementView = dynamic(() => import('./LeadManagementView'));
+const AdminPanel = dynamic(() => import('./AdminPanel'));
+const GoalManager = dynamic(() => import('./GoalManager'));
+const AppointmentCalendar = dynamic(() => import('./AppointmentCalendar'));
+const ProfileSettings = dynamic(() => import('./ProfileSettings'));
+
+// Keep default tab components static for faster LCP
+import TeamMonitoring from '@/components/manager/TeamMonitoring';
+import TopSellers from './TopSellers';
+import SalesApprovals from './SalesApprovals';
+
 import { LogOut, Upload, Users, BarChart3, Activity, TrendingUp, Trophy, MessageCircle, AlertTriangle, Target, Calendar, Briefcase, Settings } from 'lucide-react';
 import { createClient } from '@/lib/supabase/client';
 import { useRouter } from 'next/navigation';
-import FileUpload from '@/components/manager/FileUpload';
-import LeadDistribution from '@/components/manager/LeadDistribution';
-import TeamMonitoring from '@/components/manager/TeamMonitoring';
-import ReportsView from './ReportsView';
-import AnalyticsView from './AnalyticsView';
-import AgentRankings from './AgentRankings';
-import LeadManagementView from './LeadManagementView';
 import ChatPanel from '../chat/ChatPanel';
 import ChatNotificationBadge from '../chat/ChatNotificationBadge';
-import AdminPanel from './AdminPanel';
 import DashboardSwitcher from '../shared/DashboardSwitcher';
-import GoalManager from './GoalManager';
-import SalesApprovals from './SalesApprovals';
-import TopSellers from './TopSellers';
-import AppointmentCalendar from './AppointmentCalendar';
-import ProfileSettings from './ProfileSettings';
 
 
 interface ManagerDashboardProps {
@@ -82,14 +87,14 @@ export default function ManagerDashboard({ profile }: ManagerDashboardProps) {
                         {/* Center: Navigation Items (Absolute) */}
                         <div className="hidden md:flex absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 items-center gap-1 bg-slate-800/80 backdrop-blur-md rounded-2xl p-1.5 border border-white/10 shadow-xl z-10">
                             {[
-                                { id: 'monitor', icon: Activity, label: 'Takım' },
-                                { id: 'team', icon: Briefcase, label: 'Personel' },
-                                { id: 'leads', icon: Users, label: 'Leads' },
-                                { id: 'analytics', icon: TrendingUp, label: 'Analytics' },
-                                { id: 'rankings', icon: Trophy, label: 'Rank' },
-                                { id: 'reports', icon: BarChart3, label: 'Rapor' },
-                                { id: 'goals', icon: Target, label: 'Hedefler' },
+                                { id: 'monitor', icon: Activity, label: 'Genel Bakış' },
+                                { id: 'team', icon: Users, label: 'Personel' },
+                                { id: 'leads', icon: Briefcase, label: 'Leads' },
                                 { id: 'calendar', icon: Calendar, label: 'Randevular' },
+                                { id: 'analytics', icon: TrendingUp, label: 'Analiz' },
+                                { id: 'reports', icon: BarChart3, label: 'Raporlar' },
+                                { id: 'rankings', icon: Trophy, label: 'Sıralama' },
+                                { id: 'goals', icon: Target, label: 'Hedefler' },
                                 { id: 'upload', icon: Upload, label: 'Yükle' },
                                 { id: 'admin', icon: AlertTriangle, label: 'Admin' },
                                 { id: 'settings', icon: Settings, label: 'Ayarlar' },
@@ -134,14 +139,14 @@ export default function ManagerDashboard({ profile }: ManagerDashboardProps) {
             <div className="md:hidden sticky top-0 z-40 bg-slate-900/50 backdrop-blur-md border-b border-white/5 overflow-x-auto">
                 <div className="flex p-2 gap-2 min-w-max">
                     {[
-                        { id: 'monitor', icon: Activity, label: 'Takım' },
-                        { id: 'team', icon: Briefcase, label: 'Personel' },
-                        { id: 'leads', icon: Users, label: 'Leads' },
-                        { id: 'analytics', icon: TrendingUp, label: 'Analytics' },
-                        { id: 'rankings', icon: Trophy, label: 'Rank' },
-                        { id: 'reports', icon: BarChart3, label: 'Rapor' },
-                        { id: 'goals', icon: Target, label: 'Hedefler' },
+                        { id: 'monitor', icon: Activity, label: 'Genel Bakış' },
+                        { id: 'team', icon: Users, label: 'Personel' },
+                        { id: 'leads', icon: Briefcase, label: 'Leads' },
                         { id: 'calendar', icon: Calendar, label: 'Randevular' },
+                        { id: 'analytics', icon: TrendingUp, label: 'Analiz' },
+                        { id: 'reports', icon: BarChart3, label: 'Raporlar' },
+                        { id: 'rankings', icon: Trophy, label: 'Sıralama' },
+                        { id: 'goals', icon: Target, label: 'Hedefler' },
                         { id: 'upload', icon: Upload, label: 'Yükle' },
                         { id: 'admin', icon: AlertTriangle, label: 'Admin' },
                         { id: 'settings', icon: Settings, label: 'Ayarlar' },
