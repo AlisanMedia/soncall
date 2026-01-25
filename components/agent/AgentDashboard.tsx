@@ -2,14 +2,14 @@
 
 import { useState, useEffect } from 'react';
 import { Profile } from '@/types';
-import { LogOut, MessageCircle, Settings, Phone, Trophy, List, DollarSign } from 'lucide-react';
+import { LogOut, MessageCircle, Settings, Phone, Target, List, DollarSign } from 'lucide-react';
 import { createClient } from '@/lib/supabase/client';
 import { useRouter } from 'next/navigation';
 import LeadCard from './LeadCard';
 import Leaderboard from './Leaderboard';
 import NotificationToast from './NotificationToast';
 import GamificationBar from './GamificationBar';
-import AchievementsGrid from './AchievementsGrid';
+import AgentTasks from './AgentTasks';
 import ChatPanel from '../chat/ChatPanel';
 import ChatNotificationBadge from '../chat/ChatNotificationBadge';
 import AgentSettings from './AgentSettings';
@@ -17,6 +17,7 @@ import LeadHistoryView from './LeadHistoryView';
 import MySales from './MySales';
 import { ExpandableTabs } from '@/components/ui/expandable-tabs';
 import DashboardSwitcher from '../shared/DashboardSwitcher';
+import { BGPattern } from '@/components/ui/bg-pattern';
 
 const getRankColor = (rank?: string) => {
     switch (rank) {
@@ -155,7 +156,8 @@ export default function AgentDashboard({ profile: initialProfile }: AgentDashboa
     };
 
     return (
-        <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 pb-20">
+        <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 pb-20 relative overflow-hidden isolate">
+            <BGPattern variant="dots" fill="#ffffff" className="opacity-20" mask="fade-edges" />
             {/* Header */}
             <header className="bg-white/10 backdrop-blur-lg border-b border-white/20 sticky top-0 z-50">
                 <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3 sm:py-4">
@@ -284,13 +286,13 @@ export default function AgentDashboard({ profile: initialProfile }: AgentDashboa
                                 refreshKey={refreshKey}
                             />
 
-                            {/* Achievements Section */}
+                            {/* Tasks Section */}
                             <div className="bg-white/5 border border-white/10 rounded-2xl p-6">
                                 <h3 className="text-lg font-bold text-white mb-4 flex items-center gap-2">
-                                    <Trophy className="w-5 h-5 text-yellow-500" />
-                                    Başarım Koleksiyonu
+                                    <Target className="w-5 h-5 text-purple-400" />
+                                    Görevler
                                 </h3>
-                                <AchievementsGrid agentId={profile.id} />
+                                <AgentTasks agentId={profile.id} />
                             </div>
                         </div>
 

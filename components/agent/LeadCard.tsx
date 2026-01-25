@@ -28,6 +28,7 @@ export default function LeadCard({ agentId, onLeadProcessed, refreshKey }: LeadC
 
     const [actionTaken, setActionTaken] = useState<string>('');
     const [isAiProcessing, setIsAiProcessing] = useState(false);
+    const [savedAudioUrl, setSavedAudioUrl] = useState<string | null>(null);
 
     const supabase = createClient();
     const lastPlayedLeadId = useRef<string | null>(null);
@@ -141,6 +142,7 @@ export default function LeadCard({ agentId, onLeadProcessed, refreshKey }: LeadC
             setPotentialLevel('not_assessed');
             setNote('');
             setActionTaken('');
+            setSavedAudioUrl(null); // Reset audio url
 
         } catch (err: unknown) {
             const message = err instanceof Error ? err.message : 'Lead yüklenirken bir hata oluştu';
@@ -226,6 +228,19 @@ export default function LeadCard({ agentId, onLeadProcessed, refreshKey }: LeadC
                 throw new Error(data.message || 'Lead güncellenirken hata oluştu');
             }
 
+            // Save call recording metadata if available
+            if (savedAudioUrl) {
+                await supabase.from('lead_activity_log').insert({
+                    lead_id: currentLead.id,
+                    agent_id: agentId,
+                    action: 'call_recording',
+                    metadata: {
+                        recording_url: savedAudioUrl,
+                        source: 'agent_dashboard'
+                    }
+                });
+            }
+
             // Clear saved lead from localStorage since it's been processed
             localStorage.removeItem(`agent_${agentId}_current_lead`);
 
@@ -245,6 +260,7 @@ export default function LeadCard({ agentId, onLeadProcessed, refreshKey }: LeadC
     };
 
     const handleRecordingComplete = (audioUrl: string, blob: Blob) => {
+        setSavedAudioUrl(audioUrl);
         analyzeRecording(audioUrl);
     };
 
@@ -493,11 +509,12 @@ export default function LeadCard({ agentId, onLeadProcessed, refreshKey }: LeadC
                     <VoiceRecorder
                         leadId={currentLead.id}
                         onRecordingComplete={handleRecordingComplete}
+                        isProcessing={isAiProcessing}
                     />
                     {isAiProcessing && (
                         <div className="mt-2 text-xs text-purple-300 flex items-center gap-2 animate-pulse">
                             <Wand2 className="w-3 h-3" />
-                            Yapay zeka görüşmeyi analiz ediyor...
+                            Yapay zeka analiz ediyor...
                         </div>
                     )}
                 </div>

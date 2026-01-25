@@ -5,13 +5,15 @@ import { useState, useRef, useEffect } from 'react';
 import { Mic, Square, Play, Pause, Save, Loader2, UploadCloud, FileAudio } from 'lucide-react';
 import { createClient } from '@/lib/supabase/client';
 import { toast } from 'sonner';
+import { PulseVoiceRecorder } from '@/components/ui/voice-recording';
 
 interface VoiceRecorderProps {
     leadId: string;
     onRecordingComplete: (audioUrl: string, blob: Blob) => void;
+    isProcessing?: boolean;
 }
 
-export default function VoiceRecorder({ leadId, onRecordingComplete }: VoiceRecorderProps) {
+export default function VoiceRecorder({ leadId, onRecordingComplete, isProcessing = false }: VoiceRecorderProps) {
     const [isRecording, setIsRecording] = useState(false);
     const [recordingTime, setRecordingTime] = useState(0);
     const [audioBlob, setAudioBlob] = useState<Blob | null>(null);
@@ -175,97 +177,92 @@ export default function VoiceRecorder({ leadId, onRecordingComplete }: VoiceReco
         }
     };
 
+    // ... existing logic functions ...
+
     return (
-        <div className="bg-white/5 border border-white/10 rounded-xl p-4">
-            <h4 className="text-sm font-bold text-white mb-3 flex items-center gap-2">
+        <div className="bg-white/5 border border-white/10 rounded-xl p-6 flex flex-col items-center gap-6">
+            <h4 className="text-sm font-bold text-white flex items-center gap-2 self-start w-full border-b border-white/10 pb-2 mb-2">
                 <FileAudio className="w-4 h-4 text-purple-400" />
                 Görüşme Kaydı
             </h4>
 
-            {/* Audio Player (Hidden UI, Logic only) */}
+            {/* Audio Player Logic */}
             <audio
                 ref={audioPlayerRef}
-                src={audioUrl || ''}
+                src={audioUrl || undefined}
                 onEnded={() => setIsPlaying(false)}
             />
 
-            <div className="flex items-center justify-between">
-                {/* Timer & Status */}
-                <div className="flex items-center gap-3">
-                    {isRecording ? (
-                        <div className="flex items-center gap-2">
-                            <span className="relative flex h-3 w-3">
-                                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
-                                <span className="relative inline-flex rounded-full h-3 w-3 bg-red-500"></span>
-                            </span>
-                            <span className="text-red-400 font-mono font-medium">{formatTime(recordingTime)}</span>
-                        </div>
-                    ) : audioUrl ? (
-                        <div className="text-green-400 font-medium text-sm flex items-center gap-2">
-                            <FileAudio className="w-4 h-4" />
-                            Kayıt Hazır
-                        </div>
-                    ) : (
-                        <div className="text-gray-400 text-sm">Kayda başlamak için butona basın</div>
+            {/* Main Recorder UI */}
+            {(!audioUrl || isRecording) && (
+                <div className="py-2">
+                    <PulseVoiceRecorder
+                        isRecording={isRecording}
+                        onToggle={isRecording ? stopRecording : startRecording}
+                        duration={recordingTime}
+                    />
+                    {!isRecording && !audioUrl && (
+                        <p className="text-xs text-center text-purple-300/50 mt-4">
+                            Kaydı başlatmak için mikrofona dokunun
+                        </p>
                     )}
                 </div>
+            )}
 
-                {/* Controls */}
-                <div className="flex gap-2">
-                    {!audioUrl && !isRecording && (
-                        <button
-                            onClick={startRecording}
-                            className="bg-red-600 hover:bg-red-700 text-white p-3 rounded-full transition-all shadow-lg hover:scale-105"
-                            title="Kaydı Başlat"
-                        >
-                            <Mic className="w-5 h-5" />
-                        </button>
-                    )}
+            {/* Post-Recording Actions (Review & Upload) */}
+            {!isRecording && audioUrl && (
+                <div className="w-full space-y-4 animate-in fade-in slide-in-from-bottom-4 duration-500">
+                    <div className="flex items-center justify-between bg-white/5 p-3 rounded-lg border border-white/10">
+                        <div className="flex items-center gap-3">
+                            <div className="w-10 h-10 rounded-full bg-purple-500/20 flex items-center justify-center">
+                                <FileAudio className="w-5 h-5 text-purple-400" />
+                            </div>
+                            <div>
+                                <p className="text-sm font-medium text-white">Ses Kaydı Hazır</p>
+                                <p className="text-xs text-purple-300/70">{formatTime(recordingTime)}</p>
+                            </div>
+                        </div>
 
-                    {isRecording && (
-                        <button
-                            onClick={stopRecording}
-                            className="bg-gray-600 hover:bg-gray-700 text-white p-3 rounded-full transition-all shadow-lg animate-pulse"
-                            title="Kaydı Durdur"
-                        >
-                            <Square className="w-5 h-5 fill-current" />
-                        </button>
-                    )}
-
-                    {audioUrl && !isRecording && (
-                        <>
+                        <div className="flex items-center gap-2">
                             <button
                                 onClick={togglePlayback}
-                                className="bg-white/10 hover:bg-white/20 text-white p-2 rounded-lg transition-colors"
-                                title={isPlaying ? "Duraklat" : "Oynat"}
+                                className="p-2 hover:bg-white/10 rounded-full text-white transition-colors"
+                                title={isPlaying ? "Duraklat" : "Dinle"}
                             >
                                 {isPlaying ? <Pause className="w-5 h-5" /> : <Play className="w-5 h-5" />}
                             </button>
-
-                            <button
-                                onClick={handleUpload}
-                                disabled={isUploading}
-                                className="bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded-lg flex items-center gap-2 transition-all font-medium disabled:opacity-50"
-                            >
-                                {isUploading ? <img src="/loading-logo.png" alt="Loading" className="w-8 h-4 animate-pulse object-contain" /> : <UploadCloud className="w-4 h-4" />}
-                                Analiz Et
-                            </button>
-
                             <button
                                 onClick={() => {
                                     setAudioUrl(null);
                                     setAudioBlob(null);
                                 }}
-                                className="bg-red-500/10 hover:bg-red-500/20 text-red-300 p-2 rounded-lg transition-colors"
-                                title="İptal / Sil"
-                                disabled={isUploading}
+                                className="p-2 hover:bg-red-500/20 rounded-full text-red-400 transition-colors"
+                                title="Sil ve Yeniden Kaydet"
                             >
-                                <Square className="w-5 h-5" />
+                                <Square className="w-4 h-4" />
                             </button>
-                        </>
-                    )}
+                        </div>
+                    </div>
+
+                    <button
+                        onClick={handleUpload}
+                        disabled={isUploading || isProcessing}
+                        className="w-full py-3 bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 text-white rounded-lg font-bold shadow-lg shadow-purple-500/25 flex items-center justify-center gap-2 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                        {isUploading || isProcessing ? (
+                            <>
+                                <img src="/loading-logo.png" alt="Loading" className="w-5 h-5 animate-pulse object-contain" />
+                                {isUploading ? 'Yükleniyor...' : 'Analiz Ediliyor...'}
+                            </>
+                        ) : (
+                            <>
+                                <UploadCloud className="w-5 h-5" />
+                                Analiz Et ve Kaydet
+                            </>
+                        )}
+                    </button>
                 </div>
-            </div>
+            )}
         </div>
     );
 }
