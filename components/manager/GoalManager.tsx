@@ -41,7 +41,7 @@ export default function GoalManager() {
             const { data: agentsData } = await supabase
                 .from('profiles')
                 .select('*')
-                .eq('role', 'agent')
+                .in('role', ['agent', 'admin', 'manager', 'founder'])
                 .order('full_name');
 
             if (agentsData) setAgents(agentsData);

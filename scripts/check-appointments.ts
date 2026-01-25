@@ -43,24 +43,52 @@ const supabase = createClient(supabaseUrl, supabaseKey);
 
 async function checkAppointments() {
     console.log('Checking appointments...');
-    const { data, error } = await supabase
+
+    // Check 1: Leads with status 'appointment'
+    const { data: statusAppointments, error: error1 } = await supabase
         .from('leads')
-        .select('id, business_name, appointment_date, assigned_to')
-        .not('appointment_date', 'is', null)
-        .order('appointment_date', { ascending: false });
+        .select('*')
+        .eq('status', 'appointment')
+        .limit(1);
 
-    if (error) {
-        console.error('Error:', error);
-        return;
-    }
+    if (error1) console.error('Error 1:', error1);
+    else if (statusAppointments.length > 0) {
+        const lead = statusAppointments[0];
+        console.log(`Checking Activity Log for Lead: ${lead.id}`);
 
-    console.log(`Found ${data.length} appointments.`);
-    if (data.length > 0) {
-        data.slice(0, 5).forEach(apt => {
-            console.log(`${apt.appointment_date} - ${apt.business_name} (${apt.id})`);
-        });
+        const { data: logs, error: logError } = await supabase
+            .from('lead_activity_log')
+            .select('*')
+            .eq('lead_id', lead.id)
+            .limit(1);
+
+        if (logError) console.error('Log Error:', logError);
+        else if (logs.length > 0) {
+            console.log('Activity Log Keys:', Object.keys(logs[0]));
+            console.log('Sample Log:', logs[0]);
+        }
+
+        console.log(`Checking Lead Notes for Lead: ${lead.id}`);
+
+        const { data: notes, error: noteError } = await supabase
+            .from('lead_notes')
+            .select('*')
+            .eq('lead_id', lead.id)
+            .order('created_at', { ascending: false });
+
+        if (noteError) console.error('Note Error:', noteError);
+        else if (notes && notes.length > 0) {
+            console.log(`Found ${notes.length} notes.`);
+            notes.forEach(n => {
+                console.log(`[${n.created_at}] Action: ${n.action_taken}`);
+                console.log(`Note: "${n.note}"`);
+                console.log('---');
+            });
+        } else {
+            console.log('No notes found for this lead.');
+        }
     } else {
-        console.log('No appointments found.');
+        console.log('No leads found.');
     }
 }
 

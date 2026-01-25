@@ -34,6 +34,7 @@ export async function GET(request: Request) {
                 appointment_date,
                 appointment_notes,
                 assigned_to,
+                processed_at,
                 profiles!leads_assigned_to_fkey(
                     id,
                     full_name,
@@ -41,7 +42,7 @@ export async function GET(request: Request) {
                     theme_color
                 )
             `)
-            .not('appointment_date', 'is', null)
+            .or('appointment_date.not.is.null,status.eq.appointment')
             .order('appointment_date', { ascending: true });
 
         // Apply filter if selected
@@ -53,10 +54,60 @@ export async function GET(request: Request) {
 
         if (error) throw error;
 
+        // Fetch notes for these leads
+        const leadIds = leads?.map(l => l.id) || [];
+        const { data: notes } = await supabase
+            .from('lead_notes')
+            .select('lead_id, note, created_at')
+            .in('lead_id', leadIds)
+            .order('created_at', { ascending: false });
+
         // Transform data to match frontend interface
         const appointments = leads?.map(lead => {
             const agent = lead.profiles as any; // Due to join alias behavior
-            const appDate = new Date(lead.appointment_date);
+
+            // Find latest note
+            const leadNote = notes?.find(n => n.lead_id === lead.id);
+            const noteText = leadNote?.note || lead.appointment_notes || '';
+
+            // Helper to parse Turkish date from note
+            const parseTurkishDate = (text: string) => {
+                try {
+                    const match = text.match(/📅 Randevu: (.*)/);
+                    if (!match) return null;
+
+                    const dateStr = match[1].trim();
+                    // Format: "26 Ocak 2026 Pazartesi 13:19"
+                    // Split by space
+                    const parts = dateStr.split(' ');
+                    if (parts.length < 5) return null;
+
+                    const day = parseInt(parts[0]);
+                    const monthName = parts[1].toLowerCase();
+                    const year = parseInt(parts[2]);
+                    const time = parts[4]; // Skip day name (parts[3])
+                    const [hour, minute] = time.split(':').map(Number);
+
+                    const months: Record<string, number> = {
+                        'ocak': 0, 'şubat': 1, 'mart': 2, 'nisan': 3, 'mayıs': 4, 'haziran': 5,
+                        'temmuz': 6, 'ağustos': 7, 'eylül': 8, 'ekim': 9, 'kasım': 10, 'aralık': 11
+                    };
+
+                    const month = months[monthName];
+                    if (month === undefined) return null;
+
+                    const date = new Date(year, month, day, hour, minute);
+                    return date.toISOString();
+                } catch (e) {
+                    return null;
+                }
+            };
+
+            // Fallback to parsed note date or processed_at if appointment_date is missing
+            const parsedDate = parseTurkishDate(noteText);
+            const dateStr = lead.appointment_date || parsedDate || lead.processed_at || new Date().toISOString();
+
+            const appDate = new Date(dateStr);
             const today = new Date();
             const isToday = appDate.toDateString() === today.toDateString();
 
@@ -89,7 +140,7 @@ export async function GET(request: Request) {
 
             return {
                 id: lead.id,
-                appointment_date: lead.appointment_date,
+                appointment_date: dateStr, // Use the effective date
                 business_name: lead.business_name || 'İsimsiz İşletme',
                 phone_number: lead.phone_number,
                 potential_level: lead.potential_level || 'medium',
@@ -100,7 +151,7 @@ export async function GET(request: Request) {
                 is_urgent: lead.potential_level === 'high',
                 is_today: isToday,
                 time_until: timeUntil,
-                notes: lead.appointment_notes
+                notes: noteText // Use the fetched note
             };
         }) || [];
 

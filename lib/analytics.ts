@@ -144,7 +144,7 @@ export async function fetchManagerAnalytics(supabase: SupabaseClient) {
     const { data: agents, error: agentsError } = await supabase
         .from('profiles')
         .select('id, full_name, avatar_url')
-        .eq('role', 'agent');
+        .in('role', ['agent', 'admin', 'manager', 'founder']);
 
     if (agentsError) throw agentsError;
 
