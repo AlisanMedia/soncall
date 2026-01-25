@@ -33,7 +33,7 @@ export default function LeadDistribution({ batchId, totalLeads, onComplete }: Le
             const { data, error: fetchError } = await supabase
                 .from('profiles')
                 .select('*')
-                .eq('role', 'agent')
+                .in('role', ['agent', 'manager', 'admin', 'founder'])
                 .order('full_name');
 
             if (fetchError) throw fetchError;
