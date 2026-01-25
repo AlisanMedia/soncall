@@ -39,7 +39,7 @@ export async function GET(request: NextRequest) {
         // Get all agents and their remaining leads
         const { data: allAgents, error: agentsError } = await supabase
             .from('profiles')
-            .select('id, full_name')
+            .select('id, full_name, avatar_url')
             .eq('role', 'agent');
 
         if (agentsError) throw agentsError;
@@ -47,7 +47,9 @@ export async function GET(request: NextRequest) {
         // Aggregate counts per agent
         const agentStats: Record<string, {
             name: string;
+            avatar_url?: string;
             count: number;
+            total_lifetime_count: number; // For level calc
             activities: Date[];
         }> = {};
 
@@ -55,12 +57,14 @@ export async function GET(request: NextRequest) {
         allAgents?.forEach((agent: any) => {
             agentStats[agent.id] = {
                 name: agent.full_name,
+                avatar_url: agent.avatar_url,
                 count: 0,
+                total_lifetime_count: 0,
                 activities: [],
             };
         });
 
-        // Count processed leads
+        // Count processed leads (Today)
         leaderboardData?.forEach((log: any) => {
             const id = log.agent_id;
             if (agentStats[id]) {
@@ -68,6 +72,22 @@ export async function GET(request: NextRequest) {
                 agentStats[id].activities.push(new Date(log.created_at));
             }
         });
+
+        // Get lifetime processed count for level calculation
+        // Optimization: We could do a separate query or GroupBy, but for now let's query raw counts
+        // To be performant, let's just use a separate aggregate query
+        const { data: lifetimeData, error: lifetimeError } = await supabase
+            .from('lead_activity_log')
+            .select('agent_id')
+            .eq('action', 'completed');
+
+        if (!lifetimeError && lifetimeData) {
+            lifetimeData.forEach((log: any) => {
+                if (agentStats[log.agent_id]) {
+                    agentStats[log.agent_id].total_lifetime_count++;
+                }
+            });
+        }
 
         // Get remaining leads for each agent
         const { data: remainingLeads, error: remainingError } = await supabase
@@ -105,18 +125,29 @@ export async function GET(request: NextRequest) {
                     }
                 }
 
-                // Calculate speed (leads in last 5   minutes)
+                // Calculate speed (leads in last 5 minutes)
                 const last5MinActivities = data.activities.filter(
                     a => a.getTime() > fiveMinutesAgo.getTime()
                 );
 
+                // Calculate Level & Title
+                const level = Math.floor(data.total_lifetime_count / 50) + 1;
+                let rank_title = 'Çaylak';
+                if (level >= 5) rank_title = 'Uzman';
+                if (level >= 10) rank_title = 'Usta';
+                if (level >= 20) rank_title = 'Efsane';
+                if (level >= 50) rank_title = 'Godlike';
+
                 return {
                     agent_id,
                     agent_name: data.name,
+                    avatar_url: data.avatar_url,
                     processed_count: data.count,
                     remaining_count: remainingCounts[agent_id] || 0,
                     streak: streak > 1 ? streak : 0,
                     speed_last_5min: last5MinActivities.length,
+                    level,
+                    rank_title,
                     rank: 0, // Will be assigned below
                 };
             })

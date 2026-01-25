@@ -20,9 +20,17 @@ const IconMap: Record<string, any> = {
     Trophy, Phone, Zap, Target, Flame
 };
 
+import { DisplayCard } from '@/components/ui/display-cards';
+
+// ... (imports remain the same, ensure DisplayCard is imported)
+
 export default function AchievementsGrid({ agentId }: { agentId: string }) {
     const [achievements, setAchievements] = useState<Achievement[]>([]);
     const [loading, setLoading] = useState(true);
+
+    // ... (useEffect logic remains the same)
+
+    // ... load logic ...
 
     useEffect(() => {
         const load = async () => {
@@ -33,7 +41,6 @@ export default function AchievementsGrid({ agentId }: { agentId: string }) {
                 .from('achievement_definitions')
                 .select('*');
 
-            // Helper to merge data
             const mergeData = (unlocked: any[]) => {
                 if (defs) {
                     const merged = defs.map(def => ({
@@ -49,7 +56,6 @@ export default function AchievementsGrid({ agentId }: { agentId: string }) {
                 }
             };
 
-            // 1. Initial Load
             const { data: unlocked } = await supabase
                 .from('agent_achievements')
                 .select('achievement_id, unlocked_at')
@@ -58,7 +64,6 @@ export default function AchievementsGrid({ agentId }: { agentId: string }) {
             mergeData(unlocked || []);
             setLoading(false);
 
-            // 2. Realtime Subscription
             const channel = supabase
                 .channel('agent_achievements_updates')
                 .on(
@@ -70,16 +75,12 @@ export default function AchievementsGrid({ agentId }: { agentId: string }) {
                         filter: `agent_id=eq.${agentId}`
                     },
                     (payload) => {
-                        console.log('New Achievement Unlocked:', payload.new);
-                        // Reload unlocked list to be safe or append efficiently
-                        // For simplicity re-fetch unlocked list to handle merge logic perfectly
                         supabase
                             .from('agent_achievements')
                             .select('achievement_id, unlocked_at')
                             .eq('agent_id', agentId)
                             .then(({ data: freshUnlocked }) => {
                                 mergeData(freshUnlocked || []);
-                                // Optional: Toast notification here if we had toast imported
                             });
                     }
                 )
@@ -96,40 +97,27 @@ export default function AchievementsGrid({ agentId }: { agentId: string }) {
     if (loading) return <div className="text-center p-4 text-gray-400">Yükleniyor...</div>;
 
     return (
-        <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-3">
+        <div className="flex flex-wrap gap-6 justify-center">
             {achievements.map((ach) => {
                 const isUnlocked = !!ach.unlocked_at;
                 const Icon = IconMap[ach.icon_name] || Trophy;
 
                 return (
-                    <div
+                    <DisplayCard
                         key={ach.id}
+                        title={ach.title}
+                        description={ach.description}
+                        date={isUnlocked ? `Kazanıldı: ${new Date(ach.unlocked_at!).toLocaleDateString()}` : `Ödül: ${ach.xp_reward} XP`}
+                        icon={<Icon className={clsx("size-4", isUnlocked ? "text-yellow-300" : "text-gray-400")} />}
                         className={clsx(
-                            "relative aspect-square rounded-xl p-3 flex flex-col items-center justify-center text-center border transition-all duration-300 group",
+                            "w-full sm:w-[20rem] h-auto min-h-[9rem]", // Override default fixed width
                             isUnlocked
-                                ? "bg-gradient-to-br from-purple-900/40 to-indigo-900/40 border-purple-500/30 hover:border-purple-400 hover:scale-105 hover:shadow-lg hover:shadow-purple-500/20"
-                                : "bg-white/5 border-white/5 grayscale opacity-50 hover:opacity-75"
+                                ? "bg-purple-900/40 border-purple-500/50 hover:bg-purple-900/60"
+                                : "grayscale opacity-60 bg-white/5 border-white/5 hover:opacity-100"
                         )}
-                        title={isUnlocked ? `Kazanıldı: ${new Date(ach.unlocked_at!).toLocaleDateString()}` : "Kilitli"}
-                    >
-                        <div className={clsx(
-                            "w-10 h-10 rounded-full flex items-center justify-center mb-2 shadow-inner",
-                            isUnlocked ? "bg-white/10 text-yellow-400" : "bg-black/20 text-gray-500"
-                        )}>
-                            {isUnlocked ? <Icon className="w-5 h-5 drop-shadow-[0_0_8px_rgba(250,204,21,0.5)]" /> : <Lock className="w-4 h-4" />}
-                        </div>
-
-                        <h4 className="text-xs font-bold text-white mb-1 line-clamp-1">{ach.title}</h4>
-                        <p className="text-[10px] text-gray-400 line-clamp-2 leading-tight">{ach.description}</p>
-
-                        {/* XP Badge */}
-                        <div className={clsx(
-                            "absolute top-2 right-2 text-[9px] font-mono px-1.5 rounded-full border",
-                            isUnlocked ? "bg-yellow-500/20 text-yellow-200 border-yellow-500/30" : "bg-gray-800 text-gray-500 border-gray-700"
-                        )}>
-                            +{ach.xp_reward}XP
-                        </div>
-                    </div>
+                        titleClassName={isUnlocked ? "text-white" : "text-gray-400"}
+                        iconClassName={isUnlocked ? "text-yellow-400" : "text-gray-500"}
+                    />
                 );
             })}
         </div>

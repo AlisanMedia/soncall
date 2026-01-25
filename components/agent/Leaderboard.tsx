@@ -9,6 +9,9 @@ interface ExtendedLeaderboardEntry extends LeaderboardEntry {
     last_activity?: string;
     streak?: number;
     speed_last_5min?: number;
+    avatar_url?: string;
+    level?: number;
+    rank_title?: string;
 }
 
 interface LeaderboardProps {
@@ -150,6 +153,7 @@ export default function Leaderboard({ agentId, refreshKey }: LeaderboardProps) {
                     {leaderboard.map((entry, index) => {
                         const isCurrentUser = entry.agent_id === agentId;
                         const hasPulse = activityPulse[entry.agent_id];
+                        const initials = entry.agent_name.split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase();
 
                         return (
                             <div
@@ -170,44 +174,72 @@ export default function Leaderboard({ agentId, refreshKey }: LeaderboardProps) {
                                 )}
 
                                 {/* Rank Number */}
-                                <div className="font-bold text-lg w-8 text-purple-300">
+                                <div className="font-bold text-lg w-6 text-purple-300">
                                     #{entry.rank}
+                                </div>
+
+                                {/* Avatar & Level */}
+                                <div className="relative flex-shrink-0">
+                                    {entry.avatar_url ? (
+                                        <img
+                                            src={entry.avatar_url}
+                                            alt={entry.agent_name}
+                                            className="w-10 h-10 rounded-full object-cover border border-white/20"
+                                        />
+                                    ) : (
+                                        <div className="w-10 h-10 rounded-full bg-gradient-to-br from-purple-500 to-indigo-500 flex items-center justify-center text-white font-bold border border-white/20 text-xs">
+                                            {initials}
+                                        </div>
+                                    )}
+                                    {/* Level Badge */}
+                                    <div className="absolute -bottom-1 -right-1 bg-black/80 text-white text-[9px] px-1 py-0.5 rounded-full border border-white/20 font-mono">
+                                        Lvl {entry.level || 1}
+                                    </div>
                                 </div>
 
                                 <div className="flex-1 min-w-0">
                                     <div className="flex items-center gap-2">
-                                        <div className={`font-semibold truncate ${isCurrentUser ? 'text-white' : 'text-purple-100'}`}>
+                                        <div className={`font-semibold truncate text-sm ${isCurrentUser ? 'text-white' : 'text-purple-100'}`}>
                                             {entry.agent_name}
                                             {isCurrentUser && (
-                                                <span className="ml-2 text-xs bg-purple-600 px-2 py-0.5 rounded-full">Siz</span>
+                                                <span className="ml-2 text-[10px] bg-purple-600 px-1.5 py-0.5 rounded-full">Siz</span>
                                             )}
                                         </div>
-                                        {/* Online Indicator - Always show */}
-                                        <div className="w-2 h-2 bg-green-400 rounded-full animate-pulse"></div>
+                                        {/* Online Indicator */}
+                                        <div className="w-1.5 h-1.5 bg-green-400 rounded-full animate-pulse flex-shrink-0"></div>
                                     </div>
 
-                                    <div className="flex items-center gap-3 mt-1">
-                                        <div className="text-xs text-purple-300">
-                                            {entry.processed_count} lead
+                                    {/* Rank Title Badge */}
+                                    {entry.rank_title && (
+                                        <div className="text-[10px] text-purple-300 uppercase font-bold tracking-wider mb-0.5">
+                                            {entry.rank_title}
+                                        </div>
+                                    )}
+
+                                    <div className="flex items-center gap-3">
+                                        <div className="text-xs text-white font-medium">
+                                            {entry.processed_count} <span className="text-purple-300 font-normal">lead</span>
                                         </div>
 
-                                        {/* Remaining Count */}
+                                        {/* Remaining Count - Optional, only if space permits or critical */}
+                                        {/* 
                                         {entry.remaining_count !== undefined && entry.remaining_count > 0 && (
                                             <div className="flex items-center gap-1 text-xs">
                                                 <Target className="w-3 h-3 text-yellow-400" />
-                                                <span className="text-yellow-400 font-medium">{entry.remaining_count} kaldı</span>
+                                                <span className="text-yellow-400 font-medium">{entry.remaining_count}</span>
                                             </div>
                                         )}
-
-                                        {/* Streak - only show if > 2 */}
-                                        {entry.streak && entry.streak > 2 && (
-                                            <div className="flex items-center gap-1 text-xs">
-                                                <Flame className="w-3 h-3 text-orange-400" />
-                                                <span className="text-orange-400 font-medium">{entry.streak}x</span>
-                                            </div>
-                                        )}
+                                        */}
                                     </div>
                                 </div>
+
+                                {/* Right Side Stats (Streak) */}
+                                {entry.streak && entry.streak > 2 && (
+                                    <div className="flex flex-col items-center">
+                                        <Flame className="w-4 h-4 text-orange-400 animate-pulse" />
+                                        <span className="text-[10px] text-orange-400 font-bold">{entry.streak}x</span>
+                                    </div>
+                                )}
                             </div>
                         );
                     })}
