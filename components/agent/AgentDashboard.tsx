@@ -16,7 +16,6 @@ import AgentSettings from './AgentSettings';
 import LeadHistoryView from './LeadHistoryView';
 import MySales from './MySales';
 import { ExpandableTabs } from '@/components/ui/expandable-tabs';
-import DashboardSwitcher from '../shared/DashboardSwitcher';
 import { BGPattern } from '@/components/ui/bg-pattern';
 
 const getRankColor = (rank?: string) => {
@@ -59,8 +58,43 @@ export default function AgentDashboard({ profile: initialProfile }: AgentDashboa
     const [chatOpen, setChatOpen] = useState(false);
     const [managerId, setManagerId] = useState<string | null>(null);
     const [stats, setStats] = useState({ level: 1, rank: 'Çaylak' });
+
     const supabase = createClient();
     const router = useRouter();
+
+    // Helper to process notifications with localStorage logic
+    const processNewNotifications = (incomingNotifications: Notification[]) => {
+        if (!incomingNotifications || incomingNotifications.length === 0) return;
+
+        // Use localStorage key scoped to user to avoid conflicts
+        const storageKey = `seen_notifications_${initialProfile.id}`;
+        let seenIds: string[] = [];
+        try {
+            seenIds = JSON.parse(localStorage.getItem(storageKey) || '[]');
+        } catch (e) {
+            console.error('Error reading seen notifications', e);
+        }
+
+        const seenSet = new Set(seenIds);
+
+        // Filter out any notification ID that has EVER been seen
+        const newNotifs = incomingNotifications.filter(n => !seenSet.has(n.id));
+
+        if (newNotifs.length > 0) {
+            // New unseen notifications found!
+
+            // 1. Mark them as seen immediately in storage
+            newNotifs.forEach(n => seenSet.add(n.id));
+            localStorage.setItem(storageKey, JSON.stringify(Array.from(seenSet)));
+
+            // 2. Show them to the user
+            setNotifications(prev => {
+                // Double check against current state to prevent duplicates in very fast race conditions
+                const uniqueNew = newNotifs.filter(n => !prev.some(p => p.id === n.id));
+                return [...prev, ...uniqueNew];
+            });
+        }
+    };
 
     useEffect(() => {
         // Fetch fresh profile data including new fields
@@ -108,13 +142,8 @@ export default function AgentDashboard({ profile: initialProfile }: AgentDashboa
                 const response = await fetch('/api/agent/notifications');
                 const data = await response.json();
 
-                if (response.ok && data.notifications && data.notifications.length > 0) {
-                    setNotifications(prev => {
-                        const newNotifs = data.notifications.filter(
-                            (n: Notification) => !prev.some(p => p.id === n.id)
-                        );
-                        return [...prev, ...newNotifs];
-                    });
+                if (response.ok && data.notifications) {
+                    processNewNotifications(data.notifications);
                 }
             } catch (err) {
                 console.error('Notification check error:', err);
@@ -122,6 +151,10 @@ export default function AgentDashboard({ profile: initialProfile }: AgentDashboa
         };
 
         const interval = setInterval(checkNotifications, 15000); // Check every 15s
+
+        // Initial check on mount
+        checkNotifications();
+
         return () => clearInterval(interval);
     }, []);
 
@@ -139,19 +172,16 @@ export default function AgentDashboard({ profile: initialProfile }: AgentDashboa
         fetch('/api/agent/notifications')
             .then(res => res.json())
             .then(data => {
-                if (data.notifications && data.notifications.length > 0) {
-                    setNotifications(prev => {
-                        const newNotifs = data.notifications.filter(
-                            (n: Notification) => !prev.some(p => p.id === n.id)
-                        );
-                        return [...prev, ...newNotifs];
-                    });
+                if (data.notifications) {
+                    processNewNotifications(data.notifications);
                 }
             })
             .catch(err => console.error('Immediate notification check error:', err));
     };
 
     const removeNotification = (id: string) => {
+        // Just remove from view. It is already marked as seen in localStorage essentially "on receipt"
+        // so it won't come back on next poll.
         setNotifications(prev => prev.filter(n => n.id !== id));
     };
 
