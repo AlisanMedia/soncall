@@ -1,55 +1,18 @@
-import { NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
-
-// Generate consistent color for agent based on ID
-function getAgentColor(agentId: string): { from: string; to: string } {
-    const colors = [
-        { from: '#8B5CF6', to: '#EC4899' }, // Purple-Pink
-        { from: '#3B82F6', to: '#06B6D4' }, // Blue-Cyan
-        { from: '#10B981', to: '#34D399' }, // Green-Emerald
-        { from: '#F59E0B', to: '#F97316' }, // Amber-Orange
-        { from: '#EF4444', to: '#F43F5E' }, // Red-Rose
-        { from: '#6366F1', to: '#8B5CF6' }, // Indigo-Purple
-    ];
-
-    // Hash agent ID to get consistent color
-    const hash = agentId.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0);
-    return colors[hash % colors.length];
-}
-
-// Calculate time until appointment
-function getTimeUntil(appointmentDate: string): string {
-    const now = new Date();
-    const appointment = new Date(appointmentDate);
-    const diffMs = appointment.getTime() - now.getTime();
-    const diffMins = Math.floor(diffMs / 60000);
-    const diffHours = Math.floor(diffMs / 3600000);
-    const diffDays = Math.floor(diffMs / 86400000);
-
-    if (diffMins < 60) return `${diffMins} dakika sonra`;
-    if (diffHours < 24) return `${diffHours} saat sonra`;
-    if (diffDays === 1) return 'Yarın';
-    if (diffDays < 7) return `${diffDays} gün sonra`;
-
-    return appointment.toLocaleDateString('tr-TR', {
-        day: 'numeric',
-        month: 'short',
-        hour: '2-digit',
-        minute: '2-digit'
-    });
-}
+import { NextResponse } from 'next/server';
 
 export async function GET(request: Request) {
     try {
         const supabase = await createClient();
+        const { searchParams } = new URL(request.url);
+        const agentFilter = searchParams.get('agent');
 
-        // Auth check
+        // Verify manager authentication
         const { data: { user } } = await supabase.auth.getUser();
         if (!user) {
-            return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+            return NextResponse.json({ message: 'Unauthorized' }, { status: 401 });
         }
 
-        // Check if user is manager
         const { data: profile } = await supabase
             .from('profiles')
             .select('role')
@@ -57,100 +20,100 @@ export async function GET(request: Request) {
             .single();
 
         if (!['manager', 'admin', 'founder'].includes(profile?.role || '')) {
-            return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+            return NextResponse.json({ message: 'Forbidden' }, { status: 403 });
         }
 
-        // Get query params
-        const { searchParams } = new URL(request.url);
-        const agentFilter = searchParams.get('agent');
-        const potentialFilter = searchParams.get('potential');
-
-        // Fetch appointments
+        // Build query
         let query = supabase
             .from('leads')
             .select(`
                 id,
-                appointment_date,
                 business_name,
                 phone_number,
                 potential_level,
+                appointment_date,
+                appointment_notes,
                 assigned_to,
-                profiles!leads_assigned_to_fkey (
+                profiles!leads_assigned_to_fkey(
                     id,
                     full_name,
-                    avatar_url
+                    avatar_url,
+                    theme_color
                 )
             `)
             .not('appointment_date', 'is', null)
-            .gte('appointment_date', new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString())
-            .lte('appointment_date', new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString())
             .order('appointment_date', { ascending: true });
 
-        // Apply filters
-        if (agentFilter) {
+        // Apply filter if selected
+        if (agentFilter && agentFilter !== 'all') {
             query = query.eq('assigned_to', agentFilter);
         }
-        if (potentialFilter) {
-            query = query.eq('potential_level', potentialFilter);
-        }
 
-        const { data: appointments, error } = await query;
+        const { data: leads, error } = await query;
 
-        if (error) {
-            console.error('Appointments fetch error:', error);
-            return NextResponse.json({ error: error.message }, { status: 500 });
-        }
+        if (error) throw error;
 
-        // Get AI notes for each appointment
-        const appointmentIds = appointments?.map(a => a.id) || [];
-        const { data: notes } = await supabase
-            .from('lead_notes')
-            .select('lead_id, note, created_at')
-            .in('lead_id', appointmentIds)
-            .eq('action_taken', 'AI Analysis')
-            .order('created_at', { ascending: false });
+        // Transform data to match frontend interface
+        const appointments = leads?.map(lead => {
+            const agent = lead.profiles as any; // Due to join alias behavior
+            const appDate = new Date(lead.appointment_date);
+            const today = new Date();
+            const isToday = appDate.toDateString() === today.toDateString();
 
-        // Group notes by lead_id (get latest)
-        const notesByLead = new Map();
-        notes?.forEach(note => {
-            if (!notesByLead.has(note.lead_id)) {
-                notesByLead.set(note.lead_id, note.note);
+            // Calculate time until
+            const diffMs = appDate.getTime() - today.getTime();
+            const diffDays = Math.ceil(diffMs / (1000 * 60 * 60 * 24));
+            let timeUntil = '';
+
+            if (diffMs < 0) {
+                timeUntil = 'Geçmiş';
+            } else if (isToday) {
+                timeUntil = 'Bugün';
+            } else if (diffDays === 1) {
+                timeUntil = 'Yarın';
+            } else {
+                timeUntil = `${diffDays} gün kaldı`;
             }
-        });
 
-        // Transform data
-        const transformedAppointments = appointments?.map(apt => {
-            const agent = Array.isArray(apt.profiles) ? apt.profiles[0] : apt.profiles;
-            const agentColor = getAgentColor(agent.id);
-            const appointmentTime = new Date(apt.appointment_date);
-            const now = new Date();
-            const hoursUntil = (appointmentTime.getTime() - now.getTime()) / 3600000;
+            // Theme colors map (matching frontend)
+            const colors: Record<string, { from: string, to: string }> = {
+                purple: { from: '#9333ea', to: '#4f46e5' },
+                blue: { from: '#2563eb', to: '#0891b2' },
+                emerald: { from: '#059669', to: '#0d9488' },
+                amber: { from: '#d97706', to: '#ea580c' },
+                rose: { from: '#e11d48', to: '#db2777' },
+                default: { from: '#9333ea', to: '#4f46e5' }
+            };
+
+            const agentColor = colors[agent?.theme_color || 'purple'] || colors.default;
 
             return {
-                id: apt.id,
-                appointment_date: apt.appointment_date,
-                business_name: apt.business_name,
-                phone_number: apt.phone_number,
-                potential_level: apt.potential_level,
-                agent_id: agent.id,
-                agent_name: agent.full_name,
-                agent_avatar: agent.avatar_url,
+                id: lead.id,
+                appointment_date: lead.appointment_date,
+                business_name: lead.business_name || 'İsimsiz İşletme',
+                phone_number: lead.phone_number,
+                potential_level: lead.potential_level || 'medium',
+                agent_id: agent?.id,
+                agent_name: agent?.full_name || 'Bilinmeyen Agent',
+                agent_avatar: agent?.avatar_url,
                 agent_color: agentColor,
-                is_urgent: hoursUntil < 24 && hoursUntil > 0,
-                is_today: appointmentTime.toDateString() === now.toDateString(),
-                time_until: getTimeUntil(apt.appointment_date),
-                notes: notesByLead.get(apt.id) || null,
+                is_urgent: lead.potential_level === 'high',
+                is_today: isToday,
+                time_until: timeUntil,
+                notes: lead.appointment_notes
             };
         }) || [];
 
         return NextResponse.json({
             success: true,
-            appointments: transformedAppointments,
-            count: transformedAppointments.length,
+            appointments
         });
 
     } catch (error: any) {
-        console.error('Appointments API error:', error);
-        return NextResponse.json({ error: error.message }, { status: 500 });
+        console.error('Appointments fetch error:', error);
+        return NextResponse.json(
+            { success: false, message: error.message },
+            { status: 500 }
+        );
     }
 }

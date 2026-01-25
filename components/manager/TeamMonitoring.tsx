@@ -72,6 +72,7 @@ export default function TeamMonitoring() {
     const [agentStats, setAgentStats] = useState<AgentStat[]>([]);
     const [loading, setLoading] = useState(true);
     const [selectedActivity, setSelectedActivity] = useState<ActivityItem | null>(null);
+    const [showAllBatches, setShowAllBatches] = useState(false);
 
     useEffect(() => {
         loadData();
@@ -266,7 +267,7 @@ export default function TeamMonitoring() {
                         </div>
                     </div>
 
-                    <div className="space-y-3 overflow-y-auto pr-2 custom-scrollbar">
+                    <div className="space-y-3 overflow-y-auto pr-2 custom-scrollbar max-h-[350px]">
                         {activities.map((activity) => (
                             <div
                                 key={activity.id}
@@ -349,72 +350,83 @@ export default function TeamMonitoring() {
                         />
                     </div>
 
-                    <div className="space-y-3">
-                        {agentStats.map((agent) => (
-                            <div
-                                key={agent.agent_id}
-                                className="bg-white/5 rounded-lg p-4 border border-white/10 hover:bg-white/10 transition-colors"
-                            >
-                                <div className="flex items-center justify-between mb-4">
-                                    <div className="flex items-center gap-3">
-                                        <div className="relative">
-                                            {agent.avatar_url ? (
-                                                <img src={agent.avatar_url} alt={agent.agent_name} className="w-10 h-10 rounded-full object-cover border border-white/20" />
-                                            ) : (
-                                                <div className="w-10 h-10 rounded-full bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center text-white font-bold border border-white/20">
-                                                    {agent.agent_name.charAt(0)}
+                    <div className="space-y-3 max-h-[350px] overflow-y-auto custom-scrollbar pr-2">
+                        {agentStats
+                            .sort((a, b) => b.completed_today - a.completed_today)
+                            .map((agent) => (
+                                <div
+                                    key={agent.agent_id}
+                                    className="bg-white/5 rounded-lg p-4 border border-white/10 hover:bg-white/10 transition-colors"
+                                >
+                                    <div className="flex items-center justify-between mb-4">
+                                        <div className="flex items-center gap-3">
+                                            <div className="relative">
+                                                {agent.avatar_url ? (
+                                                    <img src={agent.avatar_url} alt={agent.agent_name} className="w-10 h-10 rounded-full object-cover border border-white/20" />
+                                                ) : (
+                                                    <div className="w-10 h-10 rounded-full bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center text-white font-bold border border-white/20">
+                                                        {agent.agent_name.charAt(0)}
+                                                    </div>
+                                                )}
+                                                <div className="absolute -bottom-1 -right-1 bg-black/80 text-white text-[9px] px-1 py-0.5 rounded-full border border-white/20 font-mono">
+                                                    Lvl {agent.level || 1}
                                                 </div>
-                                            )}
-                                            <div className="absolute -bottom-1 -right-1 bg-black/80 text-white text-[9px] px-1 py-0.5 rounded-full border border-white/20 font-mono">
-                                                Lvl {agent.level || 1}
+                                            </div>
+                                            <div>
+                                                <div className="font-semibold text-white text-sm">{agent.agent_name}</div>
+                                                <span className={`text-[10px] px-1.5 py-0.5 rounded border ${getRankColor(agent.rank)} font-medium uppercase tracking-wider`}>
+                                                    {agent.rank || 'Çaylak'}
+                                                </span>
                                             </div>
                                         </div>
-                                        <div>
-                                            <div className="font-semibold text-white text-sm">{agent.agent_name}</div>
-                                            <span className={`text-[10px] px-1.5 py-0.5 rounded border ${getRankColor(agent.rank)} font-medium uppercase tracking-wider`}>
-                                                {agent.rank || 'Çaylak'}
-                                            </span>
+                                        <span className="text-xs text-purple-300 font-mono bg-purple-500/10 px-2 py-1 rounded border border-purple-500/20">
+                                            {agent.completion_rate}%
+                                        </span>
+                                    </div>
+
+                                    <div className="grid grid-cols-2 gap-2">
+                                        <div className="bg-green-500/10 rounded p-2 border border-green-500/30">
+                                            <p className="text-xs text-green-300">Bugün</p>
+                                            <p className="text-lg font-bold text-green-200">{agent.completed_today}</p>
+                                        </div>
+                                        <div className="bg-yellow-500/10 rounded p-2 border border-yellow-500/30">
+                                            <p className="text-xs text-yellow-300">Kalan</p>
+                                            <p className="text-lg font-bold text-yellow-200">{agent.pending}</p>
                                         </div>
                                     </div>
-                                    <span className="text-xs text-purple-300 font-mono bg-purple-500/10 px-2 py-1 rounded border border-purple-500/20">
-                                        {agent.completion_rate}%
-                                    </span>
-                                </div>
 
-                                <div className="grid grid-cols-2 gap-2">
-                                    <div className="bg-green-500/10 rounded p-2 border border-green-500/30">
-                                        <p className="text-xs text-green-300">Bugün</p>
-                                        <p className="text-lg font-bold text-green-200">{agent.completed_today}</p>
-                                    </div>
-                                    <div className="bg-yellow-500/10 rounded p-2 border border-yellow-500/30">
-                                        <p className="text-xs text-yellow-300">Kalan</p>
-                                        <p className="text-lg font-bold text-yellow-200">{agent.pending}</p>
-                                    </div>
+                                    {agent.appointments > 0 && (
+                                        <div className="mt-2 bg-purple-500/10 rounded p-2 border border-purple-500/30">
+                                            <p className="text-xs text-purple-300">Randevular: {agent.appointments}</p>
+                                        </div>
+                                    )}
                                 </div>
-
-                                {agent.appointments > 0 && (
-                                    <div className="mt-2 bg-purple-500/10 rounded p-2 border border-purple-500/30">
-                                        <p className="text-xs text-purple-300">Randevular: {agent.appointments}</p>
-                                    </div>
-                                )}
-                            </div>
-                        ))}
+                            ))}
                     </div>
                 </div>
             </div>
 
             {/* Batch Progress */}
             <div className="bg-white/10 backdrop-blur-lg rounded-2xl shadow-2xl p-6 border border-white/20">
-                <div className="flex items-center gap-2 mb-6">
-                    <Package className="w-6 h-6 text-purple-400" />
-                    <h2 className="text-xl font-bold text-white">Batch İlerlemesi</h2>
-                    <SectionInfo
-                        text="Yüklediğiniz veri setlerinin (Excel/CSV) işlenme durumunu ve doluluk oranlarını takip edin."
-                    />
+                <div className="flex items-center justify-between mb-6">
+                    <div className="flex items-center gap-2">
+                        <Package className="w-6 h-6 text-purple-400" />
+                        <h2 className="text-xl font-bold text-white">Batch İlerlemesi</h2>
+                        <SectionInfo
+                            text="Yüklediğiniz veri setlerinin (Excel/CSV) işlenme durumunu ve doluluk oranlarını takip edin."
+                        />
+                    </div>
+                    <button
+                        onClick={() => setShowAllBatches(!showAllBatches)}
+                        className={`p-2 rounded-lg transition-colors ${showAllBatches ? 'bg-purple-600 text-white' : 'bg-white/5 text-purple-300 hover:text-white'}`}
+                        title={showAllBatches ? "Eskileri Gizle" : "Eskileri Göster"}
+                    >
+                        <Eye className="w-5 h-5" />
+                    </button>
                 </div>
 
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                    {batches.map((batch) => (
+                <div className={`grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 ${showAllBatches ? 'max-h-[350px] overflow-y-auto custom-scrollbar pr-2' : ''}`}>
+                    {(showAllBatches ? batches : batches.slice(0, 1)).map((batch) => (
                         <div key={batch.id} className="bg-white/5 rounded-lg p-4 border border-white/10">
                             <div className="mb-3">
                                 <p className="text-white font-medium truncate">{batch.filename}</p>

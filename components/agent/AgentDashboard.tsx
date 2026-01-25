@@ -262,19 +262,21 @@ export default function AgentDashboard({ profile: initialProfile }: AgentDashboa
                                 <div className="hidden md:block">
                                     <p className="text-xs text-purple-200">Hoş geldiniz,</p>
                                     <p className="font-semibold text-white text-sm truncate max-w-[150px]">{profile.nickname || profile.full_name}</p>
+                                    <div className={`mt-1 text-[10px] uppercase font-bold px-1.5 py-0.5 rounded border inline-block ${getRankColor(stats.rank)}`}>
+                                        {stats.rank}
+                                    </div>
                                 </div>
-                                <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-full bg-purple-500/20 border border-purple-500/50 overflow-hidden">
-                                    <img
-                                        src={profile.avatar_url || `https://api.dicebear.com/7.x/avataaars/svg?seed=${profile.email}`}
-                                        alt="Avatar"
-                                        className="w-full h-full object-cover"
-                                    />
-                                </div>
-                                <div className="absolute -bottom-2 -right-2 bg-black/80 text-white text-[10px] px-1.5 py-0.5 rounded-full border border-white/20 font-mono z-10">
-                                    Lvl {stats.level}
-                                </div>
-                                <div className={`absolute -bottom-8 right-0 text-[10px] uppercase font-bold px-1.5 py-0.5 rounded border ${getRankColor(stats.rank)}`}>
-                                    {stats.rank}
+                                <div className="relative">
+                                    <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-full bg-purple-500/20 border border-purple-500/50 overflow-hidden">
+                                        <img
+                                            src={profile.avatar_url || `https://api.dicebear.com/7.x/avataaars/svg?seed=${profile.email}`}
+                                            alt="Avatar"
+                                            className="w-full h-full object-cover"
+                                        />
+                                    </div>
+                                    <div className="absolute -bottom-1 -right-1 bg-black/80 text-white text-[10px] px-1.5 py-0.5 rounded-full border border-white/20 font-mono z-10 whitespace-nowrap">
+                                        Lvl {stats.level}
+                                    </div>
                                 </div>
                             </div>
                             <button

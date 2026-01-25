@@ -98,6 +98,44 @@ export default function AppointmentCalendar() {
             return { id, name: apt!.agent_name, color: apt!.agent_color };
         });
 
+    // Get month days (including padding)
+    const getMonthDays = () => {
+        const year = selectedDate.getFullYear();
+        const month = selectedDate.getMonth();
+
+        const firstDay = new Date(year, month, 1);
+        const lastDay = new Date(year, month + 1, 0);
+
+        // Start date (Monday of the first week)
+        const start = new Date(firstDay);
+        // Adjust invalid day 0 (Sunday) to 7 for calculation if needed, but standard logic:
+        // Day: 0(Sun), 1(Mon)...
+        // We want Mon(1) as start.
+        // If start is Su(0), offset -6. If Mon(1), offset 0.
+        // Formula: (day + 6) % 7 is 0 for Mon, 6 for Sun.
+        // We want to subtract that count from date.
+
+        const day = start.getDay(); // 0 is Sunday
+        const diff = day === 0 ? 6 : day - 1; // 1(Mon)->0, 0(Sun)->6
+        start.setDate(start.getDate() - diff);
+
+        // We need 5 or 6 weeks (35 or 42 days). Let's do fixed 35 or dynamic.
+        // Easier to just fill until we reach end of calendar block.
+        // Let's generate 35 days (5 weeks) which handles most months,
+        // or 42 (6 weeks) to be safe.
+        // Previous render code uses 35 for loading state, let's use 35-42.
+
+        const days = [];
+        const current = new Date(start);
+
+        // 42 days to ensure full coverage
+        for (let i = 0; i < 42; i++) {
+            days.push(new Date(current));
+            current.setDate(current.getDate() + 1);
+        }
+        return days;
+    };
+
     // Get week days
     const getWeekDays = () => {
         const start = new Date(selectedDate);
@@ -141,8 +179,8 @@ export default function AppointmentCalendar() {
                                 key={mode}
                                 onClick={() => setViewMode(mode)}
                                 className={`px-4 py-2 rounded-md text-sm font-medium transition-colors relative ${viewMode === mode
-                                        ? 'text-white'
-                                        : 'text-purple-300 hover:text-white'
+                                    ? 'text-white'
+                                    : 'text-purple-300 hover:text-white'
                                     }`}
                                 whileHover={{ scale: 1.05 }}
                                 whileTap={{ scale: 0.95 }}
@@ -230,58 +268,66 @@ export default function AppointmentCalendar() {
                 </select>
             </div>
 
-            {/* Week View */}
+            {/* Calendar Grid */}
             {loading ? (
                 <div className="grid grid-cols-7 gap-3">
-                    {Array.from({ length: 7 }).map((_, i) => (
-                        <div key={i} className="bg-white/5 rounded-xl p-4 border border-white/10 h-64 animate-pulse" />
+                    {Array.from({ length: viewMode === 'week' ? 7 : 35 }).map((_, i) => (
+                        <div key={i} className="bg-white/5 rounded-xl p-4 border border-white/10 h-32 animate-pulse" />
                     ))}
                 </div>
             ) : (
-                <div className="grid grid-cols-1 md:grid-cols-7 gap-3">
-                    {weekDays.map((day, index) => {
+                <div className={`grid gap-3 ${viewMode === 'week' ? 'grid-cols-1 md:grid-cols-7' : 'grid-cols-7'}`}>
+                    {(viewMode === 'week' ? weekDays : getMonthDays()).map((day, index) => {
                         const dateStr = day.toDateString();
                         const dayAppointments = appointmentsByDate[dateStr] || [];
                         const isToday = dateStr === today;
+                        const isSelectedMonth = day.getMonth() === selectedDate.getMonth();
 
                         return (
                             <motion.div
-                                key={dateStr}
-                                initial={{ opacity: 0, y: 20 }}
-                                animate={{ opacity: 1, y: 0 }}
-                                transition={{ delay: index * 0.05 }}
-                                className={`bg-white/5 rounded-xl p-4 border ${isToday
-                                        ? 'border-purple-500 ring-2 ring-purple-500/50'
-                                        : 'border-white/10'
-                                    } min-h-[300px]`}
+                                key={dateStr + index}
+                                initial={{ opacity: 0, scale: 0.95 }}
+                                animate={{ opacity: 1, scale: 1 }}
+                                transition={{ delay: index * 0.01 }}
+                                className={`
+                                    bg-white/5 rounded-xl border relative group overflow-hidden
+                                    ${viewMode === 'week' ? 'min-h-[300px] p-4' : 'min-h-[120px] p-2'}
+                                    ${isToday ? 'border-purple-500 ring-2 ring-purple-500/50' : 'border-white/10'}
+                                    ${!isSelectedMonth && viewMode === 'month' ? 'opacity-30' : 'opacity-100'}
+                                `}
                             >
                                 {/* Day Header */}
-                                <div className="mb-3">
-                                    <div className={`text-sm font-medium ${isToday ? 'text-purple-300' : 'text-purple-200'}`}>
-                                        {day.toLocaleDateString('tr-TR', { weekday: 'short' })}
-                                    </div>
-                                    <div className={`text-2xl font-bold ${isToday ? 'text-white' : 'text-purple-100'}`}>
+                                <div className={`flex items-center justify-between mb-2 ${viewMode === 'week' ? '' : 'text-xs'}`}>
+                                    <span className={`font-medium ${isToday ? 'text-purple-300' : 'text-purple-200'}`}>
+                                        {viewMode === 'week' ? day.toLocaleDateString('tr-TR', { weekday: 'short' }) : ''}
+                                    </span>
+                                    <span className={`font-bold ${isToday ? 'text-white' : 'text-purple-100'} ${viewMode === 'week' ? 'text-2xl' : 'text-sm'}`}>
                                         {day.getDate()}
-                                    </div>
-                                    {dayAppointments.length > 0 && (
-                                        <div className="mt-1 text-xs text-purple-400">
-                                            {dayAppointments.length} randevu
-                                        </div>
-                                    )}
+                                    </span>
                                 </div>
 
-                                {/* Appointments */}
-                                <div className="space-y-2">
-                                    <AnimatePresence>
-                                        {dayAppointments.map((apt, aptIndex) => (
+                                {/* Appointments List */}
+                                <div className="space-y-1.5 overflow-y-auto max-h-[220px] custom-scrollbar">
+                                    {dayAppointments.map((apt, aptIndex) => (
+                                        viewMode === 'week' ? (
                                             <AppointmentCard
                                                 key={apt.id}
                                                 appointment={apt}
                                                 index={aptIndex}
                                                 onClick={() => setSelectedAppointment(apt)}
                                             />
-                                        ))}
-                                    </AnimatePresence>
+                                        ) : (
+                                            // Month View Compact Dot/Item
+                                            <div
+                                                key={apt.id}
+                                                onClick={() => setSelectedAppointment(apt)}
+                                                className="cursor-pointer text-[10px] p-1.5 rounded bg-white/10 hover:bg-white/20 border border-white/5 truncate flex items-center gap-1 transition-colors"
+                                                style={{ borderLeftColor: apt.agent_color.from, borderLeftWidth: 3 }}
+                                            >
+                                                <span className="truncate flex-1">{apt.business_name}</span>
+                                            </div>
+                                        )
+                                    ))}
                                 </div>
                             </motion.div>
                         );

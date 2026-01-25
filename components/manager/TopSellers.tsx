@@ -149,12 +149,7 @@ export default function TopSellers() {
     }
 
     if (data.length === 0) {
-        return (
-            <div className="text-center py-12 bg-white/5 rounded-xl border border-white/10">
-                <Trophy className="w-12 h-12 text-gray-400 mx-auto mb-3" />
-                <p className="text-gray-400">Henüz satış verisi bulunmuyor.</p>
-            </div>
-        );
+        return null; // Hide the entire section if no sales data
     }
 
     return (

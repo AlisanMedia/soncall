@@ -31,6 +31,7 @@ export default function AgentSettings({ userProfile }: { userProfile: any }) {
     const [loading, setLoading] = useState(false);
     const [file, setFile] = useState<File | null>(null);
     const [previewUrl, setPreviewUrl] = useState<string | null>(userProfile?.avatar_url || null);
+    const [stats, setStats] = useState({ totalCalls: 0, successRate: 0 });
 
     // Password change state
     const [showPasswordSection, setShowPasswordSection] = useState(false);
@@ -51,7 +52,46 @@ export default function AgentSettings({ userProfile }: { userProfile: any }) {
         // Sync local state if prop changes
         setProfile(userProfile);
         setPreviewUrl(userProfile?.avatar_url || null);
+        fetchStats();
     }, [userProfile]);
+
+    const fetchStats = async () => {
+        try {
+            // 1. Total Calls (Completed Activities)
+            const { count: callsCount } = await supabase
+                .from('lead_activity_log')
+                .select('*', { count: 'exact', head: true })
+                .eq('agent_id', userProfile.id)
+                .eq('action', 'completed');
+
+            // 2. Success (Appointments)
+            // We count leads that resulted in appointment
+            const { count: appointmentCount } = await supabase
+                .from('leads')
+                .select('*', { count: 'exact', head: true })
+                .eq('assigned_to', userProfile.id)
+                .eq('status', 'appointment');
+
+            // 3. Sales
+            const { count: salesCount } = await supabase
+                .from('sales')
+                .select('*', { count: 'exact', head: true })
+                .eq('agent_id', userProfile.id)
+                .eq('status', 'approved');
+
+            const totalSuccess = (appointmentCount || 0) + (salesCount || 0);
+            const total = callsCount || 0;
+            const rate = total > 0 ? Math.round((totalSuccess / total) * 100) : 0;
+
+            setStats({
+                totalCalls: total,
+                successRate: rate
+            });
+
+        } catch (error) {
+            console.error('Error fetching stats:', error);
+        }
+    };
 
     const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         if (e.target.files && e.target.files[0]) {
@@ -498,11 +538,11 @@ export default function AgentSettings({ userProfile }: { userProfile: any }) {
                             <div className="mt-8 grid grid-cols-2 gap-2 border-t border-white/10 pt-4">
                                 <div className="text-center p-2 bg-white/5 rounded-lg">
                                     <p className="text-xs text-gray-500 uppercase">Toplam Çağrı</p>
-                                    <p className="text-lg font-bold text-white">0</p>
+                                    <p className="text-lg font-bold text-white">{stats.totalCalls}</p>
                                 </div>
                                 <div className="text-center p-2 bg-white/5 rounded-lg">
                                     <p className="text-xs text-gray-500 uppercase">Başarı</p>
-                                    <p className={`text-lg font-bold ${currentTheme.bg.replace('bg-', 'text-')}-400`}>%0</p>
+                                    <p className={`text-lg font-bold ${currentTheme.bg.replace('bg-', 'text-')}-400`}>%{stats.successRate}</p>
                                 </div>
                             </div>
                         </div>
