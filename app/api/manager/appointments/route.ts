@@ -32,7 +32,6 @@ export async function GET(request: Request) {
                 phone_number,
                 potential_level,
                 appointment_date,
-                appointment_notes,
                 assigned_to,
                 processed_at,
                 profiles!leads_assigned_to_fkey(
@@ -68,7 +67,7 @@ export async function GET(request: Request) {
 
             // Find latest note
             const leadNote = notes?.find(n => n.lead_id === lead.id);
-            const noteText = leadNote?.note || lead.appointment_notes || '';
+            const noteText = leadNote?.note || '';
 
             // Helper to parse Turkish date from note
             const parseTurkishDate = (text: string) => {
