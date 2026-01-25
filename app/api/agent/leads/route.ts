@@ -29,7 +29,34 @@ export async function GET(request: NextRequest) {
         const dateTo = searchParams.get('date_to');
         const search = searchParams.get('search');
 
-        // 3. Build Query
+        // 3. Get Relevant Lead IDs
+        // A. Leads currently assigned to the agent
+        const { data: assignedLeads } = await supabase
+            .from('leads')
+            .select('id')
+            .eq('assigned_to', user.id);
+
+        const assignedIds = assignedLeads?.map(l => l.id) || [];
+
+        // B. Leads worked on by the agent (from history)
+        const { data: workedLeads } = await supabase
+            .from('lead_activity_log')
+            .select('lead_id')
+            .eq('agent_id', user.id);
+
+        const workedIds = workedLeads?.map(l => l.lead_id) || [];
+
+        // Combine and deduplicate
+        const allRelevantIds = Array.from(new Set([...assignedIds, ...workedIds]));
+
+        if (allRelevantIds.length === 0) {
+            return NextResponse.json({
+                leads: [],
+                total: 0
+            });
+        }
+
+        // 4. Build Main Query
         let query = supabase
             .from('leads')
             .select(`
@@ -48,7 +75,7 @@ export async function GET(request: NextRequest) {
                     created_at
                 )
             `)
-            .eq('assigned_to', user.id)
+            .in('id', allRelevantIds)
             .order('processed_at', { ascending: false, nullsFirst: false })
             .order('created_at', { ascending: false });
 
@@ -80,21 +107,33 @@ export async function GET(request: NextRequest) {
 
         if (error) throw error;
 
-        // 4. Count Total
+        // 5. Count Total
+        // We can't use simple count query easily with 'in' if the list is huge, 
+        // but for <1000 items it's fine. Or we just return lead.length for now since client doesn't use pagination count yet?
+        // Let's do a simple count on the same query logic (minus select fields)
+        const { count } = await supabase
+            .from('leads')
+            .select('id', { count: 'exact', head: true })
+            .in('id', allRelevantIds);
+        // Note: Applying filters to count query would be ideal but skipped for brevity unless critical
+        // Given the UI doesn't seem to rely heavily on 'total' for pagination, simple count or leads.length might suffice.
+        // But let's try to be consistent with filtered count if possible.
+
+        // Accurate count with filters:
         let countQuery = supabase
             .from('leads')
             .select('id', { count: 'exact', head: true })
-            .eq('assigned_to', user.id);
+            .in('id', allRelevantIds);
 
-        if (status && status !== 'all') {
-            countQuery = countQuery.eq('status', status);
-        }
+        if (status && status !== 'all') countQuery = countQuery.eq('status', status);
+        if (potentialLevel && potentialLevel !== 'all') countQuery = countQuery.eq('potential_level', potentialLevel);
+        if (search) countQuery = countQuery.or(`business_name.ilike.%${search}%,phone_number.ilike.%${search}%`);
 
-        const { count } = await countQuery;
+        const { count: filteredCount } = await countQuery;
 
         return NextResponse.json({
             leads: leads || [],
-            total: count || 0
+            total: filteredCount || 0
         });
 
     } catch (error: any) {
