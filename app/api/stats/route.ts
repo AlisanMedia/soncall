@@ -40,7 +40,7 @@ export async function GET(request: NextRequest) {
         const { data: allAgents, error: agentsError } = await supabase
             .from('profiles')
             .select('id, full_name, avatar_url')
-            .eq('role', 'agent');
+            .in('role', ['agent', 'manager', 'admin', 'founder']);
 
         if (agentsError) throw agentsError;
 

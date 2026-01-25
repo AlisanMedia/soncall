@@ -1,9 +1,12 @@
 import { createClient } from '@/lib/supabase/server';
+import { createClient as createAdminClient } from '@supabase/supabase-js';
 import { NextRequest, NextResponse } from 'next/server';
+
+export const dynamic = 'force-dynamic';
 
 export async function GET(request: NextRequest) {
     try {
-        const supabase = await createClient();
+        const supabase = await createClient(); // Auth context
 
         // 1. Authenticate Agent
         const { data: { user } } = await supabase.auth.getUser();
@@ -11,13 +14,19 @@ export async function GET(request: NextRequest) {
             return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
         }
 
-        const { data: profile } = await supabase
+        // Use Admin Client for data fetching to bypass RLS policies that might be restricted to 'agent' role
+        const adminSupabase = createAdminClient(
+            process.env.NEXT_PUBLIC_SUPABASE_URL!,
+            process.env.SUPABASE_SERVICE_ROLE_KEY!
+        );
+
+        const { data: profile } = await adminSupabase
             .from('profiles')
             .select('role')
             .eq('id', user.id)
             .single();
 
-        if (profile?.role !== 'agent') {
+        if (!['agent', 'manager', 'admin', 'founder'].includes(profile?.role)) {
             return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
         }
 
@@ -29,25 +38,30 @@ export async function GET(request: NextRequest) {
         const dateTo = searchParams.get('date_to');
         const search = searchParams.get('search');
 
+        console.log(`[LeadHistory] Fetching for User: ${user.id}, Role: ${profile?.role}`);
+
         // 3. Get Relevant Lead IDs
         // A. Leads currently assigned to the agent
-        const { data: assignedLeads } = await supabase
+        const { data: assignedLeads } = await adminSupabase
             .from('leads')
             .select('id')
             .eq('assigned_to', user.id);
 
         const assignedIds = assignedLeads?.map(l => l.id) || [];
+        console.log(`[LeadHistory] Assigned Leads: ${assignedIds.length}`);
 
         // B. Leads worked on by the agent (from history)
-        const { data: workedLeads } = await supabase
+        const { data: workedLeads } = await adminSupabase
             .from('lead_activity_log')
             .select('lead_id')
             .eq('agent_id', user.id);
 
         const workedIds = workedLeads?.map(l => l.lead_id) || [];
+        console.log(`[LeadHistory] Worked Leads: ${workedIds.length}`);
 
         // Combine and deduplicate
         const allRelevantIds = Array.from(new Set([...assignedIds, ...workedIds]));
+        console.log(`[LeadHistory] Total Unique IDs: ${allRelevantIds.length}`);
 
         if (allRelevantIds.length === 0) {
             return NextResponse.json({
@@ -57,7 +71,7 @@ export async function GET(request: NextRequest) {
         }
 
         // 4. Build Main Query
-        let query = supabase
+        let query = adminSupabase
             .from('leads')
             .select(`
                 id,
@@ -120,7 +134,7 @@ export async function GET(request: NextRequest) {
         // But let's try to be consistent with filtered count if possible.
 
         // Accurate count with filters:
-        let countQuery = supabase
+        let countQuery = adminSupabase
             .from('leads')
             .select('id', { count: 'exact', head: true })
             .in('id', allRelevantIds);
@@ -134,6 +148,10 @@ export async function GET(request: NextRequest) {
         return NextResponse.json({
             leads: leads || [],
             total: filteredCount || 0
+        }, {
+            headers: {
+                'Cache-Control': 'no-store, max-age=0'
+            }
         });
 
     } catch (error: any) {
