@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { Activity, Loader2, Phone, MessageCircle, Calendar, CheckCircle2, Package, TrendingUp, Eye } from 'lucide-react';
+import { motion } from 'framer-motion';
 import { playActivityNotification } from '@/lib/sounds';
 import { SectionInfo } from '@/components/ui/section-info';
 import ActivityDetailModal from './ActivityDetailModal';
@@ -205,7 +206,14 @@ export default function TeamMonitoring() {
                                 </div>
                                 <p className="text-3xl font-bold text-white mt-1">{overview.total_leads}</p>
                             </div>
-                            <Package className="w-10 h-10 text-purple-400" />
+                            <motion.div
+                                key={overview.total_leads}
+                                initial={{ scale: 1 }}
+                                animate={{ scale: [1, 1.4, 1], rotate: [0, 10, -10, 0] }}
+                                transition={{ duration: 0.5, type: 'spring' }}
+                            >
+                                <Package className="w-10 h-10 text-purple-400" />
+                            </motion.div>
                         </div>
                     </div>
 
@@ -218,7 +226,17 @@ export default function TeamMonitoring() {
                                 </div>
                                 <p className="text-3xl font-bold text-yellow-300 mt-1">{overview.pending_leads}</p>
                             </div>
-                            <Activity className="w-10 h-10 text-yellow-400" />
+                            <motion.div
+                                key={overview.pending_leads}
+                                initial={{ scale: 1 }}
+                                animate={{
+                                    scale: [1, 1.2, 1],
+                                    filter: ['brightness(1)', 'brightness(1.5)', 'brightness(1)']
+                                }}
+                                transition={{ duration: 0.8, ease: "easeInOut" }}
+                            >
+                                <Activity className="w-10 h-10 text-yellow-400" />
+                            </motion.div>
                         </div>
                     </div>
 
@@ -231,7 +249,14 @@ export default function TeamMonitoring() {
                                 </div>
                                 <p className="text-3xl font-bold text-green-300 mt-1">{overview.completed_today}</p>
                             </div>
-                            <CheckCircle2 className="w-10 h-10 text-green-400" />
+                            <motion.div
+                                key={overview.completed_today}
+                                initial={{ scale: 1 }}
+                                animate={{ scale: [1, 1.3, 1] }}
+                                transition={{ duration: 0.4 }}
+                            >
+                                <CheckCircle2 className="w-10 h-10 text-green-400" />
+                            </motion.div>
                         </div>
                     </div>
 
@@ -244,7 +269,14 @@ export default function TeamMonitoring() {
                                 </div>
                                 <p className="text-3xl font-bold text-purple-300 mt-1">{overview.appointments_today}</p>
                             </div>
-                            <Calendar className="w-10 h-10 text-purple-400" />
+                            <motion.div
+                                key={overview.appointments_today}
+                                initial={{ y: 0 }}
+                                animate={{ y: [0, -10, 0] }}
+                                transition={{ duration: 0.5, type: 'spring', bounce: 0.5 }}
+                            >
+                                <Calendar className="w-10 h-10 text-purple-400" />
+                            </motion.div>
                         </div>
                     </div>
                 </div>

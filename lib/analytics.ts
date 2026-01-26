@@ -175,6 +175,13 @@ export async function fetchManagerAnalytics(supabase: SupabaseClient) {
                 .eq('assigned_to', agent.id)
                 .eq('status', 'appointment');
 
+            // Total Sales (Approved)
+            const { count: sales } = await supabase
+                .from('sales')
+                .select('*', { count: 'exact', head: true })
+                .eq('agent_id', agent.id)
+                .eq('status', 'approved');
+
             // Total processed (Lifetime) - Used for XP/Level
             const { count: totalProcessed } = await supabase
                 .from('lead_activity_log')
@@ -187,16 +194,26 @@ export async function fetchManagerAnalytics(supabase: SupabaseClient) {
                 ? Math.round(((todayCount || 0) - yesterdayCount) / yesterdayCount * 100)
                 : 0;
 
-            // Calculate Dynamic Level & Rank
-            // Level = 1 + (Total Processed / 50)
+            // Calculate Metrics
             const processedCount = totalProcessed || 0;
-            const level = Math.floor(processedCount / 50) + 1;
+            const appointmentCount = appointments || 0;
+            const salesCount = sales || 0;
+
+            // Calculate Weighted Score
+            // Sale = 100 pts
+            // Appointment = 20 pts
+            // Processed = 1 pt
+            const score = (salesCount * 100) + (appointmentCount * 20) + (processedCount * 1);
+
+            // Calculate Dynamic Level & Rank based on Score
+            // Level = 1 + (Score / 100)
+            const level = Math.floor(score / 100) + 1;
 
             let rank = 'Çaylak'; // Junior
-            if (level >= 5) rank = 'Uzman'; // Expert
-            if (level >= 10) rank = 'Usta'; // Master
-            if (level >= 20) rank = 'Efsane'; // Legend
-            if (level >= 50) rank = 'Godlike';
+            if (level >= 10) rank = 'Uzman'; // Expert
+            if (level >= 25) rank = 'Usta'; // Master
+            if (level >= 50) rank = 'Efsane'; // Legend
+            if (level >= 100) rank = 'Godlike';
 
             return {
                 agent_id: agent.id,
@@ -204,18 +221,20 @@ export async function fetchManagerAnalytics(supabase: SupabaseClient) {
                 avatar_url: agent.avatar_url,
                 level,
                 rank,
+                score, // Include score for sorting and display
                 today_count: todayCount || 0,
                 yesterday_count: yesterdayCount || 0,
                 growth_percentage: growth,
-                total_appointments: appointments || 0,
+                total_appointments: appointmentCount,
+                total_sales: salesCount,
                 total_processed: processedCount,
-                conversion_rate: processedCount ? Math.round((appointments || 0) / processedCount * 100) : 0,
+                conversion_rate: processedCount ? Math.round((appointmentCount) / processedCount * 100) : 0,
             };
         })
     );
 
-    // Sort by today's performance
-    agentPerformance.sort((a, b) => (b.today_count || 0) - (a.today_count || 0));
+    // Sort by Weighted Score (Real Performance)
+    agentPerformance.sort((a, b) => b.score - a.score);
 
     return {
         hourly: hourlyData,

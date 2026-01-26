@@ -11,10 +11,12 @@ interface AgentPerformance {
     avatar_url?: string;
     level: number;
     rank: string;
+    score: number;
     today_count: number;
     yesterday_count: number;
     growth_percentage: number;
     total_appointments: number;
+    total_sales: number;
     total_processed: number;
     conversion_rate: number;
 }
@@ -22,7 +24,7 @@ interface AgentPerformance {
 export default function AgentRankings() {
     const [agents, setAgents] = useState<AgentPerformance[]>([]);
     const [loading, setLoading] = useState(true);
-    const [sortBy, setSortBy] = useState<'today' | 'total' | 'conversion'>('today');
+    const [sortBy, setSortBy] = useState<'score' | 'sales' | 'today' | 'conversion'>('score');
     const [compareMode, setCompareMode] = useState(false);
     const [selectedAgents, setSelectedAgents] = useState<string[]>([]);
 
@@ -49,10 +51,12 @@ export default function AgentRankings() {
 
     const sortedAgents = [...agents].sort((a, b) => {
         switch (sortBy) {
+            case 'score':
+                return b.score - a.score;
+            case 'sales':
+                return b.total_sales - a.total_sales;
             case 'today':
                 return b.today_count - a.today_count;
-            case 'total':
-                return b.total_processed - a.total_processed;
             case 'conversion':
                 return b.conversion_rate - a.conversion_rate;
             default:
@@ -118,14 +122,14 @@ export default function AgentRankings() {
                     <div>
                         <h2 className="text-lg font-bold text-white flex items-center gap-2">
                             Liderlik Tablosu
-                            <SectionInfo text="Takım üyelerinin performans sıralaması. Sıralama kriterini butonlarla değiştirebilirsiniz." />
+                            <SectionInfo text="Sıralama Puanı: Satış (100p) + Randevu (20p) + İşlem (1p)" />
                         </h2>
-                        <p className="text-xs text-purple-300">Anlık performans takibi</p>
+                        <p className="text-xs text-purple-300">Anlık performans ve skor takibi</p>
                     </div>
                 </div>
 
                 <div className="flex items-center gap-2 bg-black/20 p-1 rounded-xl overflow-x-auto">
-                    {(['today', 'total', 'conversion'] as const).map((mode) => (
+                    {(['score', 'sales', 'today', 'conversion'] as const).map((mode) => (
                         <button
                             key={mode}
                             onClick={() => setSortBy(mode)}
@@ -134,7 +138,7 @@ export default function AgentRankings() {
                                 : 'text-purple-200 hover:text-white hover:bg-white/5'
                                 }`}
                         >
-                            {mode === 'today' ? 'Bugün' : mode === 'total' ? 'Toplam' : 'Conversion'}
+                            {mode === 'score' ? 'Skor' : mode === 'sales' ? 'Satış' : mode === 'today' ? 'Bugün' : 'Conv.'}
                         </button>
                     ))}
                     <div className="w-px h-6 bg-white/10 mx-1" />
@@ -182,8 +186,8 @@ export default function AgentRankings() {
                                 {/* Background glow for top 3 */}
                                 {index < 3 && (
                                     <div className={`absolute inset-0 rounded-xl opacity-0 group-hover:opacity-10 transition-opacity bg-gradient-to-r ${index === 0 ? 'from-yellow-500 to-transparent' :
-                                            index === 1 ? 'from-gray-400 to-transparent' :
-                                                'from-amber-600 to-transparent'
+                                        index === 1 ? 'from-gray-400 to-transparent' :
+                                            'from-amber-600 to-transparent'
                                         }`} />
                                 )}
 
@@ -217,14 +221,17 @@ export default function AgentRankings() {
                                             <h3 className="font-semibold text-white text-sm truncate">{agent.agent_name}</h3>
                                             {index === 0 && <Star className="w-3 h-3 text-yellow-500 fill-yellow-500 animate-pulse" />}
                                         </div>
-                                        <p className="text-xs text-stone-400 truncate">{agent.rank}</p>
+                                        <div className="flex items-center gap-2 text-xs">
+                                            <span className="text-stone-400">{agent.rank}</span>
+                                            <span className="text-purple-400 font-bold bg-purple-500/10 px-1.5 rounded">{agent.score} Puan</span>
+                                        </div>
                                     </div>
 
                                     {/* Stats Grid */}
                                     <div className="flex items-center gap-6 sm:gap-8 text-right">
-                                        <div className="hidden sm:block">
-                                            <p className="text-[10px] text-gray-500 uppercase tracking-wider">Bugün</p>
-                                            <p className="text-sm font-bold text-white">{agent.today_count}</p>
+                                        <div>
+                                            <p className="text-[10px] text-gray-500 uppercase tracking-wider">Satış</p>
+                                            <p className="text-sm font-bold text-green-400">${agent.total_sales > 0 ? agent.total_sales : '0'}</p>
                                         </div>
                                         <div className="hidden sm:block">
                                             <p className="text-[10px] text-gray-500 uppercase tracking-wider">Randevu</p>

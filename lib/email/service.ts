@@ -40,7 +40,7 @@ export async function sendEmail({ to, subject, html, attachments }: SendReportPa
     }
 
     try {
-        const data = await resend.emails.send({
+        const { data, error } = await resend.emails.send({
             // ÖNEMLİ: Domain doğrulaması yapılmadıysa SADECE 'onboarding@resend.dev' adresinden gönderim yapılabilir.
             // Domain eklerseniz burayı 'info@artificagent.com' yapabilirsiniz.
             from: process.env.REPORT_FROM_EMAIL || 'onboarding@resend.dev',
@@ -51,9 +51,14 @@ export async function sendEmail({ to, subject, html, attachments }: SendReportPa
             attachments: attachments,
         });
 
+        if (error) {
+            console.error('Email send failed:', error);
+            return { success: false, error };
+        }
+
         return { success: true, data };
     } catch (error) {
-        console.error('Email send failed:', error);
+        console.error('Email send exception:', error);
         return { success: false, error };
     }
 }
