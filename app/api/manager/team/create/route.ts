@@ -20,7 +20,7 @@ export async function POST(req: Request) {
         }
 
         const body = await req.json();
-        const { email, password, fullName, tcNumber, birthDate, city, district, role, commissionRate } = body;
+        const { email, password, fullName, tcNumber, birthDate, city, district, phoneNumber, role, commissionRate } = body;
 
         // 2. Create user in Supabase Auth
         // Note: To create a NEW user programmatically, we usually need the SERVICE_ROLE_KEY
@@ -110,6 +110,7 @@ export async function POST(req: Request) {
                 birth_date: birthDate,
                 city,
                 district,
+                phone_number: phoneNumber,
                 commission_rate: commissionRate
             });
 

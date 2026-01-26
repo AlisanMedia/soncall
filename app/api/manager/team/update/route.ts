@@ -15,7 +15,7 @@ export async function PUT(req: Request) {
         }
 
         const body = await req.json();
-        const { id, fullName, tcNumber, birthDate, city, district, role, commissionRate } = body;
+        const { id, fullName, tcNumber, birthDate, city, district, phoneNumber, role, commissionRate } = body;
 
         const { error } = await supabase
             .from('profiles')
@@ -25,6 +25,7 @@ export async function PUT(req: Request) {
                 birth_date: birthDate,
                 city,
                 district,
+                phone_number: phoneNumber,
                 commission_rate: commissionRate,
                 role
             })

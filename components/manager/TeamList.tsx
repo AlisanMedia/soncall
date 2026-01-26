@@ -78,6 +78,7 @@ export default function TeamList() {
                             <tr>
                                 <th className="px-6 py-4">Ad Soyad</th>
                                 <th className="px-6 py-4">T.C. Kimlik No</th>
+                                <th className="px-6 py-4">Telefon</th>
                                 <th className="px-6 py-4">Doğum Tarihi</th>
                                 <th className="px-6 py-4">İl</th>
                                 <th className="px-6 py-4">İlçe</th>
@@ -88,9 +89,9 @@ export default function TeamList() {
                         </thead>
                         <tbody className="divide-y divide-white/5">
                             {loading ? (
-                                <tr><td colSpan={8} className="p-8 text-center text-gray-400">Yükleniyor...</td></tr>
+                                <tr><td colSpan={9} className="p-8 text-center text-gray-400">Yükleniyor...</td></tr>
                             ) : filteredTeam.length === 0 ? (
-                                <tr><td colSpan={8} className="p-8 text-center text-gray-400">Kayıt bulunamadı.</td></tr>
+                                <tr><td colSpan={9} className="p-8 text-center text-gray-400">Kayıt bulunamadı.</td></tr>
                             ) : (
                                 filteredTeam.map(member => (
                                     <tr key={member.id} className="hover:bg-white/5 transition-colors group">
@@ -110,6 +111,7 @@ export default function TeamList() {
                                             </div>
                                         </td>
                                         <td className="px-6 py-4 text-gray-300 font-mono text-sm">{member.tc_number || '-'}</td>
+                                        <td className="px-6 py-4 text-gray-300 font-mono text-sm">{member.phone_number || '-'}</td>
                                         <td className="px-6 py-4 text-gray-300 text-sm">{formatDate(member.birth_date)}</td>
                                         <td className="px-6 py-4 text-gray-300 text-sm">{member.city || '-'}</td>
                                         <td className="px-6 py-4 text-gray-300 text-sm">{member.district || '-'}</td>

@@ -22,6 +22,7 @@ export default function AddMemberModal({ isOpen, onClose, onSuccess, memberToEdi
         birthDate: '',
         city: '',
         district: '',
+        phoneNumber: '',
         role: 'agent',
         commissionRate: '0'
     });
@@ -38,6 +39,7 @@ export default function AddMemberModal({ isOpen, onClose, onSuccess, memberToEdi
                     birthDate: memberToEdit.birth_date ? new Date(memberToEdit.birth_date).toISOString().split('T')[0] : '',
                     city: memberToEdit.city || '',
                     district: memberToEdit.district || '',
+                    phoneNumber: memberToEdit.phone_number || '',
                     role: memberToEdit.role || 'agent',
                     commissionRate: memberToEdit.commission_rate?.toString() || '0'
                 });
@@ -50,6 +52,7 @@ export default function AddMemberModal({ isOpen, onClose, onSuccess, memberToEdi
                     birthDate: '',
                     city: '',
                     district: '',
+                    phoneNumber: '',
                     role: 'agent',
                     commissionRate: '0'
                 });
@@ -184,6 +187,17 @@ export default function AddMemberModal({ isOpen, onClose, onSuccess, memberToEdi
                                     className="w-full bg-black/40 border border-white/10 rounded-lg p-3 text-white focus:border-purple-500 outline-none"
                                     value={formData.district}
                                     onChange={e => setFormData({ ...formData, district: e.target.value })}
+                                />
+                            </div>
+                            <div>
+                                <label className="block text-xs text-gray-400 mb-1">Telefon Numarası</label>
+                                <input
+                                    required
+                                    type="tel"
+                                    placeholder="05xxxxxxxxx"
+                                    className="w-full bg-black/40 border border-white/10 rounded-lg p-3 text-white focus:border-purple-500 outline-none"
+                                    value={formData.phoneNumber}
+                                    onChange={e => setFormData({ ...formData, phoneNumber: e.target.value })}
                                 />
                             </div>
                         </div>
