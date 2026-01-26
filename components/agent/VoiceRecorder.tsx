@@ -34,65 +34,116 @@ export default function VoiceRecorder({ leadId, onRecordingComplete, isProcessin
     const startRecording = async () => {
         try {
             if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
-                toast.error('Tarayıcınız ses kaydını desteklemiyor.');
+                toast.error('Tarayıcınız ses kaydını desteklemiyor. Chrome veya Firefox kullanın.');
                 return;
             }
 
-            const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+            console.log('[VoiceRecorder] Starting recording...');
+            console.log('[VoiceRecorder] Browser:', navigator.userAgent);
 
-            // More comprehensive mime type check
+            const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+            console.log('[VoiceRecorder] Microphone access granted');
+
+            // Desktop-first MIME type ordering (Safari/Edge compatibility)
             const mimeTypes = [
-                'audio/webm;codecs=opus',
-                'audio/webm',
-                'audio/mp4',
-                'audio/ogg;codecs=opus',
-                'audio/ogg',
-                'audio/wav'
+                'audio/webm;codecs=opus',     // Chrome/Firefox preferred
+                'audio/webm',                  // Chrome/Firefox fallback
+                'audio/mp4',                   // Safari/Edge
+                'audio/mp4;codecs=mp4a.40.2', // Safari specific
+                'audio/ogg;codecs=opus',       // Firefox fallback
+                'audio/wav',                   // Universal fallback
+                ''                             // Browser default (last resort)
             ];
 
-            // Filter supported types
-            const supportedType = mimeTypes.find(type => MediaRecorder.isTypeSupported(type));
-            const selectedMimeType = supportedType || '';  // Let browser default if none match
+            // Test and log supported types
+            console.log('[VoiceRecorder] Testing MIME types:');
+            const supportedTypes = mimeTypes.map(type => {
+                const supported = type === '' ? true : MediaRecorder.isTypeSupported(type);
+                console.log(`  ${type || '(browser default)'}: ${supported ? '✓' : '✗'}`);
+                return { type, supported };
+            }).filter(t => t.supported);
 
-            setAudioMimeType(selectedMimeType || 'audio/webm'); // State for later upload
+            const selectedMimeType = supportedTypes[0]?.type || '';
+            setAudioMimeType(selectedMimeType || 'audio/webm');
+
+            console.log('[VoiceRecorder] Selected MIME type:', selectedMimeType || '(browser default)');
 
             const options = selectedMimeType ? { mimeType: selectedMimeType } : undefined;
-
             const mediaRecorder = new MediaRecorder(stream, options);
             mediaRecorderRef.current = mediaRecorder;
             audioChunksRef.current = [];
 
+            // Enhanced event handlers
+            mediaRecorder.onstart = () => {
+                console.log('[VoiceRecorder] Recording started, state:', mediaRecorder.state);
+                toast.success(`Kayıt başladı (${selectedMimeType || 'default format'})`);
+            };
+
             mediaRecorder.ondataavailable = (event) => {
-                if (event.data.size > 0) {
+                console.log('[VoiceRecorder] Chunk received:', event.data.size, 'bytes');
+                if (event.data && event.data.size > 0) {
                     audioChunksRef.current.push(event.data);
                 }
             };
 
+            mediaRecorder.onerror = (event: any) => {
+                console.error('[VoiceRecorder] MediaRecorder error:', event);
+                console.error('[VoiceRecorder] Error details:', {
+                    error: event.error,
+                    state: mediaRecorder.state
+                });
+                toast.error(`Kayıt hatası: ${event.error?.name || 'Bilinmeyen hata'}`);
+                setIsRecording(false);
+                if (timerRef.current) clearInterval(timerRef.current);
+                stream.getTracks().forEach(track => track.stop());
+            };
+
             mediaRecorder.onstop = () => {
+                console.log('[VoiceRecorder] Recording stopped');
+                console.log('[VoiceRecorder] Chunks collected:', audioChunksRef.current.length);
+
                 // Ensure we have data
                 if (audioChunksRef.current.length === 0) {
+                    console.error('[VoiceRecorder] No chunks received!');
                     toast.error("Ses verisi alınamadı. Mikrofonunuzu kontrol edin.");
+                    stream.getTracks().forEach(track => track.stop());
                     return;
                 }
 
-                // Fallback mime type for Blob creation
+                // Calculate total size
+                const totalSize = audioChunksRef.current.reduce((sum, chunk) => sum + chunk.size, 0);
+                console.log('[VoiceRecorder] Total audio data:', totalSize, 'bytes');
+
+                // Stronger validation (1KB minimum)
+                if (totalSize < 1000) {
+                    console.error('[VoiceRecorder] Audio data too small:', totalSize, 'bytes');
+                    toast.error("Ses kaydı çok kısa (minimum 1KB gerekli).");
+                    stream.getTracks().forEach(track => track.stop());
+                    return;
+                }
+
+                // Create blob
                 const blobType = selectedMimeType || 'audio/webm';
                 const blob = new Blob(audioChunksRef.current, { type: blobType });
 
-                // Validate blob size
-                if (blob.size < 100) {
-                    toast.error("Ses kaydı çok kısa veya boş.");
-                    return;
-                }
+                console.log('[VoiceRecorder] Blob created:', {
+                    size: blob.size,
+                    type: blob.type,
+                    chunks: audioChunksRef.current.length
+                });
 
                 const url = URL.createObjectURL(blob);
                 setAudioBlob(blob);
                 setAudioUrl(url);
-                stream.getTracks().forEach(track => track.stop()); // Stop mic
+                stream.getTracks().forEach(track => track.stop());
+
+                toast.success(`Kayıt tamamlandı (${(blob.size / 1024).toFixed(1)} KB)`);
             };
 
-            // Request data every 1000ms to ensure chunks are captured
-            mediaRecorder.start(1000);
+            // Start recording without timeslice for better compatibility
+            mediaRecorder.start();
+            console.log('[VoiceRecorder] MediaRecorder.start() called');
+
             setIsRecording(true);
             setRecordingTime(0);
 
@@ -101,11 +152,19 @@ export default function VoiceRecorder({ leadId, onRecordingComplete, isProcessin
             }, 1000);
 
         } catch (error: any) {
-            console.error('Error accessing microphone:', error);
+            console.error('[VoiceRecorder] Error in startRecording:', error);
+            console.error('[VoiceRecorder] Error details:', {
+                name: error.name,
+                message: error.message,
+                stack: error.stack
+            });
+
             if (error.name === 'NotAllowedError' || error.name === 'PermissionDeniedError') {
                 toast.error('Mikrofon erişimi reddedildi. Tarayıcı ayarlarını kontrol edin.');
             } else if (error.name === 'NotFoundError') {
-                toast.error('Mikrofon bulunamadı.');
+                toast.error('Mikrofon bulunamadı. Cihazınızı kontrol edin.');
+            } else if (error.name === 'NotSupportedError') {
+                toast.error('Tarayıcınız ses kaydını desteklemiyor. Chrome/Firefox kullanın.');
             } else {
                 toast.error('Ses kaydı başlatılamadı: ' + error.message);
             }

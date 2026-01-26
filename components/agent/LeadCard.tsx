@@ -4,12 +4,13 @@ import { useState, useEffect, useRef } from 'react';
 import { createClient } from '@/lib/supabase/client';
 import type { Lead, PotentialLevel } from '@/types';
 import {
-    Phone, MapPin, Globe, Star, MessageCircle, Calendar,
+    Phone, MapPin, Globe, Star, Sparkles, Calendar,
     ArrowRight, Loader2, CheckCircle2, AlertCircle, Flame, Zap, TrendingDown, Wand2
 } from 'lucide-react';
 import { getWhatsAppUrl, formatPhoneNumber } from '@/lib/utils';
 import { playLeadTransition, playAppointment, playWhatsApp, playVictory, playError } from '@/lib/sounds';
 import VoiceRecorder from './VoiceRecorder';
+import AIAnalysisDisplay from './AIAnalysisDisplay';
 
 interface LeadCardProps {
     agentId: string;
@@ -29,9 +30,15 @@ export default function LeadCard({ agentId, onLeadProcessed, refreshKey }: LeadC
     const [actionTaken, setActionTaken] = useState<string>('');
     const [isAiProcessing, setIsAiProcessing] = useState(false);
     const [savedAudioUrl, setSavedAudioUrl] = useState<string | null>(null);
+    const [aiAnalysis, setAiAnalysis] = useState<any>(null);
 
     const supabase = createClient();
     const lastPlayedLeadId = useRef<string | null>(null);
+
+    // Clear AI analysis when lead changes
+    useEffect(() => {
+        setAiAnalysis(null);
+    }, [currentLead?.id]);
 
     // Load lead on mount - check localStorage first for persistence across page refreshes
     useEffect(() => {
@@ -275,50 +282,19 @@ export default function LeadCard({ agentId, onLeadProcessed, refreshKey }: LeadC
             const data = await res.json();
 
             if (data.success && data.analysis) {
-                // Build comprehensive AI note
-                let aiNote = `🤖 **AI SATIŞANALIZI** (ArtificAgent)\n\n`;
-                aiNote += `📌 **Özet:** ${data.analysis.summary || 'Analiz yapılamadı'}\n\n`;
+                // Store analysis data for display component
+                setAiAnalysis(data.analysis);
 
-                // Customer info
-                if (data.analysis.customer_name) {
-                    aiNote += `👤 **Müşteri:** ${data.analysis.customer_name}`;
-                    if (data.analysis.decision_maker) {
-                        aiNote += ` (Karar Verici ✓)`;
-                    }
-                    aiNote += `\n`;
+                // Format summary nicely for notes
+                let formattedNote = '📝 AI ANALİZ ÖZETİ\n';
+                formattedNote += '─'.repeat(40) + '\n';
+                if (data.analysis.summary) {
+                    formattedNote += data.analysis.summary + '\n';
                 }
+                formattedNote += '─'.repeat(40) + '\n';
+                formattedNote += `Analiz Zamanı: ${new Date().toLocaleString('tr-TR')}`;
 
-                // Interested service
-                if (data.analysis.interested_service && data.analysis.interested_service !== 'Belirsiz') {
-                    aiNote += `🎯 **İlgilenilen Hizmet:** ${data.analysis.interested_service}\n`;
-                }
-
-                aiNote += `💡 **Potansiyel:** ${data.analysis.potential_level?.toUpperCase() || 'BELİRLENEMEDİ'}\n`;
-
-                if (data.analysis.sentiment_score) {
-                    aiNote += `📊 **Duygu Skoru:** ${data.analysis.sentiment_score}/10\n`;
-                }
-
-                // Pain points
-                if (data.analysis.pain_points && data.analysis.pain_points.length > 0) {
-                    aiNote += `⚡ **Sorun Noktaları:** ${data.analysis.pain_points.join(', ')}\n`;
-                }
-
-                if (data.analysis.extracted_date) {
-                    aiNote += `📅 **Randevu/Tarih:** ${data.analysis.extracted_date}\n`;
-                }
-
-                if (data.analysis.key_objections && data.analysis.key_objections.length > 0) {
-                    aiNote += `⚠️ **İtirazlar:** ${data.analysis.key_objections.join(', ')}\n`;
-                }
-
-                aiNote += `\n🚀 **Önerilen Aksiyon:** ${data.analysis.suggested_action || 'Manuel inceleme'}\n`;
-
-                if (data.analysis.next_call_timing) {
-                    aiNote += `⏰ **Sonraki Arama:** ${data.analysis.next_call_timing}\n`;
-                }
-
-                setNote(prev => (prev ? prev + '\n\n' : '') + aiNote);
+                setNote(prev => (prev ? prev + '\n\n' : '') + formattedNote);
 
                 // Optionally set potential level if AI determined it
                 if (data.analysis.potential_level && data.analysis.potential_level !== 'not_assessed') {
@@ -520,6 +496,15 @@ export default function LeadCard({ agentId, onLeadProcessed, refreshKey }: LeadC
                 </div>
             )}
 
+            {/* AI Analysis Display */}
+            {aiAnalysis && (
+                <div className="mb-4">
+                    <AIAnalysisDisplay
+                        analysis={aiAnalysis}
+                    />
+                </div>
+            )}
+
             {/* Note Taking */}
             <div>
                 <label htmlFor="note" className="block text-sm font-medium text-purple-200 mb-2">
@@ -552,7 +537,7 @@ export default function LeadCard({ agentId, onLeadProcessed, refreshKey }: LeadC
                         : 'bg-green-500/20 border-2 border-green-500 text-green-100 hover:bg-green-500/30'
                         }`}
                 >
-                    <MessageCircle className="w-5 h-5" />
+                    <Sparkles className="w-5 h-5" />
                     WhatsApp'a Yönlendir
                 </button>
 

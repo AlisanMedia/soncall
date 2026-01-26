@@ -199,11 +199,20 @@ export async function fetchManagerAnalytics(supabase: SupabaseClient) {
             const appointmentCount = appointments || 0;
             const salesCount = sales || 0;
 
-            // Calculate Weighted Score
-            // Sale = 100 pts
-            // Appointment = 20 pts
-            // Processed = 1 pt
-            const score = (salesCount * 100) + (appointmentCount * 20) + (processedCount * 1);
+            // Calculate Conversion Rate
+            const conversionRate = processedCount ? Math.round((appointmentCount) / processedCount * 100) : 0;
+
+            // Calculate Weighted Score (Smart Leaderboard Logic)
+            // Sales = 500 pts (High Value)
+            // Appointment = 50 pts (Medium Value)
+            // Processed = 1 pt (Effort)
+            let score = (salesCount * 500) + (appointmentCount * 50) + (processedCount * 1);
+
+            // Efficiency Bonus: If conversion > 15%, add 10% boost
+            const isEfficient = conversionRate > 15 && processedCount > 10; // Min 10 calls to qualify
+            if (isEfficient) {
+                score = Math.round(score * 1.1);
+            }
 
             // Calculate Dynamic Level & Rank based on Score
             // Level = 1 + (Score / 100)
@@ -228,7 +237,8 @@ export async function fetchManagerAnalytics(supabase: SupabaseClient) {
                 total_appointments: appointmentCount,
                 total_sales: salesCount,
                 total_processed: processedCount,
-                conversion_rate: processedCount ? Math.round((appointmentCount) / processedCount * 100) : 0,
+                conversion_rate: conversionRate,
+                is_efficient: isEfficient, // Pass efficiency flag to UI
             };
         })
     );

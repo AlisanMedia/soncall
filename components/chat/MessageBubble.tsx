@@ -3,6 +3,7 @@
 import { Message } from '@/hooks/useRealtimeMessages';
 import { formatDistanceToNow } from 'date-fns';
 import { Check, CheckCheck } from 'lucide-react';
+import { motion } from 'framer-motion';
 
 interface MessageBubbleProps {
     message: Message;
@@ -15,7 +16,12 @@ export default function MessageBubble({ message, isOwnMessage, currentUserId, sh
     const isBroadcast = message.message_type === 'broadcast';
 
     return (
-        <div className={`flex ${isOwnMessage ? 'justify-end' : 'justify-start'} mb-4`}>
+        <motion.div
+            className={`flex ${isOwnMessage ? 'justify-end' : 'justify-start'} mb-4`}
+            initial={{ opacity: 0, y: 10, scale: 0.95 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            transition={{ type: "spring", stiffness: 300, damping: 20 }}
+        >
             <div className={`max-w-[70%] ${isOwnMessage ? 'items-end' : 'items-start'} flex flex-col`}>
                 {/* Sender name (only for other's messages) */}
                 {!isOwnMessage && (
@@ -88,7 +94,18 @@ export default function MessageBubble({ message, isOwnMessage, currentUserId, sh
                             : 'bg-white/10 border border-white/10 text-white rounded-bl-none'
                         }`}
                 >
-                    <p className="text-sm whitespace-pre-wrap break-words">{message.message}</p>
+                    <p className="text-sm whitespace-pre-wrap break-words">
+                        {message.message.split(/(@[\p{L}0-9_]+(?:\s[\p{L}0-9_]+)?)/gu).map((part, i) => {
+                            if (part.startsWith('@')) {
+                                return (
+                                    <span key={i} className={`font-semibold ${isOwnMessage ? 'text-purple-200 bg-black/20' : 'text-purple-300 bg-purple-500/20'} px-1 rounded`}>
+                                        {part}
+                                    </span>
+                                );
+                            }
+                            return part;
+                        })}
+                    </p>
                 </div>
 
                 {/* Timestamp and read status */}
@@ -107,6 +124,6 @@ export default function MessageBubble({ message, isOwnMessage, currentUserId, sh
                     )}
                 </div>
             </div>
-        </div>
+        </motion.div>
     );
 }

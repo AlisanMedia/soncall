@@ -22,7 +22,7 @@ import TeamMonitoring from '@/components/manager/TeamMonitoring';
 import TopSellers from './TopSellers';
 import SalesApprovals from './SalesApprovals';
 
-import { LogOut, Upload, Users, BarChart3, Activity, TrendingUp, Trophy, MessageCircle, AlertTriangle, Target, Calendar, Briefcase, Settings } from 'lucide-react';
+import { LogOut, Upload, Users, BarChart3, Activity, TrendingUp, Trophy, Sparkles, AlertTriangle, Target, Calendar, Briefcase, Settings } from 'lucide-react';
 import { createClient } from '@/lib/supabase/client';
 import { useRouter } from 'next/navigation';
 import ChatPanel from '../chat/ChatPanel';
@@ -239,7 +239,7 @@ export default function ManagerDashboard({ profile }: ManagerDashboardProps) {
                     className="bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 text-white w-14 h-14 rounded-full shadow-2xl flex items-center justify-center transition-all hover:scale-110 active:scale-95 relative"
                     title="Open Chat"
                 >
-                    <MessageCircle className="w-7 h-7" />
+                    <Sparkles className="w-7 h-7" />
                     <ChatNotificationBadge userId={profile.id} />
                 </button>
             </div>

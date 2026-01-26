@@ -1,6 +1,6 @@
 'use client';
 
-import { X, Calendar, User, Phone, Building2, MessageCircle } from 'lucide-react';
+import { X, Calendar, User, Phone, Building2, Sparkles } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 
 interface ActivityItem {
@@ -115,7 +115,7 @@ export default function ActivityDetailModal({ isOpen, onClose, activity }: Activ
                         {/* Activity Note */}
                         <div>
                             <h4 className="text-xs text-purple-300/70 uppercase mb-3 font-semibold tracking-wider flex items-center gap-2">
-                                <MessageCircle className="w-3 h-3" />
+                                <Sparkles className="w-3 h-3" />
                                 Görüşme Notu & Aksiyon
                             </h4>
                             <div className="bg-white/5 rounded-xl p-4 border border-white/5 space-y-3">

@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { Activity, Loader2, Phone, MessageCircle, Calendar, CheckCircle2, Package, TrendingUp, Eye } from 'lucide-react';
+import { Activity, Loader2, Phone, Sparkles, Calendar, CheckCircle2, Package, TrendingUp, Eye } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { playActivityNotification } from '@/lib/sounds';
 import { SectionInfo } from '@/components/ui/section-info';
@@ -151,7 +151,7 @@ export default function TeamMonitoring() {
 
     const getActionIcon = (action: string | null) => {
         if (!action) return <CheckCircle2 className="w-4 h-4" />;
-        if (action.includes('whatsapp')) return <MessageCircle className="w-4 h-4 text-green-400" />;
+        if (action.includes('whatsapp')) return <Sparkles className="w-4 h-4 text-green-400" />;
         if (action.includes('appointment') || action.includes('randevu')) return <Calendar className="w-4 h-4 text-purple-400" />;
         return <Phone className="w-4 h-4 text-blue-400" />;
     };

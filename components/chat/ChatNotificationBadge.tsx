@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import { motion } from 'framer-motion';
 
 interface ChatNotificationBadgeProps {
     userId: string;
@@ -31,8 +32,13 @@ export default function ChatNotificationBadge({ userId }: ChatNotificationBadgeP
     if (unreadCount === 0) return null;
 
     return (
-        <div className="absolute -top-1 -right-1 bg-red-500 text-white text-xs font-bold rounded-full h-5 min-w-[20px] flex items-center justify-center px-1 animate-pulse">
+        <motion.div
+            initial={{ scale: 0 }}
+            animate={{ scale: 1 }}
+            whileHover={{ scale: 1.1 }}
+            className="absolute -top-1 -right-1 bg-red-500 text-white text-xs font-bold rounded-full h-5 min-w-[20px] flex items-center justify-center px-1"
+        >
             {unreadCount > 99 ? '99+' : unreadCount}
-        </div>
+        </motion.div>
     );
 }

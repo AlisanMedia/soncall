@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
     Calendar, ChevronLeft, ChevronRight, Clock, Phone,
-    MessageCircle, Filter, Search, User, Zap, TrendingUp
+    Sparkles, Filter, Search, User, Zap, TrendingUp
 } from 'lucide-react';
 import { createClient } from '@/lib/supabase/client';
 
@@ -524,7 +524,7 @@ function AppointmentModal({ appointment, onClose }: {
                             whileHover={{ scale: 1.05 }}
                             whileTap={{ scale: 0.95 }}
                         >
-                            <MessageCircle className="w-4 h-4" />
+                            <Sparkles className="w-4 h-4" />
                             WhatsApp
                         </motion.a>
                     </div>

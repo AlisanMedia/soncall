@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect, useRef } from 'react';
-import { X, Loader2, MessageCircle, MoreVertical, Trash2, Download } from 'lucide-react';
+import { X, Loader2, Sparkles, MoreVertical, Trash2, Download } from 'lucide-react';
 import { useRealtimeMessages } from '@/hooks/useRealtimeMessages';
 import MessageBubble from './MessageBubble';
 import MessageInput from './MessageInput';
@@ -140,7 +140,7 @@ export default function ChatPanel({ userId, isOpen, onClose, leadId, receiverId,
             <div className="bg-white/5 backdrop-blur-md border-b border-white/10 p-4 flex items-center justify-between relative shadow-lg">
                 <div className="flex items-center gap-3">
                     <div className="p-2 bg-gradient-to-br from-purple-500/20 to-blue-500/20 rounded-lg border border-white/10">
-                        <MessageCircle className="w-5 h-5 text-purple-300" />
+                        <Sparkles className="w-5 h-5 text-purple-300" />
                     </div>
                     <div>
                         <h3 className="font-bold text-white tracking-wide">{title || 'Messages'}</h3>
@@ -203,7 +203,7 @@ export default function ChatPanel({ userId, isOpen, onClose, leadId, receiverId,
                     </div>
                 ) : messages.length === 0 ? (
                     <div className="flex flex-col items-center justify-center h-full text-center">
-                        <MessageCircle className="w-12 h-12 text-purple-400/30 mb-2" />
+                        <Sparkles className="w-12 h-12 text-purple-400/30 mb-2" />
                         <p className="text-purple-300/50">No messages yet</p>
                         <p className="text-xs text-purple-300/30 mt-1">Start a conversation!</p>
                     </div>
@@ -252,7 +252,7 @@ export default function ChatPanel({ userId, isOpen, onClose, leadId, receiverId,
             )}
 
             {/* Input */}
-            <MessageInput onSend={handleSend} />
+            <MessageInput onSend={handleSend} currentUserId={userId} />
         </div>
     );
 }

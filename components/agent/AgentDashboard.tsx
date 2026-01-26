@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { Profile } from '@/types';
-import { LogOut, MessageCircle, Settings, Phone, Target, List, DollarSign } from 'lucide-react';
+import { LogOut, Sparkles, Settings, Phone, Target, List, DollarSign } from 'lucide-react';
 import { createClient } from '@/lib/supabase/client';
 import { useRouter } from 'next/navigation';
 import LeadCard from './LeadCard';
@@ -352,7 +352,7 @@ export default function AgentDashboard({ profile: initialProfile }: AgentDashboa
                     className="fixed bottom-6 right-6 z-40 bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 text-white p-4 rounded-full shadow-2xl transition-all hover:scale-110 active:scale-95"
                     title="Open Chat"
                 >
-                    <MessageCircle className="w-6 h-6" />
+                    <Sparkles className="w-6 h-6" />
                     <ChatNotificationBadge userId={profile.id} />
                 </button>
             )}
