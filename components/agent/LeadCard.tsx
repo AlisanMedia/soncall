@@ -45,7 +45,7 @@ export default function LeadCard({ agentId, onLeadProcessed, refreshKey }: LeadC
         const restoreFromStorage = async () => {
             const savedLeadId = localStorage.getItem(`agent_${agentId}_current_lead`);
 
-            if (savedLeadId && refreshKey === 0) {
+            if (savedLeadId) {
                 // Try to restore the saved lead
                 try {
                     const { data: savedLead, error } = await supabase

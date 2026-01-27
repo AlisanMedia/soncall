@@ -2,7 +2,8 @@
 
 import { useState, useEffect } from 'react';
 import { Profile } from '@/types';
-import { LogOut, Sparkles, Settings, Phone, Target, List, DollarSign } from 'lucide-react';
+import { LogOut, Sparkles, Settings, Phone, Target, List, DollarSign, UserPlus } from 'lucide-react';
+import ManualLeadDialog from './ManualLeadDialog';
 import { createClient } from '@/lib/supabase/client';
 import { useRouter } from 'next/navigation';
 import LeadCard from './LeadCard';
@@ -57,7 +58,9 @@ export default function AgentDashboard({ profile: initialProfile }: AgentDashboa
     const [notifications, setNotifications] = useState<Notification[]>([]);
     const [chatOpen, setChatOpen] = useState(false);
     const [managerId, setManagerId] = useState<string | null>(null);
+
     const [stats, setStats] = useState({ level: 1, rank: 'Çaylak' });
+    const [manualLeadOpen, setManualLeadOpen] = useState(false);
 
     const supabase = createClient();
     const router = useRouter();
@@ -185,6 +188,22 @@ export default function AgentDashboard({ profile: initialProfile }: AgentDashboa
         setNotifications(prev => prev.filter(n => n.id !== id));
     };
 
+    const handleManualLeadSuccess = (leadId: string) => {
+        // Switch to work tab if not already on it
+        if (activeTab !== 'work') {
+            setActiveTab('work');
+        }
+
+        // Save to localStorage so LeadCard loads this specific lead
+        localStorage.setItem(`agent_${profile.id}_current_lead`, leadId);
+
+        // Force refresh LeadCard
+        setRefreshKey(prev => prev + 1);
+
+        // Close dialog
+        setManualLeadOpen(false);
+    };
+
     return (
         <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 pb-20 relative overflow-hidden isolate">
             <BGPattern variant="dots" fill="#ffffff" className="opacity-20" mask="fade-edges" />
@@ -227,6 +246,16 @@ export default function AgentDashboard({ profile: initialProfile }: AgentDashboa
                                     }}
                                 />
                             </div>
+
+                            {/* Manual Lead Button */}
+                            <button
+                                onClick={() => setManualLeadOpen(true)}
+                                className="hidden sm:flex items-center gap-2 px-3 py-1.5 bg-purple-600/20 hover:bg-purple-600/30 border border-purple-500/30 rounded-lg text-purple-200 hover:text-white transition-all text-sm font-medium hover:scale-105 active:scale-95"
+                                title="Yeni Müşteri Ekle"
+                            >
+                                <UserPlus className="w-4 h-4" />
+                                <span className="hidden lg:inline">Manuel Ekle</span>
+                            </button>
                             {/* Mobile Fallback - Simplified */}
                             <nav className="flex sm:hidden items-center gap-1 bg-black/20 p-1 rounded-lg border border-white/5">
                                 <button
@@ -234,6 +263,12 @@ export default function AgentDashboard({ profile: initialProfile }: AgentDashboa
                                     className={`p-2 rounded-md transition-all ${activeTab === 'work' ? 'bg-purple-600 text-white' : 'text-gray-300'}`}
                                 >
                                     <Phone className="w-5 h-5" />
+                                </button>
+                                <button
+                                    onClick={() => setManualLeadOpen(true)}
+                                    className="p-2 rounded-md text-purple-400 hover:bg-white/5 transition-all active:scale-95"
+                                >
+                                    <UserPlus className="w-5 h-5" />
                                 </button>
                                 <button
                                     onClick={() => setActiveTab('history')}
@@ -358,11 +393,19 @@ export default function AgentDashboard({ profile: initialProfile }: AgentDashboa
             )}
 
             {/* Chat Panel - Defaulting to Team Chat (Broadcast) so agents can talk to each other */}
+
             <ChatPanel
                 userId={profile.id}
                 isOpen={chatOpen}
                 onClose={() => setChatOpen(false)}
                 title="Team Chat"
+            />
+
+            <ManualLeadDialog
+                isOpen={manualLeadOpen}
+                onClose={() => setManualLeadOpen(false)}
+                onSuccess={handleManualLeadSuccess}
+                agentId={profile.id}
             />
         </div>
     );
