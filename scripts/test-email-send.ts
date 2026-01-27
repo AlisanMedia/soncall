@@ -47,7 +47,7 @@ async function sendTest() {
             // Let's use the user's likely email or just check the response.
             // If I use 'delivered@resend.dev', it simulates success.
             // I want to see if it fails for an arbitrary email.
-            to: ['recipient@example.com'],
+
             subject: 'Test Email from Script',
             html: '<p>Test</p>'
         });
