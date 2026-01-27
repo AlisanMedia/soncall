@@ -1,4 +1,5 @@
 import { createClient } from '@/lib/supabase/server';
+import { createServiceRoleClient } from '@/lib/supabase/service-role';
 import { NextResponse } from 'next/server';
 
 export async function POST(req: Request) {
@@ -56,7 +57,9 @@ export async function POST(req: Request) {
             }
         };
 
-        const { data, error } = await supabase
+        const serviceClient = createServiceRoleClient();
+
+        const { data, error } = await serviceClient
             .from('leads')
             .insert(newLead)
             .select()
@@ -71,7 +74,7 @@ export async function POST(req: Request) {
         // Actually, users might expect to see the note in "History".
         // Let's add a note if provided.
         if (note) {
-            await supabase.from('lead_notes').insert({
+            await serviceClient.from('lead_notes').insert({
                 lead_id: data.id,
                 agent_id: user.id,
                 note: `[Manuel Giriş Notu]: ${note}`,
