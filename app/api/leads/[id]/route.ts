@@ -69,6 +69,20 @@ export async function PATCH(
             metadata: { status, potential_level: potentialLevel, action_taken: actionTaken },
         });
 
+        // GAMIFICATION 2.0: Award XP based on outcome
+        const { awardXP } = await import('@/lib/gamification');
+
+        if (status === 'appointment') {
+            // Big Reward for Appointment
+            await awardXP(user.id, 200, 'appointment_set');
+        } else if (status === 'contacted') {
+            // Small Reward for Call/Contact
+            await awardXP(user.id, 10, 'call_made');
+        } else if (status === 'completed' || status === 'sold') {
+            // Jackpot for Sale (if applicable in future)
+            await awardXP(user.id, 1000, 'sale_closed');
+        }
+
         // Get next lead ID (optional)
         const { data: nextLeads } = await supabase
             .from('leads')

@@ -2,20 +2,14 @@
 
 import { useState, useEffect } from 'react';
 import { createClient } from '@/lib/supabase/client';
-import { Trophy, Star, Flame, Zap } from 'lucide-react';
-import { AgentProgress } from '@/types'; // We might need to define this type or just use standard fetch
+import { Trophy, Star, Flame, Zap, Sprout, Swords, Gem, Crown } from 'lucide-react';
+import { AgentProgress } from '@/types';
 
 export default function GamificationBar({ agentId }: { agentId: string }) {
     const [progress, setProgress] = useState<any>(null);
     const [loading, setLoading] = useState(true);
 
-    // Level calc logic (simple version for UI)
-    // Level N requires N * 1000 XP (Linear) or quadratic? 
-    // Let's assume database stores current_level and we use specific thresholds.
-    // Ideally backend logic handles leveling, but let's visualize based on total_xp.
-    // For now, we trust database 'level' field.
-
-    // Level thresholds for display (Example: Level 1 -> 2 needs 1000 XP)
+    // Level calc logic based on 1000 XP per level
     const getNextLevelXp = (level: number) => level * 1000;
 
     useEffect(() => {
@@ -84,36 +78,71 @@ export default function GamificationBar({ agentId }: { agentId: string }) {
     // Safe guard for calculation if math is weird for level 1
     const percent = Math.min(100, Math.max(0, (xpInLevel / xpNeeded) * 100));
 
-    // Rank Names based on level
-    const getRankName = (lvl: number) => {
-        if (lvl < 5) return 'Çaylak Temsilci';
-        if (lvl < 10) return 'Satış Uzmanı';
-        if (lvl < 20) return 'Kıdemli Temsilci';
-        if (lvl < 50) return 'Yıldız Satıcı';
-        return 'Efsane';
+    // GAMIFICATION 2.0 - RANK LOGIC
+    const getRankInfo = (lvl: number) => {
+        if (lvl < 10) return {
+            title: 'Çaylak (Rookie)',
+            icon: <Sprout className="w-6 h-6 text-green-400" />,
+            color: 'from-green-500 to-emerald-700',
+            bgGlow: 'bg-green-500/20',
+            border: 'border-green-500/30'
+        };
+        if (lvl < 25) return {
+            title: 'Avcı (Hunter)',
+            icon: <Swords className="w-6 h-6 text-slate-300" />,
+            color: 'from-slate-400 to-slate-600',
+            bgGlow: 'bg-slate-500/20',
+            border: 'border-slate-500/30'
+        };
+        if (lvl < 50) return {
+            title: 'Usta (Veteran)',
+            icon: <Flame className="w-6 h-6 text-orange-500 animate-pulse" />,
+            color: 'from-orange-500 to-red-600',
+            bgGlow: 'bg-orange-500/20',
+            border: 'border-orange-500/30'
+        };
+        if (lvl < 100) return {
+            title: 'Elit (Elite)',
+            icon: <Gem className="w-6 h-6 text-cyan-400" />,
+            color: 'from-cyan-500 to-blue-600',
+            bgGlow: 'bg-cyan-500/20',
+            border: 'border-cyan-500/30'
+        };
+        return {
+            title: 'Efsane (Legend)',
+            icon: <Crown className="w-6 h-6 text-purple-400" />,
+            color: 'from-fuchsia-600 to-purple-800',
+            bgGlow: 'bg-purple-500/20',
+            border: 'border-purple-500/30'
+        };
     };
 
+    const rank = getRankInfo(progress.current_level);
+
     return (
-        <div className="bg-gradient-to-r from-violet-900/50 to-fuchsia-900/50 border border-purple-500/30 rounded-xl p-4 relative overflow-hidden group">
+        <div className={`relative overflow-hidden group border rounded-xl p-4 transition-all duration-500 bg-gradient-to-r ${rank.color} bg-opacity-10 ${rank.border}`}>
+            {/* Background Texture/Glow */}
+            <div className={`absolute -top-10 -right-10 w-40 h-40 rounded-full blur-[60px] ${rank.bgGlow} opacity-50`}></div>
+            <div className="absolute inset-0 bg-black/40 backdrop-blur-[1px]"></div>
 
-            {/* Background Glow */}
-            <div className="absolute top-0 right-0 w-32 h-32 bg-purple-500/20 rounded-full blur-3xl -translate-y-1/2 translate-x-1/2 group-hover:bg-purple-500/30 transition-all duration-500"></div>
-
-            <div className="flex items-center justify-between mb-2 relative z-10">
-                <div className="flex items-center gap-3">
+            <div className="relative z-10 flex items-center justify-between mb-2">
+                <div className="flex items-center gap-4">
                     {/* Level Badge */}
-                    <div className="relative">
-                        <div className="w-12 h-12 bg-gradient-to-br from-yellow-400 to-orange-600 rounded-lg transform rotate-3 flex items-center justify-center shadow-lg border-2 border-yellow-200/50">
-                            <span className="text-xl font-black text-white drop-shadow-md">{progress.current_level}</span>
+                    <div className="relative transform transition-transform hover:scale-110 duration-300">
+                        <div className="w-14 h-14 bg-gradient-to-br from-white/10 to-white/5 rounded-2xl rotate-3 flex items-center justify-center shadow-2xl border border-white/20 backdrop-blur-md">
+                            <span className="text-2xl font-black text-white drop-shadow-[0_2px_4px_rgba(0,0,0,0.5)]">{progress.current_level}</span>
                         </div>
-                        <div className="absolute -bottom-2 -right-2 bg-black/60 backdrop-blur-md px-2 py-0.5 rounded text-[10px] font-bold text-yellow-400 border border-yellow-500/30">
+                        <div className="absolute -bottom-2 -right-2 bg-black/80 px-2 py-0.5 rounded text-[10px] font-bold text-white border border-white/10 shadow-lg">
                             LVL
                         </div>
                     </div>
 
                     <div>
-                        <h3 className="text-lg font-bold text-white leading-tight">{getRankName(progress.current_level)}</h3>
-                        <p className="text-xs text-purple-200 font-mono">
+                        <div className="flex items-center gap-2">
+                            {rank.icon}
+                            <h3 className="text-xl font-black text-white tracking-wide drop-shadow-lg">{rank.title}</h3>
+                        </div>
+                        <p className="text-sm text-white/70 font-mono tracking-tight ml-1">
                             {progress.total_xp.toLocaleString()} XP
                         </p>
                     </div>
@@ -121,32 +150,32 @@ export default function GamificationBar({ agentId }: { agentId: string }) {
 
                 {/* Streak Counter */}
                 <div className="flex flex-col items-end">
-                    <div className="flex items-center gap-1.5 text-orange-400">
-                        <Flame className={`w-5 h-5 ${progress.current_streak > 0 ? 'fill-orange-500 animate-pulse' : ''}`} />
-                        <span className="text-xl font-black">{progress.current_streak}</span>
+                    <div className="flex items-center gap-1.5 text-white/90 bg-white/10 px-3 py-1 rounded-full border border-white/5 shadow-inner">
+                        <Flame className={`w-4 h-4 ${progress.current_streak > 0 ? 'fill-orange-500 text-orange-500 animate-pulse' : 'text-gray-400'}`} />
+                        <span className="text-lg font-bold">{progress.current_streak}</span>
                     </div>
-                    <span className="text-[10px] text-orange-300/80 uppercase tracking-wider font-bold">Günlük Seri</span>
+                    <span className="text-[10px] text-white/50 uppercase tracking-wider font-bold mt-1 mr-1">Günlük Seri</span>
                 </div>
             </div>
 
             {/* XP Bar */}
-            <div className="mt-3 relative z-10">
-                <div className="flex justify-between text-[10px] text-purple-300 mb-1 font-medium">
+            <div className="mt-4 relative z-10">
+                <div className="flex justify-between text-[10px] text-white/60 mb-1.5 font-bold tracking-wider">
                     <span>SEVİYE {progress.current_level}</span>
-                    <span>{Math.floor(percent)}%</span>
-                    <span>SEVİYE {progress.current_level + 1}</span>
+                    <span>%{Math.floor(percent)}</span>
+                    <span className="opacity-50">SEVİYE {progress.current_level + 1}</span>
                 </div>
-                <div className="h-3 bg-black/40 rounded-full overflow-hidden border border-white/5">
+                <div className="h-3.5 bg-black/50 rounded-full overflow-hidden border border-white/10 shadow-inner">
                     <div
-                        className="h-full bg-gradient-to-r from-purple-500 via-pink-500 to-yellow-500 shadow-[0_0_10px_rgba(168,85,247,0.5)] transition-all duration-1000 ease-out"
+                        className={`h-full bg-gradient-to-r ${rank.color} shadow-[0_0_15px_rgba(255,255,255,0.3)] transition-all duration-1000 ease-out relative`}
                         style={{ width: `${percent}%` }}
                     >
                         {/* Shimmer effect */}
-                        <div className="absolute top-0 left-0 w-full h-full bg-gradient-to-r from-transparent via-white/20 to-transparent -translate-x-full animate-shimmer"></div>
+                        <div className="absolute top-0 left-0 w-full h-full bg-gradient-to-r from-transparent via-white/40 to-transparent -translate-x-full animate-shimmer"></div>
                     </div>
                 </div>
-                <div className="mt-1 text-center text-[10px] text-gray-400">
-                    Sonraki seviye için {Math.round(xpNeeded - xpInLevel)} XP kaldı
+                <div className="mt-1.5 text-right text-[10px] text-white/40 font-mono">
+                    Sonraki seviye için <span className="text-white/80 font-bold">{Math.round(xpNeeded - xpInLevel)} XP</span> kaldı
                 </div>
             </div>
         </div>
