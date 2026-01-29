@@ -31,31 +31,38 @@ export async function POST(request: NextRequest) {
             return NextResponse.json({ error: 'targetAgentId is required' }, { status: 400 });
         }
 
-        // 3. Verify Target Agent Exists (Optional but good practice)
-        const { data: agent } = await supabase
-            .from('profiles')
-            .select('id, full_name')
-            .eq('id', targetAgentId)
-            .eq('role', 'agent')
-            .single();
+        // 3. Verify Target Agent Exists (if not transferring to pool)
+        let agentName = 'Havuz (Pool)';
+        if (targetAgentId !== 'pool') {
+            const { data: agent } = await supabase
+                .from('profiles')
+                .select('id, full_name')
+                .eq('id', targetAgentId)
+                .eq('role', 'agent')
+                .single();
 
-        if (!agent) {
-            return NextResponse.json({ error: 'Target agent not found' }, { status: 404 });
+            if (!agent) {
+                return NextResponse.json({ error: 'Target agent not found' }, { status: 404 });
+            }
+            agentName = agent.full_name;
         }
 
         // 4. Perform Update
+        const updateData: any = {
+            current_agent_id: null, // Unlock if locked
+            locked_at: null,
+            status: 'pending' // Reset status to pending
+        };
+
+        if (targetAgentId === 'pool') {
+            updateData.assigned_to = null;
+        } else {
+            updateData.assigned_to = targetAgentId;
+        }
+
         const { error: updateError } = await supabase
             .from('leads')
-            .update({
-                assigned_to: targetAgentId,
-                current_agent_id: null, // Unlock if locked
-                locked_at: null,
-                status: 'pending' // Reset status to pending so new agent sees it? Or keep status? 
-                // Decision: Usually transfer means "give this work to someone else", so usually keeps status unless it was 'processed'. 
-                // If we transfer 'processed' leads, maybe we shouldn't reset status. 
-                // But usually we transfer pending stuff. 
-                // Let's assume we maintain status but unlock it.
-            })
+            .update(updateData)
             .in('id', leadIds);
 
         if (updateError) throw updateError;
@@ -68,14 +75,14 @@ export async function POST(request: NextRequest) {
             lead_id: leadId,
             agent_id: user.id, // Manager performed action
             action: 'TRANSFER_LEAD',
-            metadata: { target_agent: agent.full_name, previous_agent: 'unknown' } // We don't query previous agent to save time
+            metadata: { target_agent: agentName, previous_agent: 'unknown' } // We don't query previous agent to save time
         }));
 
         await supabase.from('lead_activity_log').insert(logs);
 
         return NextResponse.json({
             success: true,
-            message: `${leadIds.length} lead successfully transferred to ${agent.full_name}`
+            message: `${leadIds.length} lead successfully transferred to ${agentName}`
         });
 
     } catch (error: any) {

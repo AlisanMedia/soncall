@@ -28,12 +28,9 @@ export default function TransferModal({ isOpen, onClose, selectedLeadsCount, lea
 
     const loadAgents = async () => {
         try {
-            const { data } = await supabase
-                .from('profiles')
-                .select('*')
-                .eq('role', 'agent')
-                .order('full_name');
-            setAgents(data || []);
+            const res = await fetch('/api/manager/team/list-all');
+            const data = await res.json();
+            setAgents(data.agents || []);
         } catch (e) {
             console.error(e);
         } finally {
@@ -99,6 +96,7 @@ export default function TransferModal({ isOpen, onClose, selectedLeadsCount, lea
                                 onChange={(e) => setTargetAgentId(e.target.value)}
                             >
                                 <option value="">Agent Seçiniz...</option>
+                                <option value="pool">⚠️ Havuz (Atamayı Kaldır)</option>
                                 {agents.map(agent => (
                                     <option key={agent.id} value={agent.id}>{agent.full_name}</option>
                                 ))}
