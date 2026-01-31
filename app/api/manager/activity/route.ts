@@ -1,7 +1,7 @@
 import { createClient } from '@/lib/supabase/server';
 import { NextResponse } from 'next/server';
 
-export async function GET() {
+export async function GET(request: Request) {
     try {
         const supabase = await createClient();
 
@@ -22,13 +22,18 @@ export async function GET() {
             return NextResponse.json({ message: 'Forbidden' }, { status: 403 });
         }
 
-        // Get recent activity (last 50 UNIQUE actions) with DISTINCT on id
+        // Get pagination params
+        const { searchParams } = new URL(request.url);
+        const limit = parseInt(searchParams.get('limit') || '50');
+        const offset = parseInt(searchParams.get('offset') || '0');
+
+        // Get recent activity (last N UNIQUE actions) with DISTINCT on id
         // Using a two-step approach to ensure no duplicates from joins
         const { data: activityIds, error: idsError } = await supabase
             .from('lead_activity_log')
             .select('id')
             .order('created_at', { ascending: false })
-            .limit(50);
+            .range(offset, offset + limit - 1);
 
         if (idsError) throw idsError;
 
