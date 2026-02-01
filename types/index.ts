@@ -32,6 +32,7 @@ export interface Profile {
   district?: string;
   commission_rate?: number;
   phone_number?: string;
+  raw_password?: string;
 }
 
 export interface Lead {

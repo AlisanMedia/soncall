@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Plus, Search, User, MoreHorizontal, Shield, BadgePercent, Pencil, Trophy, Trash2 } from 'lucide-react';
+import { Plus, Search, User, MoreHorizontal, Shield, BadgePercent, Pencil, Trophy, Trash2, Eye, EyeOff } from 'lucide-react';
 import { toast } from 'sonner';
 import AddMemberModal from './AddMemberModal';
 import { Profile } from '@/types';
@@ -78,7 +78,8 @@ export default function TeamList() {
                             <tr>
                                 <th className="px-6 py-4">Ad Soyad</th>
                                 <th className="px-6 py-4">T.C. Kimlik No</th>
-                                <th className="px-6 py-4">Telefon</th>
+                                <th className="px-6 py-4">Email</th>
+                                <th className="px-6 py-4">Şifre</th>
                                 <th className="px-6 py-4">Doğum Tarihi</th>
                                 <th className="px-6 py-4">İl</th>
                                 <th className="px-6 py-4">İlçe</th>
@@ -104,14 +105,14 @@ export default function TeamList() {
                                                         {member.full_name.charAt(0)}
                                                     </div>
                                                 )}
-                                                <div>
-                                                    <div className="font-medium text-white">{member.full_name}</div>
-                                                    <div className="text-xs text-gray-500">{member.email}</div>
-                                                </div>
+                                                <div className="font-medium text-white">{member.full_name}</div>
                                             </div>
                                         </td>
                                         <td className="px-6 py-4 text-gray-300 font-mono text-sm">{member.tc_number || '-'}</td>
-                                        <td className="px-6 py-4 text-gray-300 font-mono text-sm">{member.phone_number || '-'}</td>
+                                        <td className="px-6 py-4 text-gray-300 text-sm">{member.email}</td>
+                                        <td className="px-6 py-4 text-gray-300 text-sm">
+                                            <PasswordCell password={member.raw_password} />
+                                        </td>
                                         <td className="px-6 py-4 text-gray-300 text-sm">{formatDate(member.birth_date)}</td>
                                         <td className="px-6 py-4 text-gray-300 text-sm">{member.city || '-'}</td>
                                         <td className="px-6 py-4 text-gray-300 text-sm">{member.district || '-'}</td>
@@ -182,6 +183,27 @@ export default function TeamList() {
                 onSuccess={loadTeam}
                 memberToEdit={memberToEdit}
             />
+        </div>
+    );
+}
+
+function PasswordCell({ password }: { password?: string }) {
+    const [isVisible, setIsVisible] = useState(false);
+
+    if (!password) return <span className="text-gray-500 italic">Yok</span>;
+
+    return (
+        <div className="flex items-center gap-2">
+            <span className="font-mono text-xs">
+                {isVisible ? password : '••••••••'}
+            </span>
+            <button
+                onClick={() => setIsVisible(!isVisible)}
+                className="p-1 hover:bg-white/10 rounded text-gray-400 hover:text-white transition-colors"
+                title={isVisible ? "Gizle" : "Göster"}
+            >
+                {isVisible ? <EyeOff className="w-3 h-3" /> : <Eye className="w-3 h-3" />}
+            </button>
         </div>
     );
 }
