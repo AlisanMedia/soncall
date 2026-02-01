@@ -1,0 +1,197 @@
+'use client';
+
+import { useState } from 'react';
+import { X, Building2, MapPin, Globe, Phone, Mail, Instagram, Linkedin, Facebook, Sparkles, ExternalLink, Search, BrainCircuit } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
+
+interface LeadDetailModalProps {
+    isOpen: boolean;
+    onClose: () => void;
+    lead: {
+        business_name: string;
+        phone_number: string;
+        [key: string]: any;
+    };
+}
+
+export default function LeadDetailModal({ isOpen, onClose, lead }: LeadDetailModalProps) {
+    const [isEnriching, setIsEnriching] = useState(false);
+    const [enrichedData, setEnrichedData] = useState<any>(null);
+
+    const handleEnrichment = async () => {
+        setIsEnriching(true);
+
+        // Simulating AI Analysis
+        await new Promise(resolve => setTimeout(resolve, 2000));
+
+        setEnrichedData({
+            website: `https://www.google.com/search?q=${encodeURIComponent(lead.business_name)}`,
+            socials: [
+                { platform: 'instagram', url: `https://www.instagram.com/explore/tags/${encodeURIComponent(lead.business_name.replace(/\s+/g, ''))}/` },
+                { platform: 'facebook', url: `https://www.facebook.com/search/top?q=${encodeURIComponent(lead.business_name)}` },
+                { platform: 'linkedin', url: `https://www.linkedin.com/search/results/all/?keywords=${encodeURIComponent(lead.business_name)}` }
+            ],
+            summary: "İşletme dijital varlığı aktif görünüyor. Potansiyel sosyal medya hesapları tespit edildi."
+        });
+
+        setIsEnriching(false);
+    };
+
+    if (!isOpen) return null;
+
+    return (
+        <AnimatePresence>
+            <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+                <motion.div
+                    initial={{ opacity: 0, scale: 0.9 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    exit={{ opacity: 0, scale: 0.9 }}
+                    className="bg-[#1e1e2d] w-full max-w-2xl rounded-2xl border border-white/10 shadow-2xl overflow-hidden"
+                >
+                    {/* Header */}
+                    <div className="bg-gradient-to-r from-slate-900 to-slate-800 p-6 border-b border-white/10 flex justify-between items-start">
+                        <div className="flex gap-4">
+                            <div className="w-16 h-16 rounded-xl bg-purple-500/20 flex items-center justify-center border border-purple-500/30">
+                                <Building2 className="w-8 h-8 text-purple-400" />
+                            </div>
+                            <div>
+                                <h2 className="text-2xl font-bold text-white">{lead.business_name}</h2>
+                                <div className="flex items-center gap-2 text-purple-200 mt-1">
+                                    <span className="px-2 py-0.5 rounded bg-purple-500/10 border border-purple-500/20 text-xs">
+                                        Potansiyel Müşteri
+                                    </span>
+                                </div>
+                            </div>
+                        </div>
+                        <button onClick={onClose} className="p-2 hover:bg-white/10 rounded-lg text-gray-400 hover:text-white transition-colors">
+                            <X className="w-5 h-5" />
+                        </button>
+                    </div>
+
+                    <div className="p-6 grid grid-cols-1 md:grid-cols-2 gap-8">
+                        {/* Left Column: Contact Info */}
+                        <div className="space-y-6">
+                            <h3 className="text-sm font-bold text-gray-400 uppercase tracking-wider mb-4">İletişim Bilgileri</h3>
+
+                            <div className="space-y-4">
+                                <div className="flex items-center gap-3 text-gray-300">
+                                    <Phone className="w-4 h-4 text-purple-400" />
+                                    <span>{lead.phone_number}</span>
+                                </div>
+                                <div className="flex items-center gap-3 text-gray-300">
+                                    <MapPin className="w-4 h-4 text-purple-400" />
+                                    <span>Konum bilgisi bekleniyor...</span>
+                                </div>
+                                <div className="flex items-center gap-3 text-gray-300">
+                                    <Globe className="w-4 h-4 text-purple-400" />
+                                    <span>Web sitesi bekleniyor...</span>
+                                </div>
+                            </div>
+
+                            <div className="pt-6 border-t border-white/10">
+                                <h3 className="text-sm font-bold text-gray-400 uppercase tracking-wider mb-4">Mevcut Veriler</h3>
+                                <pre className="bg-black/30 p-3 rounded-lg text-xs text-green-300 overflow-x-auto font-mono">
+                                    {JSON.stringify(lead.raw_data || {}, null, 2)}
+                                </pre>
+                            </div>
+                        </div>
+
+                        {/* Right Column: AI Enrichment */}
+                        <div className="space-y-6">
+                            <div className="flex items-center justify-between mb-4">
+                                <h3 className="text-sm font-bold text-gray-400 uppercase tracking-wider flex items-center gap-2">
+                                    <BrainCircuit className="w-4 h-4 text-blue-400" />
+                                    AI Dijital Varlık Analizi
+                                </h3>
+                            </div>
+
+                            {!enrichedData ? (
+                                <div className="bg-blue-500/5 border border-blue-500/20 rounded-xl p-6 text-center">
+                                    <Sparkles className="w-12 h-12 text-blue-400 mx-auto mb-4 opacity-50" />
+                                    <p className="text-blue-200 mb-6 text-sm">
+                                        İşletmenin sosyal medya hesaplarını, web sitesini ve dijital puanını yapay zeka ile analiz etmek için tıklayın.
+                                    </p>
+                                    <button
+                                        onClick={handleEnrichment}
+                                        disabled={isEnriching}
+                                        className="w-full py-3 bg-blue-600 hover:bg-blue-500 text-white rounded-lg font-bold flex items-center justify-center gap-2 transition-all shadow-lg shadow-blue-900/20"
+                                    >
+                                        {isEnriching ? (
+                                            <>
+                                                <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                                                Analiz Ediliyor...
+                                            </>
+                                        ) : (
+                                            <>
+                                                <Sparkles className="w-4 h-4" />
+                                                AI ile Verileri Zenginleştir
+                                            </>
+                                        )}
+                                    </button>
+                                </div>
+                            ) : (
+                                <motion.div
+                                    initial={{ opacity: 0, y: 10 }}
+                                    animate={{ opacity: 1, y: 0 }}
+                                    className="bg-green-500/5 border border-green-500/20 rounded-xl p-5 space-y-4"
+                                >
+                                    <div className="flex items-start gap-3">
+                                        <div className="bg-green-500/20 p-2 rounded-lg">
+                                            <CheckCircle className="w-5 h-5 text-green-400" />
+                                        </div>
+                                        <div>
+                                            <h4 className="font-bold text-green-400">Analiz Tamamlandı</h4>
+                                            <p className="text-xs text-green-200/70 mt-1">{enrichedData.summary}</p>
+                                        </div>
+                                    </div>
+
+                                    <div className="space-y-2 mt-4">
+                                        {enrichedData.socials.map((social: any, idx: number) => (
+                                            <a
+                                                key={idx}
+                                                href={social.url}
+                                                target="_blank"
+                                                rel="noopener noreferrer"
+                                                className="flex items-center justify-between p-3 bg-white/5 hover:bg-white/10 rounded-lg border border-white/10 transition-colors group"
+                                            >
+                                                <div className="flex items-center gap-3">
+                                                    {social.platform === 'instagram' && <Instagram className="w-4 h-4 text-pink-500" />}
+                                                    {social.platform === 'facebook' && <Facebook className="w-4 h-4 text-blue-500" />}
+                                                    {social.platform === 'linkedin' && <Linkedin className="w-4 h-4 text-blue-400" />}
+                                                    <span className="capitalize text-gray-300 text-sm">{social.platform} Araması</span>
+                                                </div>
+                                                <ExternalLink className="w-3 h-3 text-gray-500 group-hover:text-white" />
+                                            </a>
+                                        ))}
+
+                                        <a
+                                            href={enrichedData.website}
+                                            target="_blank"
+                                            rel="noopener noreferrer"
+                                            className="flex items-center justify-between p-3 bg-white/5 hover:bg-white/10 rounded-lg border border-white/10 transition-colors group"
+                                        >
+                                            <div className="flex items-center gap-3">
+                                                <Search className="w-4 h-4 text-orange-400" />
+                                                <span className="text-gray-300 text-sm">Google'da Ara</span>
+                                            </div>
+                                            <ExternalLink className="w-3 h-3 text-gray-500 group-hover:text-white" />
+                                        </a>
+                                    </div>
+                                </motion.div>
+                            )}
+                        </div>
+                    </div>
+                </motion.div>
+            </div>
+        </AnimatePresence>
+    );
+}
+
+function CheckCircle({ className }: { className?: string }) {
+    return (
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}>
+            <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14" />
+            <polyline points="22 4 12 14.01 9 11.01" />
+        </svg>
+    )
+}

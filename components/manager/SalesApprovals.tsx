@@ -2,8 +2,9 @@
 
 import { useState, useEffect } from 'react';
 import { createClient } from '@/lib/supabase/client';
-import { CheckCircle, XCircle, DollarSign, Clock, User, Building2, Loader2, AlertCircle, TrendingUp, Calendar } from 'lucide-react';
+import { CheckCircle, XCircle, DollarSign, Clock, User, Building2, Loader2, AlertCircle, TrendingUp, Calendar, Eye } from 'lucide-react';
 import { toast } from 'sonner';
+import LeadDetailModal from './LeadDetailModal';
 
 interface SaleRequest {
     id: string;
@@ -32,6 +33,7 @@ export default function SalesApprovals() {
     const [managerNote, setManagerNote] = useState('');
     const [processingId, setProcessingId] = useState<string | null>(null);
     const [actionType, setActionType] = useState<'approve' | 'reject' | null>(null);
+    const [viewDetailRequest, setViewDetailRequest] = useState<SaleRequest | null>(null);
 
     const supabase = createClient();
 
@@ -168,7 +170,16 @@ export default function SalesApprovals() {
                                 <div className="flex-1 space-y-2">
                                     <div className="flex items-center gap-2 text-purple-300">
                                         <Building2 className="w-4 h-4" />
-                                        <span className="font-semibold">{request.lead.business_name}</span>
+                                        <button
+                                            onClick={() => setViewDetailRequest(request)}
+                                            className="font-semibold hover:text-white hover:underline transition-colors text-left"
+                                        >
+                                            {request.lead.business_name}
+                                            <span className="ml-2 text-xs bg-purple-500/20 px-2 py-0.5 rounded-full border border-purple-500/30 text-purple-200 no-underline inline-block">
+                                                <Eye className="w-3 h-3 inline mr-1" />
+                                                Detay
+                                            </span>
+                                        </button>
                                     </div>
                                     <div className="flex items-center gap-6">
                                         <div className="flex items-center gap-2 bg-green-500/10 px-3 py-1 rounded-lg border border-green-500/20">
@@ -270,6 +281,14 @@ export default function SalesApprovals() {
                         </div>
                     </div>
                 </div>
+            )}
+            {/* Lead Detail Modal */}
+            {viewDetailRequest && (
+                <LeadDetailModal
+                    isOpen={!!viewDetailRequest}
+                    onClose={() => setViewDetailRequest(null)}
+                    lead={viewDetailRequest.lead}
+                />
             )}
         </div>
     );
