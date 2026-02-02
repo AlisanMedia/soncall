@@ -2,7 +2,10 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { Search, Filter, ShieldAlert, ArrowRightLeft, CheckSquare, Square } from 'lucide-react';
+import { Search, Filter, ShieldAlert, ArrowRightLeft, CheckSquare, Square, Trash2 } from 'lucide-react';
+import { toast } from 'sonner';
+
+
 import TransferModal from './TransferModal';
 import StuckLeadsPanel from './StuckLeadsPanel';
 import { createClient } from '@/lib/supabase/client';
@@ -147,6 +150,28 @@ export default function LeadManagementView() {
             loadData();
         } else {
             alert(data.error);
+        }
+    };
+
+    const handleBulkDelete = async () => {
+        if (!confirm(`${selectedLeads.length} adet lead kalıcı olarak silinecek. Bu işlem geri alınamaz! Emin misiniz?`)) return;
+
+        setLoading(true);
+        try {
+            const { error } = await supabase
+                .from('leads')
+                .delete()
+                .in('id', selectedLeads);
+
+            if (error) throw error;
+
+            toast.success(`${selectedLeads.length} lead başarıyla silindi.`);
+            setSelectedLeads([]);
+            loadData();
+        } catch (error: any) {
+            console.error('Delete error:', error);
+            toast.error('Silme işlemi başarısız: ' + error.message);
+            setLoading(false);
         }
     };
 
