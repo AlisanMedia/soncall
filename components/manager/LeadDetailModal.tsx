@@ -175,10 +175,6 @@ export default function LeadDetailModal({ isOpen, onClose, lead }: LeadDetailMod
                                                 <span className="inline-block mt-2 text-[10px] bg-blue-500/20 text-blue-300 px-2 py-0.5 rounded border border-blue-500/30">
                                                     Google Onaylı Veri
                                                 </span>
-                                            ) : enrichedData.source === 'ai_knowledge' ? (
-                                                <span className="inline-block mt-2 text-[10px] bg-yellow-500/20 text-yellow-300 px-2 py-0.5 rounded border border-yellow-500/30">
-                                                    AI Tahmini (Google API Eksik)
-                                                </span>
                                             ) : null}
                                         </div>
                                     </div>

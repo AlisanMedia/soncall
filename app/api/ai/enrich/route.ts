@@ -42,10 +42,10 @@ export async function POST(request: NextRequest) {
                 console.error('❌ [Enrichment] Google Search failed:', err);
             }
         } else {
-            console.log('⚠️ [Enrichment] Google API keys missing. Fallback to AI Hallucination/Knowledge.');
-            searchSource = 'ai_knowledge';
-            // We can't search, so we skip to AI analysis with empty search results, 
-            // relying on GPT's internal knowledge if the business is significant.
+            // STRICT MODE: No keys = Error
+            return NextResponse.json({
+                error: 'Google API Key eksik! Lütfen sistem yöneticisiyle iletişime geçin. (Strict Mode A)'
+            }, { status: 500 });
         }
 
         // 2. AI Analysis
