@@ -2,8 +2,9 @@
 
 import { useState, useEffect } from 'react';
 import { createClient } from '@/lib/supabase/client';
-import { CheckCircle, XCircle, DollarSign, Clock, User, Building2, Loader2, AlertCircle, TrendingUp, Calendar, Eye } from 'lucide-react';
+import { CheckCircle, XCircle, DollarSign, Clock, User, Building2, Loader2, AlertCircle, TrendingUp, Calendar, Eye, ChevronDown, ChevronUp } from 'lucide-react';
 import { toast } from 'sonner';
+import { motion, AnimatePresence } from 'framer-motion';
 import LeadDetailModal from './LeadDetailModal';
 
 interface SaleRequest {
@@ -34,6 +35,7 @@ export default function SalesApprovals() {
     const [processingId, setProcessingId] = useState<string | null>(null);
     const [actionType, setActionType] = useState<'approve' | 'reject' | null>(null);
     const [viewDetailRequest, setViewDetailRequest] = useState<SaleRequest | null>(null);
+    const [isExpanded, setIsExpanded] = useState(false);
 
     const supabase = createClient();
 
@@ -147,73 +149,102 @@ export default function SalesApprovals() {
                     </div>
                 </div>
 
-                <div className="divide-y divide-white/5">
-                    {requests.map(request => (
-                        <div key={request.id} className="p-6 hover:bg-white/5 transition-colors">
-                            <div className="flex flex-col md:flex-row md:items-center gap-6">
-                                {/* Agent Info */}
-                                <div className="flex items-center gap-3 md:w-1/4">
-                                    <div className="w-10 h-10 rounded-full bg-slate-700 flex items-center justify-center overflow-hidden border border-white/10">
-                                        {request.agent.avatar_url ? (
-                                            <img src={request.agent.avatar_url} className="w-full h-full object-cover" />
-                                        ) : (
-                                            <User className="w-5 h-5 text-gray-400" />
-                                        )}
+                <div className="divide-y divide-white/5 relative">
+                    <AnimatePresence>
+                        {requests.slice(0, isExpanded ? undefined : 3).map(request => (
+                            <motion.div
+                                key={request.id}
+                                initial={{ opacity: 0, height: 0 }}
+                                animate={{ opacity: 1, height: 'auto' }}
+                                exit={{ opacity: 0, height: 0 }}
+                                transition={{ duration: 0.3 }}
+                                className="p-6 hover:bg-white/5 transition-colors overflow-hidden"
+                            >
+                                <div className="flex flex-col md:flex-row md:items-center gap-6">
+                                    {/* Agent Info */}
+                                    <div className="flex items-center gap-3 md:w-1/4">
+                                        <div className="w-10 h-10 rounded-full bg-slate-700 flex items-center justify-center overflow-hidden border border-white/10">
+                                            {request.agent.avatar_url ? (
+                                                <img src={request.agent.avatar_url} className="w-full h-full object-cover" />
+                                            ) : (
+                                                <User className="w-5 h-5 text-gray-400" />
+                                            )}
+                                        </div>
+                                        <div>
+                                            <div className="font-bold text-white">{request.agent.full_name}</div>
+                                            <div className="text-xs text-gray-400">Temsilci</div>
+                                        </div>
                                     </div>
-                                    <div>
-                                        <div className="font-bold text-white">{request.agent.full_name}</div>
-                                        <div className="text-xs text-gray-400">Temsilci</div>
-                                    </div>
-                                </div>
 
-                                {/* Lead & Sale Info */}
-                                <div className="flex-1 space-y-2">
-                                    <div className="flex items-center gap-2 text-purple-300">
-                                        <Building2 className="w-4 h-4" />
+                                    {/* Lead & Sale Info */}
+                                    <div className="flex-1 space-y-2">
+                                        <div className="flex items-center gap-2 text-purple-300">
+                                            <Building2 className="w-4 h-4" />
+                                            <button
+                                                onClick={() => setViewDetailRequest(request)}
+                                                className="font-semibold hover:text-white hover:underline transition-colors text-left"
+                                            >
+                                                {request.lead.business_name}
+                                                <span className="ml-2 text-xs bg-purple-500/20 px-2 py-0.5 rounded-full border border-purple-500/30 text-purple-200 no-underline inline-block">
+                                                    <Eye className="w-3 h-3 inline mr-1" />
+                                                    Detay
+                                                </span>
+                                            </button>
+                                        </div>
+                                        <div className="flex items-center gap-6">
+                                            <div className="flex items-center gap-2 bg-green-500/10 px-3 py-1 rounded-lg border border-green-500/20">
+                                                <DollarSign className="w-4 h-4 text-green-400" />
+                                                <span className="text-green-400 font-bold text-lg">${request.amount.toLocaleString()}</span>
+                                            </div>
+                                            <div className="flex items-center gap-2 text-gray-400 text-xs">
+                                                <Calendar className="w-3 h-3" />
+                                                {new Date(request.created_at).toLocaleString('tr-TR')}
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    {/* Actions */}
+                                    <div className="flex gap-2 md:w-auto w-full">
                                         <button
-                                            onClick={() => setViewDetailRequest(request)}
-                                            className="font-semibold hover:text-white hover:underline transition-colors text-left"
+                                            onClick={() => handleActionClick(request, 'approve')}
+                                            className="flex-1 md:flex-none px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg font-medium flex items-center justify-center gap-2 transition-colors shadow-lg shadow-green-900/20"
                                         >
-                                            {request.lead.business_name}
-                                            <span className="ml-2 text-xs bg-purple-500/20 px-2 py-0.5 rounded-full border border-purple-500/30 text-purple-200 no-underline inline-block">
-                                                <Eye className="w-3 h-3 inline mr-1" />
-                                                Detay
-                                            </span>
+                                            <CheckCircle className="w-4 h-4" />
+                                            Onayla
+                                        </button>
+                                        <button
+                                            onClick={() => handleActionClick(request, 'reject')}
+                                            className="flex-1 md:flex-none px-4 py-2 bg-red-600/20 hover:bg-red-600/40 text-red-300 hover:text-white rounded-lg font-medium flex items-center justify-center gap-2 transition-colors border border-red-500/30"
+                                        >
+                                            <XCircle className="w-4 h-4" />
+                                            Reddet
                                         </button>
                                     </div>
-                                    <div className="flex items-center gap-6">
-                                        <div className="flex items-center gap-2 bg-green-500/10 px-3 py-1 rounded-lg border border-green-500/20">
-                                            <DollarSign className="w-4 h-4 text-green-400" />
-                                            <span className="text-green-400 font-bold text-lg">${request.amount.toLocaleString()}</span>
-                                        </div>
-                                        <div className="flex items-center gap-2 text-gray-400 text-xs">
-                                            <Calendar className="w-3 h-3" />
-                                            {new Date(request.created_at).toLocaleString('tr-TR')}
-                                        </div>
-                                    </div>
                                 </div>
-
-                                {/* Actions */}
-                                <div className="flex gap-2 md:w-auto w-full">
-                                    <button
-                                        onClick={() => handleActionClick(request, 'approve')}
-                                        className="flex-1 md:flex-none px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg font-medium flex items-center justify-center gap-2 transition-colors shadow-lg shadow-green-900/20"
-                                    >
-                                        <CheckCircle className="w-4 h-4" />
-                                        Onayla
-                                    </button>
-                                    <button
-                                        onClick={() => handleActionClick(request, 'reject')}
-                                        className="flex-1 md:flex-none px-4 py-2 bg-red-600/20 hover:bg-red-600/40 text-red-300 hover:text-white rounded-lg font-medium flex items-center justify-center gap-2 transition-colors border border-red-500/30"
-                                    >
-                                        <XCircle className="w-4 h-4" />
-                                        Reddet
-                                    </button>
-                                </div>
-                            </div>
-                        </div>
-                    ))}
+                            </motion.div>
+                        ))}
+                    </AnimatePresence>
                 </div>
+
+                {/* Expand/Collapse Button */}
+                {requests.length > 3 && (
+                    <button
+                        onClick={() => setIsExpanded(!isExpanded)}
+                        className="w-full py-3 bg-white/5 hover:bg-white/10 text-gray-400 hover:text-white text-sm font-medium transition-colors border-t border-white/5 flex items-center justify-center gap-2 group"
+                    >
+                        {isExpanded ? (
+                            <>
+                                <ChevronUp className="w-4 h-4 group-hover:-translate-y-0.5 transition-transform" />
+                                Daha Az Göster
+                            </>
+                        ) : (
+                            <>
+                                <ChevronDown className="w-4 h-4 group-hover:translate-y-0.5 transition-transform" />
+                                Tümünü Göster ({requests.length - 3} adet daha)
+                            </>
+                        )}
+                    </button>
+                )}
             </div>
 
             {/* Approval/Rejection Modal */}
