@@ -110,18 +110,14 @@ export default function LeadDetailModal({ isOpen, onClose, lead }: LeadDetailMod
                                 </div>
                                 <div className="flex items-center gap-3 text-gray-300">
                                     <MapPin className="w-4 h-4 text-purple-400 shrink-0" />
-                                    {enrichedData?.address ? (
-                                        <a
-                                            href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(enrichedData.address)}`}
-                                            target="_blank"
-                                            rel="noopener noreferrer"
-                                            className="hover:text-white hover:underline truncate"
-                                        >
-                                            {enrichedData.address}
-                                        </a>
-                                    ) : (
-                                        <span className="text-gray-500 italic">Konum bilgisi bekleniyor... (AI Analizi Yapın)</span>
-                                    )}
+                                    <a
+                                        href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(enrichedData?.address || `${lead.business_name} ${lead.city || ''} ${lead.district || ''}`)}`}
+                                        target="_blank"
+                                        rel="noopener noreferrer"
+                                        className="hover:text-white hover:underline truncate"
+                                    >
+                                        {enrichedData?.address || `${lead.city || ''} ${lead.district || ''} (Haritada Gör)`}
+                                    </a>
                                 </div>
                                 <div className="flex items-center gap-3 text-gray-300">
                                     <Globe className="w-4 h-4 text-purple-400 shrink-0" />
@@ -141,10 +137,7 @@ export default function LeadDetailModal({ isOpen, onClose, lead }: LeadDetailMod
                             </div>
 
                             <div className="pt-6 border-t border-white/10">
-                                <h3 className="text-sm font-bold text-gray-400 uppercase tracking-wider mb-4">Mevcut Veriler</h3>
-                                <pre className="bg-black/30 p-3 rounded-lg text-xs text-green-300 overflow-x-auto font-mono">
-                                    {JSON.stringify(lead.raw_data || {}, null, 2)}
-                                </pre>
+                                {/* Mevcut Veriler section removed as requested */}
                             </div>
                         </div>
 
