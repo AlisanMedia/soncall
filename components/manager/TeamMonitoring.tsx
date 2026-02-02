@@ -290,7 +290,7 @@ export default function TeamMonitoring() {
                                 key={overview.total_leads}
                                 initial={{ scale: 1 }}
                                 animate={{ scale: [1, 1.4, 1], rotate: [0, 10, -10, 0] }}
-                                transition={{ duration: 0.5, type: 'spring' }}
+                                transition={{ duration: 0.5 }}
                             >
                                 <Package className="w-10 h-10 text-purple-400" />
                             </motion.div>
@@ -353,7 +353,7 @@ export default function TeamMonitoring() {
                                 key={overview.appointments_today}
                                 initial={{ y: 0 }}
                                 animate={{ y: [0, -10, 0] }}
-                                transition={{ duration: 0.5, type: 'spring', bounce: 0.5 }}
+                                transition={{ duration: 0.5 }}
                             >
                                 <Calendar className="w-10 h-10 text-purple-400" />
                             </motion.div>

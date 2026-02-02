@@ -187,11 +187,19 @@ export default function LeadDetailModal({ isOpen, onClose, lead }: LeadDetailMod
                                         <div>
                                             <h4 className="font-bold text-green-400">Analiz Tamamlandı</h4>
                                             <p className="text-xs text-green-200/70 mt-1">{enrichedData.summary}</p>
-                                            {enrichedData.source === 'google_api' ? (
-                                                <span className="inline-block mt-2 text-[10px] bg-blue-500/20 text-blue-300 px-2 py-0.5 rounded border border-blue-500/30">
-                                                    Google Onaylı Veri
-                                                </span>
-                                            ) : null}
+                                            <div className="flex gap-2 mt-2">
+                                                {enrichedData.source === 'google_api' && (
+                                                    <span className="inline-block text-[10px] bg-blue-500/20 text-blue-300 px-2 py-0.5 rounded border border-blue-500/30">
+                                                        Google Araması
+                                                    </span>
+                                                )}
+                                                {enrichedData.source === 'website_scrape' && (
+                                                    <span className="inline-block text-[10px] bg-purple-500/20 text-purple-300 px-2 py-0.5 rounded border border-purple-500/30 flex items-center gap-1">
+                                                        <Globe className="w-3 h-3" />
+                                                        Web Sitesinden Alındı
+                                                    </span>
+                                                )}
+                                            </div>
                                         </div>
                                     </div>
 
