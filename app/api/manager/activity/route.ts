@@ -22,18 +22,48 @@ export async function GET(request: Request) {
             return NextResponse.json({ message: 'Forbidden' }, { status: 403 });
         }
 
-        // Get pagination params
+        // Get pagination and search params
         const { searchParams } = new URL(request.url);
         const limit = parseInt(searchParams.get('limit') || '50');
         const offset = parseInt(searchParams.get('offset') || '0');
+        const search = searchParams.get('search') || '';
 
-        // Get recent activity (last N UNIQUE actions) with DISTINCT on id
-        // Using a two-step approach to ensure no duplicates from joins
-        const { data: activityIds, error: idsError } = await supabase
+        let query = supabase
             .from('lead_activity_log')
             .select('id')
-            .order('created_at', { ascending: false })
-            .range(offset, offset + limit - 1);
+            .order('created_at', { ascending: false });
+
+        if (search) {
+            // 1. Find matching Agents
+            const { data: agentIds } = await supabase
+                .from('profiles')
+                .select('id')
+                .ilike('full_name', `%${search}%`);
+
+            // 2. Find matching Leads
+            const { data: leadIds } = await supabase
+                .from('leads')
+                .select('id')
+                .or(`business_name.ilike.%${search}%,phone_number.ilike.%${search}%`);
+
+            const targetAgentIds = agentIds?.map(a => a.id) || [];
+            const targetLeadIds = leadIds?.map(l => l.id) || [];
+
+            if (targetAgentIds.length > 0 || targetLeadIds.length > 0) {
+                const orConditions: string[] = [];
+                if (targetAgentIds.length > 0) orConditions.push(`agent_id.in.(${targetAgentIds.join(',')})`);
+                if (targetLeadIds.length > 0) orConditions.push(`lead_id.in.(${targetLeadIds.join(',')})`);
+
+                query = query.or(orConditions.join(','));
+            } else {
+                // If search term yields no agents or leads, return empty
+                // But maybe the search term is in activity metadata/notes? 
+                // For now, let's assume it references entities.
+                return NextResponse.json({ activities: [] });
+            }
+        }
+
+        const { data: activityIds, error: idsError } = await query.range(offset, offset + limit - 1);
 
         if (idsError) throw idsError;
 
