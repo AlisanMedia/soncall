@@ -40,6 +40,7 @@ export default function LeadDetailModal({ isOpen, onClose, lead }: LeadDetailMod
 
             setEnrichedData({
                 website: aiData.website || `https://www.google.com/search?q=${encodeURIComponent(lead.business_name)}`,
+                address: aiData.address, // Capture the address
                 socials: aiData.socials?.length > 0 ? aiData.socials : [
                     { platform: 'instagram', url: `https://www.instagram.com/explore/tags/${encodeURIComponent(lead.business_name.replace(/\s+/g, ''))}/` },
                     { platform: 'facebook', url: `https://www.facebook.com/search/top?q=${encodeURIComponent(lead.business_name)}` },
@@ -108,12 +109,34 @@ export default function LeadDetailModal({ isOpen, onClose, lead }: LeadDetailMod
                                     <span>{lead.phone_number}</span>
                                 </div>
                                 <div className="flex items-center gap-3 text-gray-300">
-                                    <MapPin className="w-4 h-4 text-purple-400" />
-                                    <span>Konum bilgisi bekleniyor...</span>
+                                    <MapPin className="w-4 h-4 text-purple-400 shrink-0" />
+                                    {enrichedData?.address ? (
+                                        <a
+                                            href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(enrichedData.address)}`}
+                                            target="_blank"
+                                            rel="noopener noreferrer"
+                                            className="hover:text-white hover:underline truncate"
+                                        >
+                                            {enrichedData.address}
+                                        </a>
+                                    ) : (
+                                        <span className="text-gray-500 italic">Konum bilgisi bekleniyor... (AI Analizi Yapın)</span>
+                                    )}
                                 </div>
                                 <div className="flex items-center gap-3 text-gray-300">
-                                    <Globe className="w-4 h-4 text-purple-400" />
-                                    <span>Web sitesi bekleniyor...</span>
+                                    <Globe className="w-4 h-4 text-purple-400 shrink-0" />
+                                    {enrichedData?.website ? (
+                                        <a
+                                            href={enrichedData.website}
+                                            target="_blank"
+                                            rel="noopener noreferrer"
+                                            className="hover:text-white hover:underline truncate text-blue-400"
+                                        >
+                                            {enrichedData.website}
+                                        </a>
+                                    ) : (
+                                        <span className="text-gray-500 italic">Web sitesi bekleniyor... (AI Analizi Yapın)</span>
+                                    )}
                                 </div>
                             </div>
 

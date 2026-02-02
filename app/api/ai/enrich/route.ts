@@ -62,6 +62,7 @@ export async function POST(request: NextRequest) {
             Output strictly valid JSON:
             {
                 "website": "url or null",
+                "address": "Full physical address found in search results or null",
                 "socials": [
                     { "platform": "instagram", "url": "url" },
                     { "platform": "facebook", "url": "url" },
