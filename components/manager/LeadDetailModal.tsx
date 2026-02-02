@@ -20,21 +20,50 @@ export default function LeadDetailModal({ isOpen, onClose, lead }: LeadDetailMod
 
     const handleEnrichment = async () => {
         setIsEnriching(true);
+        setEnrichedData(null);
 
-        // Simulating AI Analysis
-        await new Promise(resolve => setTimeout(resolve, 2000));
+        try {
+            const response = await fetch('/api/ai/enrich', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    businessName: lead.business_name,
+                    location: lead.city || lead.district || ''
+                })
+            });
 
-        setEnrichedData({
-            website: `https://www.google.com/search?q=${encodeURIComponent(lead.business_name)}`,
-            socials: [
-                { platform: 'instagram', url: `https://www.instagram.com/explore/tags/${encodeURIComponent(lead.business_name.replace(/\s+/g, ''))}/` },
-                { platform: 'facebook', url: `https://www.facebook.com/search/top?q=${encodeURIComponent(lead.business_name)}` },
-                { platform: 'linkedin', url: `https://www.linkedin.com/search/results/all/?keywords=${encodeURIComponent(lead.business_name)}` }
-            ],
-            summary: "İşletme dijital varlığı aktif görünüyor. Potansiyel sosyal medya hesapları tespit edildi."
-        });
+            const result = await response.json();
 
-        setIsEnriching(false);
+            if (!result.success) throw new Error(result.error);
+
+            const aiData = result.data;
+
+            setEnrichedData({
+                website: aiData.website || `https://www.google.com/search?q=${encodeURIComponent(lead.business_name)}`,
+                socials: aiData.socials?.length > 0 ? aiData.socials : [
+                    { platform: 'instagram', url: `https://www.instagram.com/explore/tags/${encodeURIComponent(lead.business_name.replace(/\s+/g, ''))}/` },
+                    { platform: 'facebook', url: `https://www.facebook.com/search/top?q=${encodeURIComponent(lead.business_name)}` },
+                    { platform: 'linkedin', url: `https://www.linkedin.com/search/results/all/?keywords=${encodeURIComponent(lead.business_name)}` }
+                ],
+                summary: aiData.summary || "AI analizi tamamlandı.",
+                source: result.meta?.source || 'unknown'
+            });
+
+        } catch (error) {
+            console.error('Enrichment failed:', error);
+            setEnrichedData({
+                website: `https://www.google.com/search?q=${encodeURIComponent(lead.business_name)}`,
+                socials: [
+                    { platform: 'instagram', url: `https://www.instagram.com/explore/tags/${encodeURIComponent(lead.business_name.replace(/\s+/g, ''))}/` },
+                    { platform: 'facebook', url: `https://www.facebook.com/search/top?q=${encodeURIComponent(lead.business_name)}` },
+                    { platform: 'linkedin', url: `https://www.linkedin.com/search/results/all/?keywords=${encodeURIComponent(lead.business_name)}` }
+                ],
+                summary: "Bağlantı hatası oluştu. Manuel arama linkleri gösteriliyor.",
+                source: 'error'
+            });
+        } finally {
+            setIsEnriching(false);
+        }
     };
 
     if (!isOpen) return null;
@@ -142,6 +171,15 @@ export default function LeadDetailModal({ isOpen, onClose, lead }: LeadDetailMod
                                         <div>
                                             <h4 className="font-bold text-green-400">Analiz Tamamlandı</h4>
                                             <p className="text-xs text-green-200/70 mt-1">{enrichedData.summary}</p>
+                                            {enrichedData.source === 'google_api' ? (
+                                                <span className="inline-block mt-2 text-[10px] bg-blue-500/20 text-blue-300 px-2 py-0.5 rounded border border-blue-500/30">
+                                                    Google Onaylı Veri
+                                                </span>
+                                            ) : enrichedData.source === 'ai_knowledge' ? (
+                                                <span className="inline-block mt-2 text-[10px] bg-yellow-500/20 text-yellow-300 px-2 py-0.5 rounded border border-yellow-500/30">
+                                                    AI Tahmini (Google API Eksik)
+                                                </span>
+                                            ) : null}
                                         </div>
                                     </div>
 
