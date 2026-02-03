@@ -34,20 +34,41 @@ export async function GET(request: Request) {
             .order('created_at', { ascending: false });
 
         if (search) {
+            let targetLeadIds: string[] = [];
+
+            // 0. Check for Lead Number Search (SC-xxxx or just xxxx)
+            const cleanSearch = search.replace(/^(sc-?|#)/i, ''); // Remove SC-, SC, # prefixes
+            const isNumberSearch = /^\d+$/.test(cleanSearch);
+
+            if (isNumberSearch) {
+                const { data: numLeads } = await supabase
+                    .from('leads')
+                    .select('id')
+                    .eq('lead_number', parseInt(cleanSearch));
+
+                if (numLeads && numLeads.length > 0) {
+                    targetLeadIds.push(...numLeads.map(l => l.id));
+                }
+            }
+
             // 1. Find matching Agents
             const { data: agentIds } = await supabase
                 .from('profiles')
                 .select('id')
                 .ilike('full_name', `%${search}%`);
 
-            // 2. Find matching Leads
-            const { data: leadIds } = await supabase
+            // 2. Find matching Leads (by name/phone) 
+            const { data: textLeads } = await supabase
                 .from('leads')
                 .select('id')
                 .or(`business_name.ilike.%${search}%,phone_number.ilike.%${search}%`);
 
+            if (textLeads) targetLeadIds.push(...textLeads.map(l => l.id));
+
             const targetAgentIds = agentIds?.map(a => a.id) || [];
-            const targetLeadIds = leadIds?.map(l => l.id) || [];
+
+            // Deduplicate lead IDs
+            targetLeadIds = [...new Set(targetLeadIds)];
 
             if (targetAgentIds.length > 0 || targetLeadIds.length > 0) {
                 const orConditions: string[] = [];
@@ -56,9 +77,6 @@ export async function GET(request: Request) {
 
                 query = query.or(orConditions.join(','));
             } else {
-                // If search term yields no agents or leads, return empty
-                // But maybe the search term is in activity metadata/notes? 
-                // For now, let's assume it references entities.
                 return NextResponse.json({ activities: [] });
             }
         }
@@ -86,6 +104,7 @@ export async function GET(request: Request) {
         leads (
           business_name,
           phone_number,
+          lead_number,
           status,
           potential_level
         )

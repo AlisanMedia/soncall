@@ -37,6 +37,7 @@ export interface Profile {
 
 export interface Lead {
   id: string;
+  lead_number?: number; // Added via migration
   business_name: string;
   phone_number: string;
   address: string;

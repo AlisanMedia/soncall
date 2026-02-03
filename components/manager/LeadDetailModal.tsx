@@ -10,6 +10,7 @@ interface LeadDetailModalProps {
     lead: {
         business_name: string;
         phone_number: string;
+        lead_number?: number;
         [key: string]: any;
     };
 }
@@ -85,7 +86,14 @@ export default function LeadDetailModal({ isOpen, onClose, lead }: LeadDetailMod
                                 <Building2 className="w-8 h-8 text-purple-400" />
                             </div>
                             <div>
-                                <h2 className="text-2xl font-bold text-white">{lead.business_name}</h2>
+                                <h2 className="text-2xl font-bold text-white flex items-center gap-2">
+                                    {lead.lead_number && (
+                                        <span className="text-lg text-purple-400 font-mono bg-purple-500/10 px-2 py-0.5 rounded border border-purple-500/20">
+                                            #{lead.lead_number}
+                                        </span>
+                                    )}
+                                    {lead.business_name}
+                                </h2>
                                 <div className="flex items-center gap-2 text-purple-200 mt-1">
                                     <span className="px-2 py-0.5 rounded bg-purple-500/10 border border-purple-500/20 text-xs">
                                         Potansiyel Müşteri
