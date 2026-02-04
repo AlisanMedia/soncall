@@ -137,8 +137,8 @@ export default function ManagerDashboard({ profile }: ManagerDashboardProps) {
                 </div>
             </header>
 
-            {/* Mobile Navigation (Visible only on small screens) */}
-            <div className="md:hidden sticky top-0 z-40 bg-slate-900/50 backdrop-blur-md border-b border-white/5 overflow-x-auto">
+            {/* Mobile Navigation (Visible only on small screens) - Enhanced with Smooth Scroll */}
+            <div className="md:hidden sticky top-0 z-40 bg-slate-900/50 backdrop-blur-md border-b border-white/5 overflow-x-auto scrollbar-thin">
                 <div className="flex p-2 gap-2 min-w-max">
                     {[
                         { id: 'monitor', icon: Activity, label: 'Genel Bakış' },
@@ -156,13 +156,13 @@ export default function ManagerDashboard({ profile }: ManagerDashboardProps) {
                         <button
                             key={item.id}
                             onClick={() => setCurrentTab(item.id as Tab)}
-                            className={`p-2 rounded-lg flex flex-col items-center gap-1 min-w-[60px] ${currentTab === item.id
-                                ? 'bg-purple-600 text-white'
+                            className={`p-3 rounded-lg flex flex-col items-center gap-1 min-w-[70px] transition-all touch-target active:scale-95 ${currentTab === item.id
+                                ? 'bg-purple-600 text-white shadow-lg'
                                 : 'text-purple-200 hover:bg-white/10'
                                 }`}
                         >
                             <item.icon className="w-5 h-5" />
-                            <span className="text-[10px]">{item.label}</span>
+                            <span className="text-[10px] font-medium">{item.label}</span>
                         </button>
                     ))}
                 </div>
@@ -231,15 +231,16 @@ export default function ManagerDashboard({ profile }: ManagerDashboardProps) {
                 )}
             </main>
 
-            {/* Floating Action Buttons */}
-            <div className="fixed bottom-6 right-6 z-50 flex flex-col gap-4">
+            {/* Floating Action Buttons - Mobile Optimized */}
+            <div className="fixed bottom-6 right-6 z-50 flex flex-col gap-4 safe-bottom safe-right">
                 {/* Chat Button */}
                 <button
                     onClick={() => setChatOpen(!chatOpen)}
-                    className="bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 text-white w-14 h-14 rounded-full shadow-2xl flex items-center justify-center transition-all hover:scale-110 active:scale-95 relative"
+                    className="bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 text-white w-14 h-14 md:w-16 md:h-16 rounded-full shadow-2xl flex items-center justify-center transition-all hover:scale-110 active:scale-95 relative touch-target-large"
                     title="Open Chat"
+                    aria-label="Open Chat"
                 >
-                    <Sparkles className="w-7 h-7" />
+                    <Sparkles className="w-6 h-6 md:w-7 md:h-7" />
                     <ChatNotificationBadge userId={profile.id} />
                 </button>
             </div>

@@ -285,20 +285,22 @@ export default function VoiceRecorder({ leadId, onRecordingComplete, isProcessin
                         <div className="flex items-center gap-2">
                             <button
                                 onClick={togglePlayback}
-                                className="p-2 hover:bg-white/10 rounded-full text-white transition-colors"
+                                className="p-2 sm:p-3 hover:bg-white/10 active:scale-95 rounded-full text-white transition-all touch-target"
                                 title={isPlaying ? "Duraklat" : "Dinle"}
+                                aria-label={isPlaying ? "Duraklat" : "Dinle"}
                             >
-                                {isPlaying ? <Pause className="w-5 h-5" /> : <Play className="w-5 h-5" />}
+                                {isPlaying ? <Pause className="w-5 h-5 sm:w-6 sm:h-6" /> : <Play className="w-5 h-5 sm:w-6 sm:h-6" />}
                             </button>
                             <button
                                 onClick={() => {
                                     setAudioUrl(null);
                                     setAudioBlob(null);
                                 }}
-                                className="p-2 hover:bg-red-500/20 rounded-full text-red-400 transition-colors"
+                                className="p-2 sm:p-3 hover:bg-red-500/20 active:scale-95 rounded-full text-red-400 transition-all touch-target"
                                 title="Sil ve Yeniden Kaydet"
+                                aria-label="Sil ve Yeniden Kaydet"
                             >
-                                <Square className="w-4 h-4" />
+                                <Square className="w-4 h-4 sm:w-5 sm:h-5" />
                             </button>
                         </div>
                     </div>
@@ -306,17 +308,17 @@ export default function VoiceRecorder({ leadId, onRecordingComplete, isProcessin
                     <button
                         onClick={handleUpload}
                         disabled={isUploading || isProcessing}
-                        className="w-full py-3 bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 text-white rounded-lg font-bold shadow-lg shadow-purple-500/25 flex items-center justify-center gap-2 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                        className="w-full py-3 sm:py-4 px-4 bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 text-white rounded-lg font-bold shadow-lg shadow-purple-500/25 flex items-center justify-center gap-2 transition-all disabled:opacity-50 disabled:cursor-not-allowed active:scale-95 touch-target"
                     >
                         {isUploading || isProcessing ? (
                             <>
                                 <img src="/loading-logo.png" alt="Loading" className="w-5 h-5 animate-pulse object-contain" />
-                                {isUploading ? 'Yükleniyor...' : 'Analiz Ediliyor...'}
+                                <span className="text-sm sm:text-base">{isUploading ? 'Yükleniyor...' : 'Analiz Ediliyor...'}</span>
                             </>
                         ) : (
                             <>
                                 <UploadCloud className="w-5 h-5" />
-                                Analiz Et ve Kaydet
+                                <span className="text-sm sm:text-base">Analiz Et ve Kaydet</span>
                             </>
                         )}
                     </button>

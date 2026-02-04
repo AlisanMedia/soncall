@@ -380,14 +380,15 @@ export default function AgentDashboard({ profile: initialProfile }: AgentDashboa
                 {activeTab === 'settings' && <AgentSettings userProfile={profile} />}
             </main>
 
-            {/* Floating Chat Button (Only show in Work tab) */}
+            {/* Floating Chat Button (Only show in Work tab) - Optimized for Mobile */}
             {(activeTab === 'work' || activeTab === 'history') && (
                 <button
                     onClick={() => setChatOpen(!chatOpen)}
-                    className="fixed bottom-6 right-6 z-40 bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 text-white p-4 rounded-full shadow-2xl transition-all hover:scale-110 active:scale-95"
+                    className="fixed bottom-6 right-6 z-40 bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 text-white w-14 h-14 md:w-16 md:h-16 rounded-full shadow-2xl transition-all hover:scale-110 active:scale-95 flex items-center justify-center safe-bottom safe-right touch-target-large"
                     title="Open Chat"
+                    aria-label="Open Chat"
                 >
-                    <Sparkles className="w-6 h-6" />
+                    <Sparkles className="w-6 h-6 md:w-7 md:h-7" />
                     <ChatNotificationBadge userId={profile.id} />
                 </button>
             )}

@@ -108,7 +108,7 @@ export default function Leaderboard({ agentId, refreshKey }: LeaderboardProps) {
                     <div className="flex items-center justify-between">
                         <div>
                             <div className="text-purple-200 text-xs mb-1">Bugün İşlenen</div>
-                            <div className="text-2xl font-bold text-white">{userStats.processed_today}</div>
+                            <div className="text-2xl sm:text-3xl font-bold text-white">{userStats.processed_today}</div>
                         </div>
                         {userStats.streak > 0 && (
                             <div className="flex items-center gap-1 bg-orange-500/20 px-2 py-1 rounded-lg">
@@ -121,12 +121,12 @@ export default function Leaderboard({ agentId, refreshKey }: LeaderboardProps) {
 
                 <div className="bg-white/5 rounded-lg p-2 border border-white/10">
                     <div className="text-purple-300 text-xs mb-1">Atanan</div>
-                    <div className="text-lg font-semibold text-white">{userStats.total_assigned}</div>
+                    <div className="text-base sm:text-lg font-semibold text-white">{userStats.total_assigned}</div>
                 </div>
 
                 <div className="bg-yellow-500/10 rounded-lg p-2 border border-yellow-500/30">
                     <div className="text-yellow-300 text-xs mb-1">Kalan</div>
-                    <div className="text-lg font-semibold text-yellow-300">{userStats.remaining}</div>
+                    <div className="text-base sm:text-lg font-semibold text-yellow-300">{userStats.remaining}</div>
                 </div>
 
                 {userStats.speed_last_5min > 0 && (

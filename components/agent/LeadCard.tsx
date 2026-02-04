@@ -395,8 +395,8 @@ export default function LeadCard({ agentId, onLeadProcessed, refreshKey }: LeadC
             )}
 
 
-            {/* Lead Info */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {/* Lead Info - Responsive Grid */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
                 <div className="bg-white/5 rounded-lg p-4 border border-white/10">
                     <div className="flex items-center gap-2 text-purple-300 mb-2">
                         <Phone className="w-4 h-4" />
@@ -404,7 +404,7 @@ export default function LeadCard({ agentId, onLeadProcessed, refreshKey }: LeadC
                     </div>
                     <a
                         href={`tel:${currentLead.phone_number}`}
-                        className="text-lg font-semibold text-white hover:text-purple-300 transition-colors"
+                        className="text-lg font-semibold text-white hover:text-purple-300 transition-colors block py-1 touch-target"
                     >
                         {formatPhoneNumber(currentLead.phone_number)}
                     </a>
@@ -415,13 +415,13 @@ export default function LeadCard({ agentId, onLeadProcessed, refreshKey }: LeadC
                         <MapPin className="w-4 h-4" />
                         <span className="text-sm font-medium">Adres</span>
                     </div>
-                    <p className="text-lg font-semibold text-white truncate">
+                    <p className="text-base sm:text-lg font-semibold text-white line-clamp-2">
                         {currentLead.address || 'Adres yok'}
                     </p>
                 </div>
 
                 {currentLead.website && (
-                    <div className="bg-white/5 rounded-lg p-4 border border-white/10 md:col-span-2">
+                    <div className="bg-white/5 rounded-lg p-4 border border-white/10 sm:col-span-2">
                         <div className="flex items-center gap-2 text-purple-300 mb-2">
                             <Globe className="w-4 h-4" />
                             <span className="text-sm font-medium">Website</span>
@@ -430,7 +430,7 @@ export default function LeadCard({ agentId, onLeadProcessed, refreshKey }: LeadC
                             href={currentLead.website}
                             target="_blank"
                             rel="noopener noreferrer"
-                            className="text-lg font-semibold text-purple-400 hover:text-purple-300 transition-colors"
+                            className="text-base sm:text-lg font-semibold text-purple-400 hover:text-purple-300 transition-colors break-all block py-1 touch-target"
                         >
                             {currentLead.website}
                         </a>
@@ -438,43 +438,43 @@ export default function LeadCard({ agentId, onLeadProcessed, refreshKey }: LeadC
                 )}
             </div>
 
-            {/* Potential Level Selection */}
+            {/* Potential Level Selection - Touch-Optimized */}
             <div>
                 <label className="block text-sm font-medium text-purple-200 mb-3">
                     Potansiyel Seviyesi <span className="text-red-400">*</span>
                 </label>
-                <div className="grid grid-cols-3 gap-3">
+                <div className="grid grid-cols-3 gap-2 sm:gap-3">
                     <button
                         onClick={() => setPotentialLevel('high')}
-                        className={`p-4 rounded-lg border-2 transition-all ${potentialLevel === 'high'
+                        className={`p-3 sm:p-4 rounded-lg border-2 transition-all touch-target ${potentialLevel === 'high'
                             ? 'border-green-400 bg-green-500/20 text-green-100'
-                            : 'border-white/20 bg-white/5 text-purple-200 hover:border-green-400/50'
+                            : 'border-white/20 bg-white/5 text-purple-200 hover:border-green-400/50 active:scale-95'
                             }`}
                     >
-                        <Flame className="w-6 h-6 mx-auto mb-2" />
-                        <div className="font-semibold">Yüksek</div>
+                        <Flame className="w-5 h-5 sm:w-6 sm:h-6 mx-auto mb-1 sm:mb-2" />
+                        <div className="font-semibold text-sm sm:text-base">Yüksek</div>
                     </button>
 
                     <button
                         onClick={() => setPotentialLevel('medium')}
-                        className={`p-4 rounded-lg border-2 transition-all ${potentialLevel === 'medium'
+                        className={`p-3 sm:p-4 rounded-lg border-2 transition-all touch-target ${potentialLevel === 'medium'
                             ? 'border-yellow-400 bg-yellow-500/20 text-yellow-100'
-                            : 'border-white/20 bg-white/5 text-purple-200 hover:border-yellow-400/50'
+                            : 'border-white/20 bg-white/5 text-purple-200 hover:border-yellow-400/50 active:scale-95'
                             }`}
                     >
-                        <Zap className="w-6 h-6 mx-auto mb-2" />
-                        <div className="font-semibold">Orta</div>
+                        <Zap className="w-5 h-5 sm:w-6 sm:h-6 mx-auto mb-1 sm:mb-2" />
+                        <div className="font-semibold text-sm sm:text-base">Orta</div>
                     </button>
 
                     <button
                         onClick={() => setPotentialLevel('low')}
-                        className={`p-4 rounded-lg border-2 transition-all ${potentialLevel === 'low'
+                        className={`p-3 sm:p-4 rounded-lg border-2 transition-all touch-target ${potentialLevel === 'low'
                             ? 'border-red-400 bg-red-500/20 text-red-100'
-                            : 'border-white/20 bg-white/5 text-purple-200 hover:border-red-400/50'
+                            : 'border-white/20 bg-white/5 text-purple-200 hover:border-red-400/50 active:scale-95'
                             }`}
                     >
-                        <TrendingDown className="w-6 h-6 mx-auto mb-2" />
-                        <div className="font-semibold">Düşük</div>
+                        <TrendingDown className="w-5 h-5 sm:w-6 sm:h-6 mx-auto mb-1 sm:mb-2" />
+                        <div className="font-semibold text-sm sm:text-base">Düşük</div>
                     </button>
                 </div>
             </div>
@@ -527,48 +527,48 @@ export default function LeadCard({ agentId, onLeadProcessed, refreshKey }: LeadC
                 </p>
             </div>
 
-            {/* Action Buttons */}
-            <div className="grid grid-cols-2 gap-4">
+            {/* Action Buttons - Mobile Optimized */}
+            <div className="grid grid-cols-1 xs:grid-cols-2 gap-3 sm:gap-4">
                 <button
                     onClick={handleWhatsApp}
                     disabled={processing}
-                    className={`py-3 px-4 rounded-lg font-semibold transition-all flex items-center justify-center gap-2 ${actionTaken === 'whatsapp_sent'
+                    className={`py-3 sm:py-4 px-4 sm:px-6 rounded-lg font-semibold transition-all flex items-center justify-center gap-2 touch-target ${actionTaken === 'whatsapp_sent'
                         ? 'bg-green-600 text-white'
-                        : 'bg-green-500/20 border-2 border-green-500 text-green-100 hover:bg-green-500/30'
+                        : 'bg-green-500/20 border-2 border-green-500 text-green-100 hover:bg-green-500/30 active:scale-95'
                         }`}
                 >
                     <Sparkles className="w-5 h-5" />
-                    WhatsApp'a Yönlendir
+                    <span className="text-sm sm:text-base">WhatsApp'a Yönlendir</span>
                 </button>
 
                 <button
                     onClick={handleAppointment}
                     disabled={processing}
-                    className={`py-3 px-4 rounded-lg font-semibold transition-all flex items-center justify-center gap-2 ${actionTaken === 'appointment_scheduled'
+                    className={`py-3 sm:py-4 px-4 sm:px-6 rounded-lg font-semibold transition-all flex items-center justify-center gap-2 touch-target ${actionTaken === 'appointment_scheduled'
                         ? 'bg-purple-600 text-white'
-                        : 'bg-purple-500/20 border-2 border-purple-500 text-purple-100 hover:bg-purple-500/30'
+                        : 'bg-purple-500/20 border-2 border-purple-500 text-purple-100 hover:bg-purple-500/30 active:scale-95'
                         }`}
                 >
                     <Calendar className="w-5 h-5" />
-                    Randevuya Çevir
+                    <span className="text-sm sm:text-base">Randevuya Çevir</span>
                 </button>
             </div>
 
-            {/* Next Lead Button */}
+            {/* Next Lead Button - Mobile Optimized */}
             <button
                 onClick={handleNextLead}
                 disabled={!isFormValid() || processing}
-                className="w-full py-4 px-6 bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 text-white font-bold text-lg rounded-lg shadow-lg hover:shadow-xl transform hover:scale-[1.02] transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none flex items-center justify-center gap-3"
+                className="w-full py-4 sm:py-5 px-6 bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 text-white font-bold text-base sm:text-lg rounded-lg shadow-lg hover:shadow-xl transform hover:scale-[1.02] active:scale-95 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none flex items-center justify-center gap-3 touch-target-large"
             >
                 {processing ? (
                     <>
-                        <Loader2 className="w-6 h-6 animate-spin" />
-                        İşleniyor...
+                        <Loader2 className="w-5 h-5 sm:w-6 sm:h-6 animate-spin" />
+                        <span>İşleniyor...</span>
                     </>
                 ) : (
                     <>
-                        Sonraki Lead
-                        <ArrowRight className="w-6 h-6" />
+                        <span>Sonraki Lead</span>
+                        <ArrowRight className="w-5 h-5 sm:w-6 sm:h-6" />
                     </>
                 )}
             </button>

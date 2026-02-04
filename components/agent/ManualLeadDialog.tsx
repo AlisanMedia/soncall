@@ -230,21 +230,21 @@ export default function ManualLeadDialog({ isOpen, onClose, onSuccess, agentId }
                         <button
                             type="button"
                             onClick={onClose}
-                            className="flex-1 py-3 px-4 bg-white/5 hover:bg-white/10 text-white rounded-lg font-medium transition-colors border border-white/5"
+                            className="flex-1 py-3 sm:py-3 px-4 bg-white/5 hover:bg-white/10 active:scale-95 text-white rounded-lg font-medium transition-all border border-white/5 touch-target"
                         >
                             İptal
                         </button>
                         <button
                             type="submit"
                             disabled={loading}
-                            className="flex-1 py-3 px-4 bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 text-white rounded-lg font-bold shadow-lg shadow-purple-500/20 flex items-center justify-center gap-2 transform active:scale-[0.98] transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                            className="flex-1 py-4 sm:py-3 px-4 bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 text-white rounded-lg font-bold shadow-lg shadow-purple-500/20 flex items-center justify-center gap-2 transform active:scale-95 transition-all disabled:opacity-50 disabled:cursor-not-allowed touch-target-large"
                         >
                             {loading ? (
                                 <Loader2 className="w-5 h-5 animate-spin" />
                             ) : (
                                 <>
                                     <Plus className="w-5 h-5" />
-                                    Ekle ve Başla
+                                    <span className="text-sm sm:text-base">Ekle ve Başla</span>
                                 </>
                             )}
                         </button>

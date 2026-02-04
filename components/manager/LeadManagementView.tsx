@@ -186,10 +186,10 @@ export default function LeadManagementView() {
                         <h3 className="text-lg font-bold text-white">Hızlı Filtre</h3>
                         <SectionInfo text="Belirli bir satış temsilcisine atanmış veya havuzda bekleyen leadleri buradan filtreleyebilirsiniz." />
                     </div>
-                    <div className="flex flex-col gap-3">
-                        <div className="flex gap-2">
+                    <div className="flex flex-col gap-2 sm:gap-3">
+                        <div className="flex flex-col sm:flex-row gap-2">
                             <select
-                                className="bg-black/20 border border-white/10 rounded-lg p-2 text-white flex-1"
+                                className="bg-black/20 border border-white/10 rounded-lg p-3 sm:p-2 text-white text-sm flex-1 touch-target"
                                 value={agentFilter}
                                 onChange={e => { setAgentFilter(e.target.value); setSelectedLeads([]); }}
                             >
@@ -200,7 +200,7 @@ export default function LeadManagementView() {
                                 ))}
                             </select>
                             <select
-                                className="bg-black/20 border border-white/10 rounded-lg p-2 text-white flex-1"
+                                className="bg-black/20 border border-white/10 rounded-lg p-3 sm:p-2 text-white text-sm flex-1 touch-target"
                                 value={statusFilter}
                                 onChange={e => { setStatusFilter(e.target.value); setSelectedLeads([]); }}
                             >
@@ -213,9 +213,9 @@ export default function LeadManagementView() {
                                 <option value="unreachable">Ulaşılamadı</option>
                             </select>
                         </div>
-                        <div className="flex gap-2">
+                        <div className="flex flex-col sm:flex-row gap-2">
                             <select
-                                className="bg-black/20 border border-white/10 rounded-lg p-2 text-white flex-1"
+                                className="bg-black/20 border border-white/10 rounded-lg p-3 sm:p-2 text-white text-sm flex-1 touch-target"
                                 value={categoryFilter}
                                 onChange={e => { setCategoryFilter(e.target.value); setSelectedLeads([]); }}
                             >
@@ -225,7 +225,7 @@ export default function LeadManagementView() {
                                 ))}
                             </select>
                             <select
-                                className="bg-black/20 border border-white/10 rounded-lg p-2 text-white flex-1"
+                                className="bg-black/20 border border-white/10 rounded-lg p-3 sm:p-2 text-white text-sm flex-1 touch-target"
                                 value={dateFilter}
                                 onChange={e => { setDateFilter(e.target.value); setSelectedLeads([]); }}
                             >
@@ -236,7 +236,7 @@ export default function LeadManagementView() {
                             </select>
                             <button
                                 onClick={loadData}
-                                className="px-4 py-2 bg-white/10 rounded-lg text-white hover:bg-white/20 whitespace-nowrap"
+                                className="px-4 py-3 sm:py-2 bg-white/10 rounded-lg text-white text-sm hover:bg-white/20 active:scale-95 whitespace-nowrap touch-target transition-all"
                             >
                                 Yenile
                             </button>
@@ -266,58 +266,58 @@ export default function LeadManagementView() {
             <div className="bg-white/5 border border-white/10 rounded-xl overflow-hidden">
                 {/* Batch Actions Bar */}
                 {selectedLeads.length > 0 && (
-                    <div className="bg-purple-600 p-3 flex items-center justify-between animate-in slide-in-from-top-2">
-                        <span className="text-white font-bold ml-2">{selectedLeads.length} lead seçildi</span>
-                        <div className="flex gap-2">
+                    <div className="bg-purple-600 p-3 sm:p-3 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 animate-in slide-in-from-top-2">
+                        <span className="text-white font-bold ml-2 text-sm">{selectedLeads.length} lead seçildi</span>
+                        <div className="flex gap-2 w-full sm:w-auto">
                             <button
                                 onClick={() => setTransferModalOpen(true)}
-                                className="bg-white text-purple-600 px-4 py-1.5 rounded-lg font-bold text-sm hover:bg-gray-100 flex items-center gap-2"
+                                className="flex-1 sm:flex-none bg-white text-purple-600 px-4 py-2 rounded-lg font-bold text-sm hover:bg-gray-100 active:scale-95 flex items-center justify-center gap-2 touch-target transition-all"
                             >
                                 <ArrowRightLeft className="w-4 h-4" /> Transfer Et
                             </button>
-                            <button onClick={() => setSelectedLeads([])} className="text-purple-200 hover:text-white px-3 text-sm">İptal</button>
+                            <button onClick={() => setSelectedLeads([])} className="text-purple-200 hover:text-white px-3 py-2 text-sm touch-target active:scale-95 transition-all">İptal</button>
                         </div>
                     </div>
                 )}
 
                 <div className="overflow-x-auto">
                     <table className="w-full text-left">
-                        <thead className="bg-white/5 text-purple-200 text-xs uppercase">
+                        <thead className="bg-white/5 text-purple-200 text-[10px] sm:text-xs uppercase sticky top-0 z-10">
                             <tr>
-                                <th className="p-4 w-10">
-                                    <button onClick={toggleSelectAll}>
+                                <th className="p-2 sm:p-4 w-10">
+                                    <button onClick={toggleSelectAll} className="touch-target p-1">
                                         {selectedLeads.length > 0 && selectedLeads.length === leads.length
                                             ? <CheckSquare className="w-5 h-5 text-purple-400" />
                                             : <Square className="w-5 h-5 text-gray-500" />}
                                     </button>
                                 </th>
-                                <th className="p-4">
-                                    <div className="flex items-center gap-2">
+                                <th className="p-2 sm:p-4 text-left">
+                                    <div className="flex items-center gap-1 sm:gap-2">
                                         İşletme
-                                        <SectionInfo text="Müşterinin ticari ünvanı veya kayıtlı adı." />
+                                        <span className="hidden sm:inline"><SectionInfo text="Müşterinin ticari ünvanı veya kayıtlı adı." /></span>
                                     </div>
                                 </th>
-                                <th className="p-4">
+                                <th className="p-2 sm:p-4 hidden sm:table-cell text-left">
                                     <div className="flex items-center gap-2">
                                         Sektör
                                         <SectionInfo text="Leadin ait olduğu sektör kategorisi." />
                                     </div>
                                 </th>
-                                <th className="p-4">
-                                    <div className="flex items-center gap-2">
-                                        Mevcut Agent
-                                        <SectionInfo text="Bu leadin şu anda atandığı satış temsilcisi. 'Havuzda' ise kimseye atanmamıştır." />
+                                <th className="p-2 sm:p-4 text-left">
+                                    <div className="flex items-center gap-1 sm:gap-2">
+                                        <span className="hidden sm:inline">Mevcut</span> Agent
+                                        <span className="hidden sm:inline"><SectionInfo text="Bu leadin şu anda atandığı satış temsilcisi. 'Havuzda' ise kimseye atanmamıştır." /></span>
                                     </div>
                                 </th>
-                                <th className="p-4">
-                                    <div className="flex items-center gap-2">
+                                <th className="p-2 sm:p-4 text-left">
+                                    <div className="flex items-center gap-1 sm:gap-2">
                                         Durum
-                                        <SectionInfo text="Leadin anlık durumu (Örn: Beklemede, Arandı, Randevu)." />
+                                        <span className="hidden sm:inline"><SectionInfo text="Leadin anlık durumu (Örn: Beklemede, Arandı, Randevu)." /></span>
                                     </div>
                                 </th>
-                                <th className="p-4">
+                                <th className="p-2 sm:p-4 hidden md:table-cell text-left">
                                     <div className="flex items-center gap-2">
-                                        Oluşturma
+                                        Tarih
                                         <SectionInfo text="Leadin sisteme ilk yüklendiği tarih." />
                                     </div>
                                 </th>
@@ -330,28 +330,28 @@ export default function LeadManagementView() {
                                 <tr><td colSpan={6} className="p-8 text-center text-gray-400">Gösterilecek lead bulunamadı.</td></tr>
                             ) : (
                                 leads.map(lead => (
-                                    <tr key={lead.id} className={`hover:bg-white/5 transition-colors ${selectedLeads.includes(lead.id) ? 'bg-purple-500/10' : ''}`}>
-                                        <td className="p-4">
-                                            <button onClick={() => toggleSelect(lead.id)}>
+                                    <tr key={lead.id} className={`hover:bg-white/5 transition-colors text-xs sm:text-sm ${selectedLeads.includes(lead.id) ? 'bg-purple-500/10' : ''}`}>
+                                        <td className="p-2 sm:p-4">
+                                            <button onClick={() => toggleSelect(lead.id)} className="touch-target p-1">
                                                 {selectedLeads.includes(lead.id)
                                                     ? <CheckSquare className="w-5 h-5 text-purple-400" />
                                                     : <Square className="w-5 h-5 text-gray-500" />}
                                             </button>
                                         </td>
-                                        <td className="p-4 text-white font-medium">
-                                            <div>{lead.business_name}</div>
-                                            <div className="text-xs text-purple-300 sm:hidden">{lead.category}</div>
+                                        <td className="p-2 sm:p-4 text-white font-medium">
+                                            <div className="truncate max-w-[120px] sm:max-w-none">{lead.business_name}</div>
+                                            <div className="text-xs text-purple-300 sm:hidden truncate">{lead.category || 'Belirsiz'}</div>
                                         </td>
-                                        <td className="p-4 text-gray-300 hidden sm:table-cell">
+                                        <td className="p-2 sm:p-4 text-gray-300 hidden sm:table-cell">
                                             <span className="bg-white/10 px-2 py-1 rounded text-xs">{lead.category || 'Belirsiz'}</span>
                                         </td>
-                                        <td className="p-4 text-gray-300">
+                                        <td className="p-2 sm:p-4 text-gray-300 text-xs sm:text-sm">
                                             {lead.profiles?.full_name || <span className="text-gray-500 italic">Havuzda</span>}
                                         </td>
-                                        <td className="p-4">
-                                            <span className="bg-yellow-500/20 text-yellow-500 px-2 py-1 rounded text-xs">{lead.status}</span>
+                                        <td className="p-2 sm:p-4">
+                                            <span className="bg-yellow-500/20 text-yellow-500 px-2 py-1 rounded text-[10px] sm:text-xs whitespace-nowrap">{lead.status}</span>
                                         </td>
-                                        <td className="p-4 text-gray-500 text-sm">
+                                        <td className="p-2 sm:p-4 text-gray-500 text-xs sm:text-sm hidden md:table-cell">
                                             {new Date(lead.created_at).toLocaleDateString()}
                                         </td>
                                     </tr>

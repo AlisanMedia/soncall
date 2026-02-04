@@ -46,26 +46,26 @@ export default function TeamList() {
             {/* Header / Tools */}
             <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
                 <div>
-                    <h1 className="text-2xl font-bold text-white">ArtificAgent – Marketing Ekip</h1>
-                    <p className="text-gray-400">Takım üyelerini yönet, rol ve komisyon oranlarını belirle.</p>
+                    <h1 className="text-xl sm:text-2xl font-bold text-white">ArtificAgent – Marketing Ekip</h1>
+                    <p className="text-sm sm:text-base text-gray-400">Takım üyelerini yönet</p>
                 </div>
-                <div className="flex items-center gap-3 w-full md:w-auto">
+                <div className="flex items-center gap-2 sm:gap-3 w-full md:w-auto">
                     <div className="relative flex-1 md:w-64">
                         <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-500" />
                         <input
                             type="text"
-                            placeholder="İsim, email veya TC ile ara..."
+                            placeholder="İsim veya email..."
                             value={searchTerm}
                             onChange={(e) => setSearchTerm(e.target.value)}
-                            className="w-full bg-black/20 border border-white/10 rounded-lg pl-10 pr-4 py-2 text-white placeholder-gray-500 focus:outline-none focus:border-purple-500"
+                            className="w-full bg-black/20 border border-white/10 rounded-lg pl-10 pr-3 sm:pr-4 py-2 sm:py-2.5 text-sm sm:text-base text-white placeholder-gray-500 focus:outline-none focus:border-purple-500 touch-target"
                         />
                     </div>
                     <button
                         onClick={() => { setMemberToEdit(null); setIsAddModalOpen(true); }}
-                        className="bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded-lg font-medium transition-colors flex items-center gap-2 whitespace-nowrap"
+                        className="bg-purple-600 hover:bg-purple-700 active:scale-95 text-white px-3 sm:px-4 py-2 sm:py-2.5 rounded-lg font-medium transition-all flex items-center gap-2 whitespace-nowrap touch-target text-sm sm:text-base"
                     >
                         <Plus className="w-4 h-4" />
-                        Üye Ekle
+                        <span className="hidden sm:inline">Üye</span> Ekle
                     </button>
                 </div>
             </div>
@@ -74,18 +74,18 @@ export default function TeamList() {
             <div className="bg-white/5 border border-white/10 rounded-xl overflow-hidden">
                 <div className="overflow-x-auto">
                     <table className="w-full text-left">
-                        <thead className="bg-black/40 text-gray-400 text-xs uppercase font-semibold">
+                        <thead className="bg-black/40 text-gray-400 text-[10px] sm:text-xs uppercase font-semibold sticky top-0 z-10">
                             <tr>
-                                <th className="px-6 py-4">Ad Soyad</th>
-                                <th className="px-6 py-4">T.C. Kimlik No</th>
-                                <th className="px-6 py-4">Email</th>
-                                <th className="px-6 py-4">Şifre</th>
-                                <th className="px-6 py-4">Doğum Tarihi</th>
-                                <th className="px-6 py-4">İl</th>
-                                <th className="px-6 py-4">İlçe</th>
-                                <th className="px-6 py-4">Rol</th>
-                                <th className="px-6 py-4">Komisyon</th>
-                                <th className="px-6 py-4 text-right">İşlem</th>
+                                <th className="px-3 sm:px-6 py-3 sm:py-4 text-left">Ad Soyad</th>
+                                <th className="px-3 sm:px-6 py-3 sm:py-4 hidden md:table-cell">T.C. No</th>
+                                <th className="px-3 sm:px-6 py-3 sm:py-4 hidden lg:table-cell">Email</th>
+                                <th className="px-3 sm:px-6 py-3 sm:py-4 hidden lg:table-cell">Şifre</th>
+                                <th className="px-3 sm:px-6 py-3 sm:py-4 hidden xl:table-cell">Doğum</th>
+                                <th className="px-3 sm:px-6 py-3 sm:py-4 hidden xl:table-cell">İl</th>
+                                <th className="px-3 sm:px-6 py-3 sm:py-4 hidden xl:table-cell">İlçe</th>
+                                <th className="px-3 sm:px-6 py-3 sm:py-4 text-left">Rol</th>
+                                <th className="px-3 sm:px-6 py-3 sm:py-4 hidden sm:table-cell">Kom.</th>
+                                <th className="px-3 sm:px-6 py-3 sm:py-4 text-right">İşlem</th>
                             </tr>
                         </thead>
                         <tbody className="divide-y divide-white/5">

@@ -135,7 +135,7 @@ export default function ChatPanel({ userId, isOpen, onClose, leadId, receiverId,
     if (!isOpen) return null;
 
     return (
-        <div className="fixed inset-y-0 right-0 w-full sm:w-96 bg-slate-900/80 backdrop-blur-xl shadow-2xl z-50 flex flex-col border-l border-white/10">
+        <div className="fixed inset-0 sm:inset-y-0 sm:right-0 sm:left-auto w-full sm:w-96 md:w-[420px] bg-slate-900/95 sm:bg-slate-900/80 backdrop-blur-xl shadow-2xl z-50 flex flex-col border-l border-white/10">
             {/* Header */}
             <div className="bg-white/5 backdrop-blur-md border-b border-white/10 p-4 flex items-center justify-between relative shadow-lg">
                 <div className="flex items-center gap-3">
@@ -184,9 +184,10 @@ export default function ChatPanel({ userId, isOpen, onClose, leadId, receiverId,
 
                     <button
                         onClick={onClose}
-                        className="p-2 hover:bg-white/10 rounded-lg transition-colors text-white/70 hover:text-white"
+                        className="p-2 sm:p-3 hover:bg-white/10 active:scale-95 rounded-lg transition-all text-white/70 hover:text-white touch-target"
+                        aria-label="Close Chat"
                     >
-                        <X className="w-5 h-5" />
+                        <X className="w-5 h-5 sm:w-6 sm:h-6" />
                     </button>
                 </div>
             </div>
@@ -245,7 +246,8 @@ export default function ChatPanel({ userId, isOpen, onClose, leadId, receiverId,
             {!isAtBottom && (
                 <button
                     onClick={() => scrollToBottom()}
-                    className="absolute bottom-20 right-4 p-2 bg-purple-600 rounded-full shadow-lg hover:bg-purple-700 transition-colors z-10"
+                    className="absolute bottom-20 right-4 p-3 bg-purple-600 rounded-full shadow-lg hover:bg-purple-700 active:scale-95 transition-all z-10 touch-target"
+                    aria-label="Scroll to bottom"
                 >
                     <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-white"><path d="m6 9 6 6 6-6" /></svg>
                 </button>

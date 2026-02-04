@@ -50,27 +50,27 @@ export default function ConversionFunnel() {
     const totalConversionRate = totalLeads ? ((finalSales / totalLeads) * 100).toFixed(1) : '0';
 
     return (
-        <div className="bg-white/10 backdrop-blur-lg rounded-2xl shadow-2xl p-6 border border-white/20">
-            <div className="flex items-center justify-between mb-6">
+        <div className="bg-white/10 backdrop-blur-lg rounded-2xl shadow-2xl p-4 sm:p-6 border border-white/20">
+            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between mb-4 sm:mb-6 gap-3">
                 <div>
-                    <h3 className="text-lg font-semibold text-white flex items-center gap-2">
-                        <Users className="w-5 h-5 text-purple-400" />
+                    <h3 className="text-base sm:text-lg font-semibold text-white flex items-center gap-2">
+                        <Users className="w-4 h-4 sm:w-5 sm:h-5 text-purple-400" />
                         Dönüşüm Hunisi
-                        <SectionInfo text="Müşterilerin ilk temastan satışa kadar geçtikleri aşamaları ve kayıp oranlarını gösterir." />
+                        <span className="hidden sm:inline"><SectionInfo text="Müşterilerin ilk temastan satışa kadar geçtikleri aşamaları ve kayıp oranlarını gösterir." /></span>
                     </h3>
-                    <p className="text-sm text-purple-300">Lead'den satışa dönüşüm analizi</p>
+                    <p className="text-xs sm:text-sm text-purple-300">Lead'den satışa dönüşüm</p>
                 </div>
-                <div className="text-right">
+                <div className="text-left sm:text-right">
                     <p className="text-xs text-purple-300">Genel Dönüşüm</p>
-                    <p className="text-2xl font-bold text-emerald-400 flex items-center justify-end gap-1">
+                    <p className="text-xl sm:text-2xl font-bold text-emerald-400 flex items-center gap-1">
                         %{totalConversionRate}
                     </p>
                 </div>
             </div>
 
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            <div className="flex flex-col lg:flex-row gap-4 lg:gap-6">
                 {/* Chart */}
-                <div className="lg:col-span-2 h-[350px]">
+                <div className="flex-1 h-[250px] sm:h-[300px] lg:h-[350px]">
                     <ResponsiveContainer width="100%" height="100%">
                         <BarChart
                             data={data}
@@ -108,14 +108,14 @@ export default function ConversionFunnel() {
                 </div>
 
                 {/* Metrics Breakdown */}
-                <div className="space-y-4">
+                <div className="flex-1 space-y-3 sm:space-y-4">
                     {data.map((stage, index) => (
                         <motion.div
                             key={stage.name}
                             initial={{ opacity: 0, x: 20 }}
                             animate={{ opacity: 1, x: 0 }}
                             transition={{ delay: index * 0.1 }}
-                            className="bg-white/5 rounded-lg p-3 border border-white/5 relative overflow-hidden group hover:border-white/20 transition-colors"
+                            className="bg-white/5 rounded-lg p-2 sm:p-3 border border-white/5 relative overflow-hidden group hover:border-white/20 transition-colors"
                         >
                             {/* Progress bar background */}
                             <div
@@ -124,21 +124,21 @@ export default function ConversionFunnel() {
                             />
 
                             <div className="relative flex items-center justify-between">
-                                <div className="flex items-center gap-3">
-                                    <div className="w-2 h-8 rounded-full" style={{ backgroundColor: stage.fill }} />
-                                    <div>
-                                        <div className="text-sm font-medium text-white">{stage.name}</div>
-                                        <div className="text-xs text-purple-300">{stage.value} kişi</div>
+                                <div className="flex items-center gap-2 sm:gap-3 flex-1 min-w-0">
+                                    <div className="w-1.5 sm:w-2 h-6 sm:h-8 rounded-full flex-shrink-0" style={{ backgroundColor: stage.fill }} />
+                                    <div className="min-w-0">
+                                        <div className="text-xs sm:text-sm font-medium text-white truncate">{stage.name}</div>
+                                        <div className="text-[10px] sm:text-xs text-purple-300">{stage.value} kişi</div>
                                     </div>
                                 </div>
 
                                 {index > 0 && (
-                                    <div className="text-right">
-                                        <div className="flex items-center gap-1 text-xs text-red-400 font-medium">
+                                    <div className="text-right flex-shrink-0 ml-2">
+                                        <div className="flex items-center gap-0.5 sm:gap-1 text-[10px] sm:text-xs text-red-400 font-medium">
                                             <TrendingDown className="w-3 h-3" />
-                                            %{stage.dropRate} kayıp
+                                            %{stage.dropRate}
                                         </div>
-                                        <div className="text-[10px] text-purple-400">
+                                        <div className="text-[9px] sm:text-[10px] text-purple-400 hidden sm:block">
                                             Önceki adımdan
                                         </div>
                                     </div>

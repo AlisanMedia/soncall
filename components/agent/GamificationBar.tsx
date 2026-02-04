@@ -98,12 +98,12 @@ export default function GamificationBar({ agentId }: { agentId: string }) {
             <div className={`absolute -top-10 -right-10 w-40 h-40 rounded-full blur-[60px] ${rank.bgGlow} opacity-50`}></div>
             <div className="absolute inset-0 bg-black/40 backdrop-blur-[1px]"></div>
 
-            <div className="relative z-10 flex items-center justify-between mb-2">
-                <div className="flex items-center gap-4">
+            <div className="relative z-10 flex flex-col xs:flex-row items-start xs:items-center justify-between gap-3 xs:gap-0 mb-2">
+                <div className="flex items-center gap-3 sm:gap-4">
                     {/* Level Badge */}
                     <div className="relative transform transition-transform hover:scale-110 duration-300">
-                        <div className="w-14 h-14 bg-gradient-to-br from-white/10 to-white/5 rounded-2xl rotate-3 flex items-center justify-center shadow-2xl border border-white/20 backdrop-blur-md">
-                            <span className="text-2xl font-black text-white drop-shadow-[0_2px_4px_rgba(0,0,0,0.5)]">{progress.current_level}</span>
+                        <div className="w-12 h-12 sm:w-14 sm:h-14 bg-gradient-to-br from-white/10 to-white/5 rounded-2xl rotate-3 flex items-center justify-center shadow-2xl border border-white/20 backdrop-blur-md">
+                            <span className="text-xl sm:text-2xl font-black text-white drop-shadow-[0_2px_4px_rgba(0,0,0,0.5)]">{progress.current_level}</span>
                         </div>
                         <div className="absolute -bottom-2 -right-2 bg-black/80 px-2 py-0.5 rounded text-[10px] font-bold text-white border border-white/10 shadow-lg">
                             LVL
@@ -113,21 +113,21 @@ export default function GamificationBar({ agentId }: { agentId: string }) {
                     <div>
                         <div className="flex items-center gap-2">
                             <IconComponent />
-                            <h3 className="text-xl font-black text-white tracking-wide drop-shadow-lg">{rank.title}</h3>
+                            <h3 className="text-lg sm:text-xl font-black text-white tracking-wide drop-shadow-lg">{rank.title}</h3>
                         </div>
-                        <p className="text-sm text-white/70 font-mono tracking-tight ml-1">
+                        <p className="text-xs sm:text-sm text-white/70 font-mono tracking-tight ml-1">
                             {progress.total_xp.toLocaleString()} XP
                         </p>
                     </div>
                 </div>
 
-                {/* Streak Counter */}
-                <div className="flex flex-col items-end">
-                    <div className="flex items-center gap-1.5 text-white/90 bg-white/10 px-3 py-1 rounded-full border border-white/5 shadow-inner">
+                {/* Streak Counter - Mobile Optimized */}
+                <div className="flex flex-col items-start xs:items-end">
+                    <div className="flex items-center gap-1.5 text-white/90 bg-white/10 px-3 py-1.5 sm:py-1 rounded-full border border-white/5 shadow-inner">
                         <Flame className={`w-4 h-4 ${progress.current_streak > 0 ? 'fill-orange-500 text-orange-500 animate-pulse' : 'text-gray-400'}`} />
-                        <span className="text-lg font-bold">{progress.current_streak}</span>
+                        <span className="text-base sm:text-lg font-bold">{progress.current_streak}</span>
                     </div>
-                    <span className="text-[10px] text-white/50 uppercase tracking-wider font-bold mt-1 mr-1">Günlük Seri</span>
+                    <span className="text-[10px] text-white/50 uppercase tracking-wider font-bold mt-1 ml-1 xs:ml-0 xs:mr-1">Günlük Seri</span>
                 </div>
             </div>
 

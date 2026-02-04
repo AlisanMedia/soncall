@@ -134,7 +134,7 @@ export default function AgentRankings() {
                         <button
                             key={mode}
                             onClick={() => setSortBy(mode)}
-                            className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all whitespace-nowrap ${sortBy === mode
+                            className={`px-3 sm:px-3 py-2 sm:py-1.5 rounded-lg text-xs font-semibold transition-all whitespace-nowrap touch-target ${sortBy === mode
                                 ? 'bg-purple-600 text-white shadow-lg'
                                 : 'text-purple-200 hover:text-white hover:bg-white/5'
                                 }`}
@@ -176,7 +176,7 @@ export default function AgentRankings() {
                                 key={agent.agent_id}
                                 onClick={() => compareMode && toggleAgentSelection(agent.agent_id)}
                                 className={`
-                                    relative group p-3 rounded-xl border backdrop-blur-md transition-all duration-300
+                                    relative group p-2 sm:p-3 rounded-xl border backdrop-blur-md transition-all duration-300
                                     ${compareMode ? 'cursor-pointer' : ''}
                                     ${isSelected
                                         ? 'bg-green-500/10 border-green-500/50 ring-1 ring-green-500/30'
@@ -200,7 +200,7 @@ export default function AgentRankings() {
 
                                     {/* Avatar */}
                                     <div className="relative shrink-0">
-                                        <div className={`w-10 h-10 rounded-full flex items-center justify-center text-sm font-bold border ${isSelected ? 'border-green-400' : 'border-white/10'} overflow-hidden
+                                        <div className={`w-9 h-9 sm:w-10 sm:h-10 rounded-full flex items-center justify-center text-sm font-bold border ${isSelected ? 'border-green-400' : 'border-white/10'} overflow-hidden
                                             ${!agent.avatar_url ? 'bg-gradient-to-br from-indigo-500 to-purple-600 text-white' : ''}
                                         `}>
                                             {agent.avatar_url ? (
@@ -234,19 +234,19 @@ export default function AgentRankings() {
                                     </div>
 
                                     {/* Stats Grid */}
-                                    <div className="flex items-center gap-6 sm:gap-8 text-right">
+                                    <div className="flex items-center gap-3 sm:gap-6 md:gap-8 text-right">
                                         <div>
                                             <p className="text-[10px] text-gray-500 uppercase tracking-wider">Satış</p>
-                                            <p className="text-sm font-bold text-green-400">${agent.total_sales > 0 ? agent.total_sales : '0'}</p>
+                                            <p className="text-xs sm:text-sm font-bold text-green-400">${agent.total_sales > 0 ? agent.total_sales : '0'}</p>
                                         </div>
                                         <div className="hidden sm:block">
                                             <p className="text-[10px] text-gray-500 uppercase tracking-wider">Randevu</p>
-                                            <p className="text-sm font-bold text-purple-300">{agent.total_appointments}</p>
+                                            <p className="text-xs sm:text-sm font-bold text-purple-300">{agent.total_appointments}</p>
                                         </div>
                                         <div>
                                             <p className="text-[10px] text-gray-500 uppercase tracking-wider">Conv.</p>
                                             <div className="flex items-center justify-end gap-1">
-                                                <p className="text-sm font-bold text-white">{agent.conversion_rate}%</p>
+                                                <p className="text-xs sm:text-sm font-bold text-white">{agent.conversion_rate}%</p>
                                             </div>
                                         </div>
                                     </div>

@@ -83,60 +83,60 @@ export default function AnalyticsView() {
     return (
         <div className="space-y-6">
             {/* Summary Cards */}
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-                <div className="bg-gradient-to-br from-purple-600 to-indigo-600 rounded-xl p-6 border border-white/20">
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-3 sm:gap-4">
+                <div className="bg-gradient-to-br from-purple-600 to-indigo-600 rounded-xl p-4 sm:p-6 border border-white/20">
                     <div className="flex items-center justify-between">
                         <div>
                             <div className="flex items-center gap-1">
-                                <p className="text-purple-100 text-sm">Bugün İşlenen</p>
-                                <SectionInfo text="Bugün sistem üzerinden aranan, mesaj atılan veya durumu değiştirilen toplam lead sayısı." />
+                                <p className="text-purple-100 text-xs sm:text-sm">Bugün İşlenen</p>
+                                <span className="hidden sm:inline"><SectionInfo text="Bugün sistem üzerinden aranan, mesaj atılan veya durumu değiştirilen toplam lead sayısı." /></span>
                             </div>
-                            <p className="text-4xl font-bold text-white mt-1">{data.todayStats.processed}</p>
+                            <p className="text-2xl sm:text-4xl font-bold text-white mt-1">{data.todayStats.processed}</p>
                         </div>
-                        <Target className="w-12 h-12 text-white/30" />
+                        <Target className="w-8 h-8 sm:w-12 sm:h-12 text-white/30" />
                     </div>
                 </div>
 
-                <div className="bg-gradient-to-br from-green-600 to-emerald-600 rounded-xl p-6 border border-white/20">
+                <div className="bg-gradient-to-br from-green-600 to-emerald-600 rounded-xl p-4 sm:p-6 border border-white/20">
                     <div className="flex items-center justify-between">
                         <div>
                             <div className="flex items-center gap-1">
-                                <p className="text-green-100 text-sm">Bugün Randevu</p>
-                                <SectionInfo text="Bugün oluşturulan toplam kesinleşmiş randevu sayısı." />
+                                <p className="text-green-100 text-xs sm:text-sm">Bugün Randevu</p>
+                                <span className="hidden sm:inline"><SectionInfo text="Bugün oluşturulan toplam kesinleşmiş randevu sayısı." /></span>
                             </div>
-                            <p className="text-4xl font-bold text-white mt-1">{data.todayStats.appointments}</p>
+                            <p className="text-2xl sm:text-4xl font-bold text-white mt-1">{data.todayStats.appointments}</p>
                         </div>
-                        <Award className="w-12 h-12 text-white/30" />
+                        <Award className="w-8 h-8 sm:w-12 sm:h-12 text-white/30" />
                     </div>
                 </div>
 
-                <div className="bg-gradient-to-br from-orange-600 to-red-600 rounded-xl p-6 border border-white/20">
+                <div className="bg-gradient-to-br from-orange-600 to-red-600 rounded-xl p-4 sm:p-6 border border-white/20">
                     <div className="flex items-center justify-between">
                         <div>
                             <div className="flex items-center gap-1">
-                                <p className="text-orange-100 text-sm">Conversion Rate</p>
-                                <SectionInfo text="Toplam leadler içinden satışa veya randevuya dönüşenlerin yüzdesi." />
+                                <p className="text-orange-100 text-xs sm:text-sm">Conv. Rate</p>
+                                <span className="hidden sm:inline"><SectionInfo text="Toplam leadler içinden satışa veya randevuya dönüşenlerin yüzdesi." /></span>
                             </div>
-                            <p className="text-4xl font-bold text-white mt-1">
+                            <p className="text-2xl sm:text-4xl font-bold text-white mt-1">
                                 {data.funnel[2].percentage}%
                             </p>
                         </div>
-                        <TrendingUp className="w-12 h-12 text-white/30" />
+                        <TrendingUp className="w-8 h-8 sm:w-12 sm:h-12 text-white/30" />
                     </div>
                 </div>
 
-                <div className="bg-gradient-to-br from-blue-600 to-cyan-600 rounded-xl p-6 border border-white/20">
+                <div className="bg-gradient-to-br from-blue-600 to-cyan-600 rounded-xl p-4 sm:p-6 border border-white/20">
                     <div className="flex items-center justify-between">
                         <div>
                             <div className="flex items-center gap-1">
-                                <p className="text-blue-100 text-sm">Peak Saat</p>
-                                <SectionInfo text="Gün içinde en çok işlemin yapıldığı ve verimin en yüksek olduğu saat aralığı." />
+                                <p className="text-blue-100 text-xs sm:text-sm">Peak Saat</p>
+                                <span className="hidden sm:inline"><SectionInfo text="Gün içinde en çok işlemin yapıldığı ve verimin en yüksek olduğu saat aralığı." /></span>
                             </div>
-                            <p className="text-2xl font-bold text-white mt-1">
+                            <p className="text-xl sm:text-2xl font-bold text-white mt-1">
                                 {data.peakHours[0]?.label.split(' - ')[0] || 'N/A'}
                             </p>
                         </div>
-                        <Clock className="w-12 h-12 text-white/30" />
+                        <Clock className="w-8 h-8 sm:w-12 sm:h-12 text-white/30" />
                     </div>
                 </div>
             </div>
@@ -148,53 +148,53 @@ export default function AnalyticsView() {
             <AiPerformancePanel />
 
             {/* Performance Badges */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                <div className="bg-white/10 backdrop-blur-lg rounded-xl p-6 border border-white/20">
-                    <div className="flex items-center gap-3 mb-3">
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4">
+                <div className="bg-white/10 backdrop-blur-lg rounded-xl p-4 sm:p-6 border border-white/20">
+                    <div className="flex items-center gap-2 sm:gap-3 mb-2 sm:mb-3">
                         <div className="p-2 bg-yellow-500/20 rounded-lg">
-                            <Award className="w-6 h-6 text-yellow-400" />
+                            <Award className="w-5 h-5 sm:w-6 sm:h-6 text-yellow-400" />
                         </div>
-                        <h3 className="font-semibold text-white">Top Performer</h3>
-                        <SectionInfo text="Bugün en çok lead işleyen ve aktivite gösteren takım üyesi." />
+                        <h3 className="font-semibold text-white text-sm sm:text-base">Top Performer</h3>
+                        <span className="hidden sm:inline"><SectionInfo text="Bugün en çok lead işleyen ve aktivite gösteren takım üyesi." /></span>
                     </div>
                     {topPerformers[0] && (
                         <div>
-                            <p className="text-2xl font-bold text-yellow-400">{topPerformers[0].agent_name}</p>
-                            <p className="text-purple-200 text-sm mt-1">{topPerformers[0].today_count} lead bugün</p>
+                            <p className="text-xl sm:text-2xl font-bold text-yellow-400 truncate">{topPerformers[0].agent_name}</p>
+                            <p className="text-purple-200 text-xs sm:text-sm mt-1">{topPerformers[0].today_count} lead bugün</p>
                         </div>
                     )}
                 </div>
 
-                <div className="bg-white/10 backdrop-blur-lg rounded-xl p-6 border border-white/20">
-                    <div className="flex items-center gap-3 mb-3">
+                <div className="bg-white/10 backdrop-blur-lg rounded-xl p-4 sm:p-6 border border-white/20">
+                    <div className="flex items-center gap-2 sm:gap-3 mb-2 sm:mb-3">
                         <div className="p-2 bg-green-500/20 rounded-lg">
-                            <TrendingUp className="w-6 h-6 text-green-400" />
+                            <TrendingUp className="w-5 h-5 sm:w-6 sm:h-6 text-green-400" />
                         </div>
-                        <h3 className="font-semibold text-white">Most Improved</h3>
-                        <SectionInfo text="Düne göre performansını oransal olarak en çok artıran takım üyesi." />
+                        <h3 className="font-semibold text-white text-sm sm:text-base">Most Improved</h3>
+                        <span className="hidden sm:inline"><SectionInfo text="Düne göre performansını oransal olarak en çok artıran takım üyesi." /></span>
                     </div>
                     {mostImproved && (
                         <div>
-                            <p className="text-2xl font-bold text-green-400">{mostImproved.agent_name}</p>
-                            <p className="text-purple-200 text-sm mt-1">
+                            <p className="text-xl sm:text-2xl font-bold text-green-400 truncate">{mostImproved.agent_name}</p>
+                            <p className="text-purple-200 text-xs sm:text-sm mt-1">
                                 {mostImproved.growth_percentage > 0 ? '+' : ''}{mostImproved.growth_percentage}% büyüme
                             </p>
                         </div>
                     )}
                 </div>
 
-                <div className="bg-white/10 backdrop-blur-lg rounded-xl p-6 border border-white/20">
-                    <div className="flex items-center gap-3 mb-3">
+                <div className="bg-white/10 backdrop-blur-lg rounded-xl p-4 sm:p-6 border border-white/20">
+                    <div className="flex items-center gap-2 sm:gap-3 mb-2 sm:mb-3">
                         <div className="p-2 bg-purple-500/20 rounded-lg">
-                            <Zap className="w-6 h-6 text-purple-400" />
+                            <Zap className="w-5 h-5 sm:w-6 sm:h-6 text-purple-400" />
                         </div>
-                        <h3 className="font-semibold text-white">Best Converter</h3>
-                        <SectionInfo text="İşlediği lead başına en yüksek randevu/satış oranına sahip takım üyesi." />
+                        <h3 className="font-semibold text-white text-sm sm:text-base">Best Converter</h3>
+                        <span className="hidden sm:inline"><SectionInfo text="İşlediği lead başına en yüksek randevu/satış oranına sahip takım üyesi." /></span>
                     </div>
                     {bestConverter && (
                         <div>
-                            <p className="text-2xl font-bold text-purple-400">{bestConverter.agent_name}</p>
-                            <p className="text-purple-200 text-sm mt-1">{bestConverter.conversion_rate}% conversion</p>
+                            <p className="text-xl sm:text-2xl font-bold text-purple-400 truncate">{bestConverter.agent_name}</p>
+                            <p className="text-purple-200 text-xs sm:text-sm mt-1">{bestConverter.conversion_rate}% conversion</p>
                         </div>
                     )}
                 </div>
@@ -204,12 +204,13 @@ export default function AnalyticsView() {
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                 {/* Hourly Activity Chart */}
                 <div className="bg-white/10 backdrop-blur-lg rounded-2xl shadow-2xl p-6 border border-white/20">
-                    <h3 className="text-xl font-bold text-white mb-4 flex items-center gap-2">
-                        <Clock className="w-5 h-5 text-purple-400" />
-                        Saatlik Aktivite (Son 24 Saat)
-                        <SectionInfo text="Son 24 saat içindeki tüm aktivitelerin saat dilimlerine göre dağılımı." />
+                    <h3 className="text-base sm:text-xl font-bold text-white mb-4 flex items-center gap-2">
+                        <Clock className="w-4 h-4 sm:w-5 sm:h-5 text-purple-400" />
+                        <span className="truncate">Saatlik Aktivite</span>
+                        <span className="hidden sm:inline text-sm font-normal">(Son 24 Saat)</span>
+                        <span className="hidden sm:inline"><SectionInfo text="Son 24 saat içindeki tüm aktivitelerin saat dilimlerine göre dağılımı." /></span>
                     </h3>
-                    <ResponsiveContainer width="100%" height={300}>
+                    <ResponsiveContainer width="100%" height={250} className="sm:!h-[300px]">
                         <BarChart data={data.hourly}>
                             <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.1)" />
                             <XAxis
@@ -234,12 +235,13 @@ export default function AnalyticsView() {
 
                 {/* Daily Trend Chart */}
                 <div className="bg-white/10 backdrop-blur-lg rounded-2xl shadow-2xl p-6 border border-white/20">
-                    <h3 className="text-xl font-bold text-white mb-4 flex items-center gap-2">
-                        <TrendingUp className="w-5 h-5 text-green-400" />
-                        Günlük Trend (Son 7 Gün)
-                        <SectionInfo text="Son 7 gündeki toplam işlem hacminin günlük bazda değişimi." />
+                    <h3 className="text-base sm:text-xl font-bold text-white mb-4 flex items-center gap-2">
+                        <TrendingUp className="w-4 h-4 sm:w-5 sm:h-5 text-green-400" />
+                        <span className="truncate">Günlük Trend</span>
+                        <span className="hidden sm:inline text-sm font-normal">(Son 7 Gün)</span>
+                        <span className="hidden sm:inline"><SectionInfo text="Son 7 gündeki toplam işlem hacminin günlük bazda değişimi." /></span>
                     </h3>
-                    <ResponsiveContainer width="100%" height={300}>
+                    <ResponsiveContainer width="100%" height={250} className="sm:!h-[300px]">
                         <LineChart data={data.daily}>
                             <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.1)" />
                             <XAxis dataKey="label" stroke="#c4b5fd" tick={{ fontSize: 12 }} />
