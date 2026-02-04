@@ -1,64 +1,16 @@
 
 import { createClient } from '@supabase/supabase-js';
 
+// Export client-safe utilities
+export { getRankInfo, type RankInfo } from './gamification-utils';
+
 // Use Service Role to bypass RLS and ensure we can update agent_progress
+// THIS FILE SHOULD ONLY BE IMPORTED IN SERVER-SIDE CODE (API routes, server components)
 const supabaseAdmin = createClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.SUPABASE_SERVICE_ROLE_KEY!
 );
 
-/**
- * Shared Type for Rank Information
- */
-export interface RankInfo {
-    title: string;
-    icon: 'Sprout' | 'Swords' | 'Flame' | 'Gem' | 'Crown';
-    color: string;
-    bgGlow: string;
-    border: string;
-}
-
-/**
- * Centralized Logic for Rank Titles and Visuals
- * Based on Level (XP/1000)
- */
-export const getRankInfo = (lvl: number): RankInfo => {
-    if (lvl < 10) return {
-        title: 'Çaylak (Rookie)',
-        icon: 'Sprout',
-        color: 'from-green-500 to-emerald-700',
-        bgGlow: 'bg-green-500/20',
-        border: 'border-green-500/30'
-    };
-    if (lvl < 25) return {
-        title: 'Avcı (Hunter)',
-        icon: 'Swords',
-        color: 'from-slate-400 to-slate-600',
-        bgGlow: 'bg-slate-500/20',
-        border: 'border-slate-500/30'
-    };
-    if (lvl < 50) return {
-        title: 'Usta (Veteran)',
-        icon: 'Flame',
-        color: 'from-orange-500 to-red-600',
-        bgGlow: 'bg-orange-500/20',
-        border: 'border-orange-500/30'
-    };
-    if (lvl < 100) return {
-        title: 'Elit (Elite)',
-        icon: 'Gem',
-        color: 'from-cyan-500 to-blue-600',
-        bgGlow: 'bg-cyan-500/20',
-        border: 'border-cyan-500/30'
-    };
-    return {
-        title: 'Efsane (Legend)',
-        icon: 'Crown',
-        color: 'from-fuchsia-600 to-purple-800',
-        bgGlow: 'bg-purple-500/20',
-        border: 'border-purple-500/30'
-    };
-};
 
 export async function awardXP(agentId: string, amount: number, reason: string) {
     console.log(`[Gamification] Awarding ${amount} XP to ${agentId} for: ${reason}`);

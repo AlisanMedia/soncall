@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react';
 import { createClient } from '@/lib/supabase/client';
 import { Trophy, Star, Flame, Zap, Sprout, Swords, Gem, Crown } from 'lucide-react';
 import { AgentProgress } from '@/types';
-import { getRankInfo } from '@/lib/gamification';
+import { getRankInfo } from '@/lib/gamification-utils';
 
 export default function GamificationBar({ agentId }: { agentId: string }) {
     const [progress, setProgress] = useState<any>(null);
