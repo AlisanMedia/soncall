@@ -111,16 +111,33 @@ async function run() {
     );
 
     // Fetch ALL agents
-    const { data: agents, error } = await supabaseAdmin
+    const { data, error } = await supabaseAdmin
         .from('agent_progress')
         .select(`
             agent_id,
+            last_activity_date,
+            last_motivation_sent,
             profiles:agent_id (
                 phone_number,
                 full_name,
                 nickname
             )
         `);
+
+    // Define types for better safety
+    interface Profile {
+        phone_number: string | null;
+        full_name: string | null;
+        nickname: string | null;
+    }
+
+    interface AgentData {
+        agent_id: string;
+        last_motivation_sent: string | null;
+        profiles: Profile | Profile[] | null;
+    }
+
+    const agents = data as unknown as AgentData[] | null;
 
     if (error) {
         console.error('Error fetching agents:', error);

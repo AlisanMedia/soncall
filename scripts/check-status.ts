@@ -10,20 +10,35 @@ const supabase = createClient(
     process.env.SUPABASE_SERVICE_ROLE_KEY!
 );
 
+interface AgentMotivation {
+    last_motivation_sent: string | null;
+    profiles: { full_name: string | null } | { full_name: string | null }[] | null;
+}
+
 async function check() {
-    const { data: agents } = await supabase
+    const { data } = await supabase
         .from('agent_progress')
         .select(`
             last_motivation_sent,
             profiles:agent_id (full_name)
         `);
 
+    const agents = data as unknown as AgentMotivation[] | null;
+
     console.log('--- SMS Gönderim Raporu (Bugün) ---');
     const today = new Date().toISOString().split('T')[0];
 
     let count = 0;
     agents?.forEach(a => {
-        const name = Array.isArray(a.profiles) ? a.profiles[0]?.full_name : a.profiles?.full_name;
+        let name = "Bilinmiyor";
+        if (a.profiles) {
+            if (Array.isArray(a.profiles)) {
+                name = a.profiles[0]?.full_name || name;
+            } else {
+                name = a.profiles.full_name || name;
+            }
+        }
+
         const sentTime = a.last_motivation_sent;
 
         if (sentTime && sentTime.startsWith(today)) {
