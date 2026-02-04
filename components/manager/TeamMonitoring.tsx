@@ -6,6 +6,7 @@ import { motion } from 'framer-motion';
 import { playActivityNotification } from '@/lib/sounds';
 import { SectionInfo } from '@/components/ui/section-info';
 import ActivityDetailModal from './ActivityDetailModal';
+import BatchDetailModal from './BatchDetailModal';
 
 interface ActivityItem {
     id: string;
@@ -73,6 +74,7 @@ export default function TeamMonitoring() {
     const [agentStats, setAgentStats] = useState<AgentStat[]>([]);
     const [loading, setLoading] = useState(true);
     const [selectedActivity, setSelectedActivity] = useState<ActivityItem | null>(null);
+    const [selectedBatchId, setSelectedBatchId] = useState<string | null>(null);
     const [showAllBatches, setShowAllBatches] = useState(false);
     const [loadingMore, setLoadingMore] = useState(false);
     const [hasMore, setHasMore] = useState(true);
@@ -569,10 +571,22 @@ export default function TeamMonitoring() {
                 </div>
 
                 <div className={`grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 ${showAllBatches ? 'max-h-[350px] overflow-y-auto custom-scrollbar pr-2' : ''}`}>
-                    {(showAllBatches ? batches : batches.slice(0, 1)).map((batch) => (
-                        <div key={batch.id} className="bg-white/5 rounded-lg p-4 border border-white/10">
+                    {(showAllBatches ? batches : batches.slice(0, 3)).map((batch) => (
+                        <div key={batch.id} className="bg-white/5 rounded-lg p-4 border border-white/10 group hover:border-purple-500/30 transition-colors relative">
+                            {/* Action Overlay (Visible on Hover) */}
+                            <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity flex gap-1">
+                                <button
+                                    onClick={() => setSelectedBatchId(batch.id)}
+                                    className="p-1.5 bg-purple-600 text-white rounded hover:bg-purple-500 shadow-lg"
+                                    title="Detaylı İncele"
+                                >
+                                    <Search className="w-3 h-3" />
+                                </button>
+                                {/* Direct quick export can also be added here, but inside modal is cleaner for filters */}
+                            </div>
+
                             <div className="mb-3">
-                                <p className="text-white font-medium truncate">{batch.filename}</p>
+                                <p className="text-white font-medium truncate pr-8">{batch.filename}</p>
                                 <p className="text-xs text-purple-300 mt-1">
                                     {new Date(batch.created_at).toLocaleDateString('tr-TR')}
                                     {batch.profiles?.full_name && ` • ${batch.profiles.full_name}`}
@@ -622,6 +636,12 @@ export default function TeamMonitoring() {
                 isOpen={!!selectedActivity}
                 onClose={() => setSelectedActivity(null)}
                 activity={selectedActivity}
+            />
+
+            <BatchDetailModal
+                isOpen={!!selectedBatchId}
+                onClose={() => setSelectedBatchId(null)}
+                batchId={selectedBatchId}
             />
 
             <style jsx>{`

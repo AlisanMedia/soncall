@@ -189,17 +189,21 @@ export default function AiPerformancePanel() {
                         </div>
                         <div>
                             <h3 className="font-semibold text-white">Kahin Skoru</h3>
-                            <p className="text-xs text-purple-300">Oracle Accuracy</p>
+                            <p className="text-xs text-purple-300">Weighted Precision</p>
                         </div>
-                        <SectionInfo text="Yapay zekanın satış ve randevu tahminlerindeki doğruluk oranı." />
+                        <SectionInfo text="Yeni Katı Puanlama: Satış (+100), Randevu (+50). Yanlış tahminler (-100) ile cezalandırılır." />
                     </div>
 
                     <div className="text-center mb-4">
                         <div className="text-4xl font-bold text-purple-400 mb-1">
-                            {data.oracle.accuracy}%
+                            {data.oracle.totalPredictions < 5 ? (
+                                <span className="text-2xl text-purple-300 animate-pulse">Veri Toplanıyor...</span>
+                            ) : (
+                                `${data.oracle.accuracy}%`
+                            )}
                         </div>
                         <p className="text-xs text-purple-200">
-                            {data.oracle.totalPredictions} tahmin analiz edildi
+                            {data.oracle.totalPredictions} analiz doğrulandı
                         </p>
                     </div>
 
@@ -226,8 +230,8 @@ export default function AiPerformancePanel() {
 
                     <div className="mt-4 pt-4 border-t border-white/10">
                         <div className="flex justify-between text-xs">
-                            <span className="text-purple-300">Precision</span>
-                            <span className="text-purple-400 font-semibold">{data.oracle.precision}%</span>
+                            <span className="text-purple-300">Güven Skoru</span>
+                            <span className="text-purple-400 font-semibold">Verified</span>
                         </div>
                     </div>
                 </motion.div>
@@ -244,10 +248,10 @@ export default function AiPerformancePanel() {
                             <TrendingUp className="w-5 h-5 text-cyan-400" />
                         </div>
                         <div>
-                            <h3 className="font-semibold text-white">Öğrenme Eğrisi</h3>
-                            <p className="text-xs text-cyan-300">Son 4 Hafta</p>
+                            <h3 className="font-semibold text-white">Performans Eğrisi</h3>
+                            <p className="text-xs text-cyan-300">Trend Analizi</p>
                         </div>
-                        <SectionInfo text="Yapay zekanın zaman içindeki öğrenme ve iyileşme grafiği." />
+                        <SectionInfo text="Cortex'in tahmin başarısının haftalık değişimi." />
                     </div>
 
                     <ResponsiveContainer width="100%" height={200}>
@@ -283,7 +287,7 @@ export default function AiPerformancePanel() {
                     </ResponsiveContainer>
 
                     <p className="text-xs text-cyan-200 text-center mt-2">
-                        Trend: {data.learningCurve[data.learningCurve.length - 1]?.accuracy > data.learningCurve[0]?.accuracy ? '📈 Gelişiyor' : '📉 Optimize edilmeli'}
+                        Durum: {data.learningCurve.length > 0 && data.learningCurve[data.learningCurve.length - 1]?.accuracy >= 50 ? '✅ Stabil' : '⚠️ Kalibrasyon Gerekli'}
                     </p>
                 </motion.div>
 
@@ -300,9 +304,9 @@ export default function AiPerformancePanel() {
                         </div>
                         <div>
                             <h3 className="font-semibold text-white">Sinerji Endeksi</h3>
-                            <p className="text-xs text-emerald-300">Agent-AI Uyumu</p>
+                            <p className="text-xs text-emerald-300">Action Compliance</p>
                         </div>
-                        <SectionInfo text="Satış temsilcilerinin yapay zeka önerilerini ne kadar dikkate alıp uyguladığının skoru." />
+                        <SectionInfo text="AI'ın 'Ara' veya 'Mesaj At' önerilerinin Agent tarafından uygulanma oranı." />
                     </div>
 
                     <div className="text-center mb-4">
@@ -310,7 +314,7 @@ export default function AiPerformancePanel() {
                             {data.synergy.score}%
                         </div>
                         <p className="text-xs text-emerald-200">
-                            {data.synergy.quickFollowUps}/{data.synergy.totalOpportunities} hızlı takip
+                            {data.synergy.quickFollowUps}/{data.synergy.totalOpportunities} öneri uygulandı
                         </p>
                     </div>
 
@@ -331,9 +335,9 @@ export default function AiPerformancePanel() {
 
                     <div className="mt-4">
                         <div className="flex items-center justify-between text-xs mb-2">
-                            <span className="text-emerald-300">AI + Agent Koordinasyonu</span>
+                            <span className="text-emerald-300">Aksiyon Uyumu</span>
                             <span className="text-emerald-400 font-semibold">
-                                {data.synergy.score >= 70 ? 'Mükemmel' : data.synergy.score >= 50 ? 'İyi' : 'Geliştirilebilir'}
+                                {data.synergy.score >= 80 ? 'Harika' : data.synergy.score >= 50 ? 'İyi' : 'Düşük'}
                             </span>
                         </div>
                         <div className="w-full bg-white/10 rounded-full h-2">
@@ -350,7 +354,7 @@ export default function AiPerformancePanel() {
 
             {/* Secondary Metrics */}
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                {/* Appointment Detection */}
+                {/* Appointment Verification */}
                 <motion.div
                     initial={{ opacity: 0, y: 20 }}
                     animate={{ opacity: 1, y: 0 }}
@@ -363,14 +367,14 @@ export default function AiPerformancePanel() {
                                 <ShieldCheck className="w-5 h-5 text-orange-400" />
                             </div>
                             <div>
-                                <h3 className="font-semibold text-white">Randevu Dedektörü</h3>
-                                <p className="text-xs text-orange-300">Zaman Bükücü Sistemi</p>
+                                <h3 className="font-semibold text-white">Doğrulanmış Randevu</h3>
+                                <p className="text-xs text-orange-300">Cross-Check Sistem</p>
                             </div>
-                            <SectionInfo text="Ses kayıtlarındaki tarih ve saat ifadelerini algılama başarısı." />
+                            <SectionInfo text="Sadece AI loglarında kanıtı bulunan (tarih/kelime eşleşen) randevuları sayar." />
                         </div>
                         <div className="text-right">
                             <div className="text-2xl font-bold text-orange-400">{data.appointmentDetection.rate}%</div>
-                            <div className="text-xs text-orange-200">{data.appointmentDetection.total} randevu</div>
+                            <div className="text-xs text-orange-200">{data.appointmentDetection.total} verified</div>
                         </div>
                     </div>
 
@@ -384,7 +388,7 @@ export default function AiPerformancePanel() {
                     </div>
 
                     <p className="text-xs text-orange-200 mt-3">
-                        AI, ses kaydındaki tarih ve saat ifadelerini {data.appointmentDetection.rate}% doğrulukla yakalıyor.
+                        AI, alınan randevuların %{data.appointmentDetection.rate}'sini önceden tespit etti veya logladı.
                     </p>
                 </motion.div>
 
@@ -400,10 +404,10 @@ export default function AiPerformancePanel() {
                             <Diamond className="w-5 h-5 text-pink-400" />
                         </div>
                         <div>
-                            <h3 className="font-semibold text-white">Tahmin Dağılımı</h3>
-                            <p className="text-xs text-pink-300">Breakdown</p>
+                            <h3 className="font-semibold text-white">Başarı Dağılımı</h3>
+                            <p className="text-xs text-pink-300">Kazanım vs Kayıp</p>
                         </div>
-                        <SectionInfo text="Yapılan tüm tahminlerin kategorik dağılımı (Doğru, Yanlış, Fırsat)." />
+                        <SectionInfo text="Cortex'in pozitif ve negatif tahminlerinin gerçek sonuçlarla dağılımı." />
                     </div>
 
                     <ResponsiveContainer width="100%" height={180}>
