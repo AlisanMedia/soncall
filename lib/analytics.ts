@@ -1,4 +1,5 @@
 import { SupabaseClient } from '@supabase/supabase-js';
+import { getRankInfo } from './gamification';
 
 export async function fetchManagerAnalytics(supabase: SupabaseClient) {
     // Get timezone-aware timestamps
@@ -148,6 +149,15 @@ export async function fetchManagerAnalytics(supabase: SupabaseClient) {
 
     if (agentsError) throw agentsError;
 
+    // Fetch Level Data for ALL agents in one go
+    const { data: agentProgress } = await supabase
+        .from('agent_progress')
+        .select('agent_id, total_xp, current_level');
+
+    const progressMap = new Map();
+    agentProgress?.forEach((p: any) => progressMap.set(p.agent_id, p));
+
+
     const agentPerformance = await Promise.all(
         (agents || []).map(async (agent) => {
             // Today's count
@@ -202,35 +212,24 @@ export async function fetchManagerAnalytics(supabase: SupabaseClient) {
             // Calculate Conversion Rate
             const conversionRate = processedCount ? Math.round((appointmentCount) / processedCount * 100) : 0;
 
-            // Calculate Weighted Score (Smart Leaderboard Logic)
-            // Sales = 500 pts (High Value)
-            // Appointment = 50 pts (Medium Value)
-            // Processed = 1 pt (Effort)
-            let score = (salesCount * 500) + (appointmentCount * 50) + (processedCount * 1);
+            // GAMIFICATION 2.0 INTEGRATION
+            const progress = progressMap.get(agent.id);
+            const level = progress?.current_level || 1;
+            const score = progress?.total_xp || 0; // Use XP as visual score
 
-            // Efficiency Bonus: If conversion > 15%, add 10% boost
-            const isEfficient = conversionRate > 15 && processedCount > 10; // Min 10 calls to qualify
-            if (isEfficient) {
-                score = Math.round(score * 1.1);
-            }
+            // Get Standard Rank Info
+            const rankInfo = getRankInfo(level);
 
-            // Calculate Dynamic Level & Rank based on Score
-            // Level = 1 + (Score / 100)
-            const level = Math.floor(score / 100) + 1;
-
-            let rank = 'Çaylak'; // Junior
-            if (level >= 10) rank = 'Uzman'; // Expert
-            if (level >= 25) rank = 'Usta'; // Master
-            if (level >= 50) rank = 'Efsane'; // Legend
-            if (level >= 100) rank = 'Godlike';
+            // Efficiency Bonus: If conversion > 15%, add 10% boost (To what? Maybe just a visual flag now)
+            const isEfficient = conversionRate > 15 && processedCount > 10;
 
             return {
                 agent_id: agent.id,
                 agent_name: agent.full_name,
                 avatar_url: agent.avatar_url,
                 level,
-                rank,
-                score, // Include score for sorting and display
+                rank: rankInfo.title, // Standardized Title
+                score, // Shows Total XP now
                 today_count: todayCount || 0,
                 yesterday_count: yesterdayCount || 0,
                 growth_percentage: growth,
@@ -238,12 +237,12 @@ export async function fetchManagerAnalytics(supabase: SupabaseClient) {
                 total_sales: salesCount,
                 total_processed: processedCount,
                 conversion_rate: conversionRate,
-                is_efficient: isEfficient, // Pass efficiency flag to UI
+                is_efficient: isEfficient,
             };
         })
     );
 
-    // Sort by Weighted Score (Real Performance)
+    // Sort by Total XP (Level)
     agentPerformance.sort((a, b) => b.score - a.score);
 
     return {

@@ -220,16 +220,6 @@ export default function Leaderboard({ agentId, refreshKey }: LeaderboardProps) {
                                         <div className="text-xs text-white font-medium">
                                             {entry.processed_count} <span className="text-purple-300 font-normal">lead</span>
                                         </div>
-
-                                        {/* Remaining Count - Optional, only if space permits or critical */}
-                                        {/* 
-                                        {entry.remaining_count !== undefined && entry.remaining_count > 0 && (
-                                            <div className="flex items-center gap-1 text-xs">
-                                                <Target className="w-3 h-3 text-yellow-400" />
-                                                <span className="text-yellow-400 font-medium">{entry.remaining_count}</span>
-                                            </div>
-                                        )}
-                                        */}
                                     </div>
                                 </div>
 

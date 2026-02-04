@@ -123,9 +123,9 @@ export default function AgentRankings() {
                     <div>
                         <h2 className="text-lg font-bold text-white flex items-center gap-2">
                             Liderlik Tablosu
-                            <SectionInfo text="Sıralama Puanı: Satış (500p) + Randevu (50p) + İşlem (1p). Verimlilik Bonusu (>%15 Conv): +%10 Puan" />
+                            <SectionInfo text="Rank sistemi artık XP bazlıdır. Satış=1000XP, Randevu=200XP, Arama=10XP." />
                         </h2>
-                        <p className="text-xs text-purple-300">Anlık performans ve skor takibi</p>
+                        <p className="text-xs text-purple-300">Anlık performans ve XP takibi</p>
                     </div>
                 </div>
 
@@ -139,7 +139,7 @@ export default function AgentRankings() {
                                 : 'text-purple-200 hover:text-white hover:bg-white/5'
                                 }`}
                         >
-                            {mode === 'score' ? 'Skor' : mode === 'sales' ? 'Satış' : mode === 'today' ? 'Bugün' : 'Conv.'}
+                            {mode === 'score' ? 'XP' : mode === 'sales' ? 'Satış' : mode === 'today' ? 'Bugün' : 'Conv.'}
                         </button>
                     ))}
                     <div className="w-px h-6 bg-white/10 mx-1" />
@@ -221,16 +221,15 @@ export default function AgentRankings() {
                                         <div className="flex items-center gap-2">
                                             <h3 className="font-semibold text-white text-sm truncate">{agent.agent_name}</h3>
                                             {index === 0 && <Star className="w-3 h-3 text-yellow-500 fill-yellow-500 animate-pulse" />}
-                                            {agent.is_efficient && (
-                                                <div className="flex items-center gap-0.5 px-1.5 py-0.5 rounded-full bg-orange-500/20 border border-orange-500/30" title="Verimlilik Bonusu Aktif! (+%10 Puan)">
+                                            {agent.is_efficient && ( // Efficiency bonus is legacy now but kept visually
+                                                <div className="flex items-center gap-0.5 px-1.5 py-0.5 rounded-full bg-orange-500/20 border border-orange-500/30" title="Verimlilik Bonusu Aktif!">
                                                     <Zap className="w-3 h-3 text-orange-400 fill-orange-400 animate-pulse" />
-                                                    <span className="text-[9px] font-bold text-orange-300">BONUS</span>
                                                 </div>
                                             )}
                                         </div>
                                         <div className="flex items-center gap-2 text-xs">
                                             <span className="text-stone-400">{agent.rank}</span>
-                                            <span className="text-purple-400 font-bold bg-purple-500/10 px-1.5 rounded">{agent.score} Puan</span>
+                                            <span className="text-purple-400 font-bold bg-purple-500/10 px-1.5 rounded">{agent.score} XP</span>
                                         </div>
                                     </div>
 

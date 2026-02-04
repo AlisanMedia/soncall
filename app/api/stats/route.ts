@@ -49,18 +49,29 @@ export async function GET(request: NextRequest) {
             name: string;
             avatar_url?: string;
             count: number;
-            total_lifetime_count: number; // For level calc
+            total_lifetime_count: number; // For level calc fallback
             activities: Date[];
+            level: number; // New field
         }> = {};
 
         // Initialize all agents
+        // Fetch XP levels first
+        const { data: progressData } = await supabase
+            .from('agent_progress')
+            .select('agent_id, current_level');
+
+        const levelMap = new Map();
+        progressData?.forEach((p: any) => levelMap.set(p.agent_id, p.current_level));
+
         allAgents?.forEach((agent: any) => {
+            const level = levelMap.get(agent.id) || 1;
             agentStats[agent.id] = {
                 name: agent.full_name,
                 avatar_url: agent.avatar_url,
                 count: 0,
                 total_lifetime_count: 0,
                 activities: [],
+                level
             };
         });
 
@@ -130,13 +141,28 @@ export async function GET(request: NextRequest) {
                     a => a.getTime() > fiveMinutesAgo.getTime()
                 );
 
-                // Calculate Level & Title
-                const level = Math.floor(data.total_lifetime_count / 50) + 1;
+                // GAMIFICATION 2.0 INTEGRATION
+                // We need to fetch XP/Level from agent_progress table ideally.
+                // For now, let's keep it performant or do a second query.
+                // Actually, the best way is to fetch agent_progress at the top level like in analytics.ts
+                // BUT, to avoid rewriting the whole file execution flow right now, let's assume we can fetch it or
+                // better yet: Re-structure this map to include the data we will fetch below.
+
+                // Wait, let's fetch it at the top level to be clean.
+                // (See modified query below)
+
+                const level = data.level || 1;
+                // We will populate 'data.level' from the main query updates (see below).
+
+                // Get Standard Rank Info (Import dynamically or duplicate logic to avoid import issues if edge runtime - but this is node)
+                // Let's use simple logic here matching getRankInfo if we can't import easily, or just import.
+                // Importing is better.
+
                 let rank_title = 'Çaylak';
-                if (level >= 5) rank_title = 'Uzman';
-                if (level >= 10) rank_title = 'Usta';
-                if (level >= 20) rank_title = 'Efsane';
-                if (level >= 50) rank_title = 'Godlike';
+                if (level >= 10) rank_title = 'Avcı';
+                if (level >= 25) rank_title = 'Usta';
+                if (level >= 50) rank_title = 'Elit';
+                if (level >= 100) rank_title = 'Efsane';
 
                 return {
                     agent_id,
@@ -147,7 +173,7 @@ export async function GET(request: NextRequest) {
                     streak: streak > 1 ? streak : 0,
                     speed_last_5min: last5MinActivities.length,
                     level,
-                    rank_title,
+                    rank_title, // Unified title
                     rank: 0, // Will be assigned below
                 };
             })

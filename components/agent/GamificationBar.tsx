@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import { createClient } from '@/lib/supabase/client';
 import { Trophy, Star, Flame, Zap, Sprout, Swords, Gem, Crown } from 'lucide-react';
 import { AgentProgress } from '@/types';
+import { getRankInfo } from '@/lib/gamification';
 
 export default function GamificationBar({ agentId }: { agentId: string }) {
     const [progress, setProgress] = useState<any>(null);
@@ -79,45 +80,17 @@ export default function GamificationBar({ agentId }: { agentId: string }) {
     const percent = Math.min(100, Math.max(0, (xpInLevel / xpNeeded) * 100));
 
     // GAMIFICATION 2.0 - RANK LOGIC
-    const getRankInfo = (lvl: number) => {
-        if (lvl < 10) return {
-            title: 'Çaylak (Rookie)',
-            icon: <Sprout className="w-6 h-6 text-green-400" />,
-            color: 'from-green-500 to-emerald-700',
-            bgGlow: 'bg-green-500/20',
-            border: 'border-green-500/30'
-        };
-        if (lvl < 25) return {
-            title: 'Avcı (Hunter)',
-            icon: <Swords className="w-6 h-6 text-slate-300" />,
-            color: 'from-slate-400 to-slate-600',
-            bgGlow: 'bg-slate-500/20',
-            border: 'border-slate-500/30'
-        };
-        if (lvl < 50) return {
-            title: 'Usta (Veteran)',
-            icon: <Flame className="w-6 h-6 text-orange-500 animate-pulse" />,
-            color: 'from-orange-500 to-red-600',
-            bgGlow: 'bg-orange-500/20',
-            border: 'border-orange-500/30'
-        };
-        if (lvl < 100) return {
-            title: 'Elit (Elite)',
-            icon: <Gem className="w-6 h-6 text-cyan-400" />,
-            color: 'from-cyan-500 to-blue-600',
-            bgGlow: 'bg-cyan-500/20',
-            border: 'border-cyan-500/30'
-        };
-        return {
-            title: 'Efsane (Legend)',
-            icon: <Crown className="w-6 h-6 text-purple-400" />,
-            color: 'from-fuchsia-600 to-purple-800',
-            bgGlow: 'bg-purple-500/20',
-            border: 'border-purple-500/30'
-        };
-    };
-
     const rank = getRankInfo(progress.current_level);
+
+    // Map icon string to component
+    const IconComponent = () => {
+        if (rank.icon === 'Sprout') return <Sprout className="w-6 h-6 text-green-400" />;
+        if (rank.icon === 'Swords') return <Swords className="w-6 h-6 text-slate-300" />;
+        if (rank.icon === 'Flame') return <Flame className="w-6 h-6 text-orange-500 animate-pulse" />;
+        if (rank.icon === 'Gem') return <Gem className="w-6 h-6 text-cyan-400" />;
+        if (rank.icon === 'Crown') return <Crown className="w-6 h-6 text-purple-400" />;
+        return <Sprout className="w-6 h-6 text-green-400" />;
+    };
 
     return (
         <div className={`relative overflow-hidden group border rounded-xl p-4 transition-all duration-500 bg-gradient-to-r ${rank.color} bg-opacity-10 ${rank.border}`}>
@@ -139,7 +112,7 @@ export default function GamificationBar({ agentId }: { agentId: string }) {
 
                     <div>
                         <div className="flex items-center gap-2">
-                            {rank.icon}
+                            <IconComponent />
                             <h3 className="text-xl font-black text-white tracking-wide drop-shadow-lg">{rank.title}</h3>
                         </div>
                         <p className="text-sm text-white/70 font-mono tracking-tight ml-1">

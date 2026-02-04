@@ -188,13 +188,13 @@ export default function TeamList() {
 }
 
 function PasswordCell({ password }: { password?: string }) {
-    const [isVisible, setIsVisible] = useState(false);
+    const [isVisible, setIsVisible] = useState(true); // Default to visible now
 
     if (!password) return <span className="text-gray-500 italic">Yok</span>;
 
     return (
         <div className="flex items-center gap-2">
-            <span className="font-mono text-xs">
+            <span className="font-mono text-xs text-white/90">
                 {isVisible ? password : '••••••••'}
             </span>
             <button
