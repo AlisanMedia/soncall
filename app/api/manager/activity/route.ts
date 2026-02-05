@@ -97,7 +97,7 @@ export async function GET(request: Request) {
         metadata,
         agent_id,
         lead_id,
-        profiles!lead_activity_log_agent_id_fkey (
+        profiles (
           full_name,
           avatar_url
         ),

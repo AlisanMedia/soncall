@@ -254,7 +254,7 @@ export default function AiPerformancePanel() {
                         <SectionInfo text="Cortex'in tahmin başarısının haftalık değişimi." />
                     </div>
 
-                    <ResponsiveContainer width="100%" height={200}>
+                    <ResponsiveContainer width="100%" height={200} minHeight={100}>
                         <LineChart data={data.learningCurve}>
                             <CartesianGrid strokeDasharray="3 3" stroke="#ffffff10" />
                             <XAxis
@@ -410,7 +410,7 @@ export default function AiPerformancePanel() {
                         <SectionInfo text="Cortex'in pozitif ve negatif tahminlerinin gerçek sonuçlarla dağılımı." />
                     </div>
 
-                    <ResponsiveContainer width="100%" height={180}>
+                    <ResponsiveContainer width="100%" height={180} minHeight={100}>
                         <PieChart>
                             <Pie
                                 data={confusionData}

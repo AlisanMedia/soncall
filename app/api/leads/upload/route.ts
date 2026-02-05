@@ -108,9 +108,9 @@ export async function POST(request: NextRequest) {
             } else {
                 // Not a duplicate - add to insert list
                 // ALSO add to "existing" logic for this batch to prevent internal duplicates within the same file!
+                const { id, ...leadWithoutId } = lead;
                 leadsToInsert.push({
-                    ...lead,
-                    id: undefined, // remove incoming ID if any
+                    ...leadWithoutId,
                     batch_id: batch.id,
                     created_at: new Date().toISOString(),
                     updated_at: new Date().toISOString(),

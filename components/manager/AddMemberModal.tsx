@@ -95,16 +95,16 @@ export default function AddMemberModal({ isOpen, onClose, onSuccess, memberToEdi
     };
 
     return (
-        <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-            <div className="bg-[#1a1a2e] border border-white/10 w-full max-w-2xl rounded-2xl shadow-2xl overflow-hidden flex flex-col max-h-[90vh]">
-                <div className="p-6 border-b border-white/10 flex justify-between items-center bg-white/5">
-                    <h2 className="text-xl font-bold text-white">{memberToEdit ? 'Üye Düzenle' : 'Yeni Takım Üyesi Ekle'}</h2>
-                    <button onClick={onClose} className="text-gray-400 hover:text-white transition-colors">
-                        <X className="w-6 h-6" />
+        <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-end sm:items-center justify-center sm:p-4">
+            <div className="bg-[#1a1a2e] border-t sm:border border-white/10 w-full sm:max-w-2xl rounded-t-3xl sm:rounded-2xl shadow-2xl overflow-hidden animate-in slide-in-from-bottom sm:zoom-in-95 max-h-[90vh] flex flex-col">
+                <div className="sticky top-0 z-10 p-4 sm:p-6 border-b border-white/10 flex justify-between items-center bg-white/5 backdrop-blur-sm">
+                    <h2 className="text-lg sm:text-xl font-bold text-white">{memberToEdit ? 'Üye Düzenle' : 'Yeni Takım Üyesi Ekle'}</h2>
+                    <button onClick={onClose} className="text-gray-400 hover:text-white p-2 rounded-full hover:bg-white/10 touch-target">
+                        <X className="w-6 h-6 sm:w-5 sm:h-5" />
                     </button>
                 </div>
 
-                <form onSubmit={handleSubmit} className="p-6 overflow-y-auto space-y-6 custom-scrollbar">
+                <form onSubmit={handleSubmit} className="p-4 sm:p-6 overflow-y-auto space-y-4 sm:space-y-6 custom-scrollbar">
                     {/* Account Info - ONLY FOR NEW MEMBERS */}
                     {!memberToEdit && (
                         <div className="space-y-4">
@@ -235,18 +235,18 @@ export default function AddMemberModal({ isOpen, onClose, onSuccess, memberToEdi
                         </div>
                     </div>
 
-                    <div className="pt-4 border-t border-white/10 flex justify-end gap-3">
+                    <div className="pt-4 border-t border-white/10 flex flex-col sm:flex-row justify-end gap-3">
                         <button
                             type="button"
                             onClick={onClose}
-                            className="px-4 py-2 rounded-lg hover:bg-white/5 text-gray-400 hover:text-white transition-colors"
+                            className="px-4 py-3 sm:py-2 rounded-lg hover:bg-white/5 text-gray-400 hover:text-white transition-colors touch-target order-2 sm:order-1"
                         >
                             İptal
                         </button>
                         <button
                             type="submit"
                             disabled={isLoading}
-                            className="px-6 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-lg font-medium transition-colors disabled:opacity-50 flex items-center gap-2"
+                            className="px-6 py-4 sm:py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-lg font-medium transition-colors disabled:opacity-50 flex items-center justify-center gap-2 touch-target-large active:scale-95 order-1 sm:order-2"
                         >
                             {isLoading ? <Loader2 className="w-5 h-5 animate-spin" /> : <Save className="w-5 h-5" />}
                             Kaydet

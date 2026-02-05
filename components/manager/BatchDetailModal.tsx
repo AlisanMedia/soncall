@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { X, Search, Filter, ArrowUpDown, Download, Loader2, User, Phone, Briefcase } from 'lucide-react';
+import { X, Search, Filter, ArrowUpDown, Download, Loader2, User, Phone, Briefcase, RotateCcw, CheckSquare, Square } from 'lucide-react';
 
 interface BatchDetailModalProps {
     batchId: string | null;
@@ -35,6 +35,9 @@ export default function BatchDetailModal({ batchId, isOpen, onClose }: BatchDeta
     const [totalPages, setTotalPages] = useState(1);
     const [totalRecords, setTotalRecords] = useState(0);
     const [isExporting, setIsExporting] = useState(false);
+    const [selectedLeads, setSelectedLeads] = useState<string[]>([]);
+    const [showResetDialog, setShowResetDialog] = useState(false);
+    const [isResetting, setIsResetting] = useState(false);
 
     useEffect(() => {
         if (isOpen && batchId) {
@@ -46,6 +49,7 @@ export default function BatchDetailModal({ batchId, isOpen, onClose }: BatchDeta
             setSearchTerm('');
             setStatusFilter('all');
             setCurrentPage(1);
+            setSelectedLeads([]);
         }
     }, [isOpen, batchId, currentPage, statusFilter]);
 
@@ -107,6 +111,52 @@ export default function BatchDetailModal({ batchId, isOpen, onClose }: BatchDeta
         }
     };
 
+    const handleResetToPool = async () => {
+        if (!batchId) return;
+        setIsResetting(true);
+        try {
+            const res = await fetch(`/api/manager/batches/${batchId}/reset-to-pool`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    lead_ids: selectedLeads,
+                    reset_potential: false
+                })
+            });
+
+            if (res.ok) {
+                const data = await res.json();
+                alert(data.message); // Simple alert, can be replaced with toast
+                setSelectedLeads([]);
+                setShowResetDialog(false);
+                loadBatchData(); // Refresh data
+            } else {
+                alert('Havuza aktarma başarısız');
+            }
+        } catch (error) {
+            console.error('Reset error:', error);
+            alert('Bir hata oluştu');
+        } finally {
+            setIsResetting(false);
+        }
+    };
+
+    const toggleLeadSelection = (leadId: string) => {
+        setSelectedLeads(prev =>
+            prev.includes(leadId)
+                ? prev.filter(id => id !== leadId)
+                : [...prev, leadId]
+        );
+    };
+
+    const handleSelectAll = () => {
+        if (selectedLeads.length === leads.length) {
+            setSelectedLeads([]);
+        } else {
+            setSelectedLeads(leads.map(l => l.id));
+        }
+    };
+
     const getStatusColor = (status: string) => {
         switch (status) {
             case 'appointment': return 'text-purple-400 bg-purple-500/10 border-purple-500/20';
@@ -140,6 +190,15 @@ export default function BatchDetailModal({ batchId, isOpen, onClose }: BatchDeta
                             </p>
                         </div>
                         <div className="flex items-center gap-2 self-end sm:self-auto">
+                            {selectedLeads.length > 0 && (
+                                <button
+                                    onClick={() => setShowResetDialog(true)}
+                                    className="flex items-center gap-1.5 sm:gap-2 px-2.5 sm:px-4 py-1.5 sm:py-2 bg-orange-600 hover:bg-orange-700 active:scale-95 text-white rounded-lg text-xs sm:text-sm font-medium transition-all touch-target"
+                                >
+                                    <RotateCcw className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+                                    Havuza Aktar ({selectedLeads.length})
+                                </button>
+                            )}
                             <button
                                 onClick={handleExport}
                                 disabled={isExporting}
@@ -195,6 +254,19 @@ export default function BatchDetailModal({ batchId, isOpen, onClose }: BatchDeta
                             <table className="w-full text-left border-collapse">
                                 <thead className="bg-slate-800/50 sticky top-0 z-10">
                                     <tr>
+                                        <th className="p-2 sm:p-3 w-12">
+                                            <button
+                                                onClick={handleSelectAll}
+                                                className="text-slate-400 hover:text-white transition-colors"
+                                                title={selectedLeads.length === leads.length ? 'Seçimi Kaldır' : 'Tümünü Seç'}
+                                            >
+                                                {selectedLeads.length === leads.length && leads.length > 0 ? (
+                                                    <CheckSquare className="w-4 h-4" />
+                                                ) : (
+                                                    <Square className="w-4 h-4" />
+                                                )}
+                                            </button>
+                                        </th>
                                         <th className="p-2 sm:p-3 text-[10px] sm:text-xs font-medium text-slate-400 uppercase tracking-wider text-left">Müşteri</th>
                                         <th className="p-2 sm:p-3 text-[10px] sm:text-xs font-medium text-slate-400 uppercase tracking-wider hidden md:table-cell">Telefon</th>
                                         <th className="p-2 sm:p-3 text-[10px] sm:text-xs font-medium text-slate-400 uppercase tracking-wider text-left">Durum</th>
@@ -205,6 +277,18 @@ export default function BatchDetailModal({ batchId, isOpen, onClose }: BatchDeta
                                 <tbody className="divide-y divide-slate-700/50">
                                     {leads.map((lead) => (
                                         <tr key={lead.id} className="hover:bg-slate-800/30 transition-colors text-xs sm:text-sm">
+                                            <td className="p-2 sm:p-3">
+                                                <button
+                                                    onClick={() => toggleLeadSelection(lead.id)}
+                                                    className="text-slate-400 hover:text-white transition-colors"
+                                                >
+                                                    {selectedLeads.includes(lead.id) ? (
+                                                        <CheckSquare className="w-4 h-4 text-orange-400" />
+                                                    ) : (
+                                                        <Square className="w-4 h-4" />
+                                                    )}
+                                                </button>
+                                            </td>
                                             <td className="p-2 sm:p-3">
                                                 <div className="font-medium text-white text-xs sm:text-sm truncate max-w-[120px] sm:max-w-none">{lead.business_name || 'İsimsiz'}</div>
                                                 <div className="text-[10px] sm:text-xs text-slate-500 md:hidden font-mono">{lead.phone_number}</div>
@@ -269,6 +353,59 @@ export default function BatchDetailModal({ batchId, isOpen, onClose }: BatchDeta
                         </div>
                     </div>
                 </motion.div>
+
+                {/* Reset Confirmation Dialog */}
+                {showResetDialog && (
+                    <div className="absolute inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50">
+                        <motion.div
+                            initial={{ opacity: 0, scale: 0.95 }}
+                            animate={{ opacity: 1, scale: 1 }}
+                            className="bg-slate-900 border border-slate-700 rounded-xl p-6 max-w-md mx-4 shadow-2xl"
+                        >
+                            <h3 className="text-xl font-bold text-white mb-4">Havuza Aktarma Onayı</h3>
+                            <p className="text-slate-300 mb-6">
+                                Seçili <span className="text-orange-400 font-bold">{selectedLeads.length} lead</span> havuza aktarılacak:
+                            </p>
+                            <ul className="space-y-2 mb-6 text-sm text-slate-400">
+                                <li className="flex items-center gap-2">
+                                    <span className="text-green-400">✓</span> Status: <span className="text-yellow-300">pending</span>
+                                </li>
+                                <li className="flex items-center gap-2">
+                                    <span className="text-green-400">✓</span> Assignment kaldırılacak
+                                </li>
+                                <li className="flex items-center gap-2">
+                                    <span className="text-green-400">✓</span> Lock kaldırılacak
+                                </li>
+                            </ul>
+                            <div className="flex gap-3">
+                                <button
+                                    onClick={handleResetToPool}
+                                    disabled={isResetting}
+                                    className="flex-1 flex items-center justify-center gap-2 px-4 py-2 bg-orange-600 hover:bg-orange-700 text-white rounded-lg font-medium transition-colors disabled:opacity-50"
+                                >
+                                    {isResetting ? (
+                                        <>
+                                            <Loader2 className="w-4 h-4 animate-spin" />
+                                            İşleniyor...
+                                        </>
+                                    ) : (
+                                        <>
+                                            <RotateCcw className="w-4 h-4" />
+                                            Onayla
+                                        </>
+                                    )}
+                                </button>
+                                <button
+                                    onClick={() => setShowResetDialog(false)}
+                                    disabled={isResetting}
+                                    className="flex-1 px-4 py-2 bg-slate-700 hover:bg-slate-600 text-white rounded-lg font-medium transition-colors disabled:opacity-50"
+                                >
+                                    İptal
+                                </button>
+                            </div>
+                        </motion.div>
+                    </div>
+                )}
             </div>
         </AnimatePresence>
     );

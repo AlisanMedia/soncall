@@ -210,7 +210,7 @@ export default function AnalyticsView() {
                         <span className="hidden sm:inline text-sm font-normal">(Son 24 Saat)</span>
                         <span className="hidden sm:inline"><SectionInfo text="Son 24 saat içindeki tüm aktivitelerin saat dilimlerine göre dağılımı." /></span>
                     </h3>
-                    <ResponsiveContainer width="100%" height={250}>
+                    <ResponsiveContainer width="100%" height={250} minHeight={100}>
                         <BarChart data={data.hourly}>
                             <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.1)" />
                             <XAxis
@@ -241,7 +241,7 @@ export default function AnalyticsView() {
                         <span className="hidden sm:inline text-sm font-normal">(Son 7 Gün)</span>
                         <span className="hidden sm:inline"><SectionInfo text="Son 7 gündeki toplam işlem hacminin günlük bazda değişimi." /></span>
                     </h3>
-                    <ResponsiveContainer width="100%" height={250}>
+                    <ResponsiveContainer width="100%" height={250} minHeight={100}>
                         <LineChart data={data.daily}>
                             <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.1)" />
                             <XAxis dataKey="label" stroke="#c4b5fd" tick={{ fontSize: 12 }} />
@@ -280,7 +280,7 @@ export default function AnalyticsView() {
                         <h3 className="text-xl font-bold text-white">Top Kategoriler</h3>
                         <SectionInfo text="İşlenen leadlerin sektörel veya kategorik dağılımı." />
                     </div>
-                    <ResponsiveContainer width="100%" height={300}>
+                    <ResponsiveContainer width="100%" height={300} minHeight={100}>
                         <PieChart>
                             <Pie
                                 data={data.categories.slice(0, 6)}

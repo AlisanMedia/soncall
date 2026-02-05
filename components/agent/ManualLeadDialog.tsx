@@ -132,13 +132,13 @@ export default function ManualLeadDialog({ isOpen, onClose, onSuccess, agentId }
     };
 
     return (
-        <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 animate-in fade-in duration-200">
-            <div className="bg-slate-900 border border-purple-500/30 rounded-2xl p-6 w-full max-w-md shadow-2xl relative animate-in zoom-in-95 duration-200">
+        <div className="fixed inset-0 z-[60] flex items-end sm:items-center justify-center bg-black/60 backdrop-blur-sm sm:p-4 animate-in fade-in duration-200">
+            <div className="bg-slate-900 border-t sm:border border-purple-500/30 rounded-t-3xl sm:rounded-2xl p-4 sm:p-6 w-full sm:max-w-md max-h-[95vh] sm:max-h-[90vh] shadow-2xl relative animate-in slide-in-from-bottom sm:zoom-in-95 duration-200 overflow-y-auto">
                 <button
                     onClick={onClose}
-                    className="absolute top-4 right-4 text-gray-400 hover:text-white transition-colors p-1 rounded-full hover:bg-white/10"
+                    className="sticky top-0 sm:absolute sm:top-4 right-0 sm:right-4 z-10 text-gray-400 hover:text-white transition-colors p-2 rounded-full hover:bg-white/10 touch-target bg-slate-900/80 sm:bg-transparent backdrop-blur-sm mb-2 sm:mb-0"
                 >
-                    <X className="w-5 h-5" />
+                    <X className="w-6 h-6 sm:w-5 sm:h-5" />
                 </button>
 
                 <h3 className="text-xl font-bold text-white mb-6 flex items-center gap-2">

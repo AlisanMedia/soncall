@@ -72,27 +72,27 @@ export default function LeadDetailModal({ isOpen, onClose, lead }: LeadDetailMod
 
     return (
         <AnimatePresence>
-            <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+            <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-end sm:items-center justify-center sm:p-4">
                 <motion.div
-                    initial={{ opacity: 0, scale: 0.9 }}
-                    animate={{ opacity: 1, scale: 1 }}
-                    exit={{ opacity: 0, scale: 0.9 }}
-                    className="bg-[#1e1e2d] w-full max-w-2xl rounded-2xl border border-white/10 shadow-2xl overflow-hidden"
+                    initial={{ opacity: 0, y: 100 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: 100 }}
+                    className="bg-[#1e1e2d] w-full sm:max-w-2xl rounded-t-3xl sm:rounded-2xl border-t sm:border border-white/10 shadow-2xl overflow-hidden max-h-[90vh] flex flex-col"
                 >
                     {/* Header */}
-                    <div className="bg-gradient-to-r from-slate-900 to-slate-800 p-6 border-b border-white/10 flex justify-between items-start">
-                        <div className="flex gap-4">
-                            <div className="w-16 h-16 rounded-xl bg-purple-500/20 flex items-center justify-center border border-purple-500/30">
-                                <Building2 className="w-8 h-8 text-purple-400" />
+                    <div className="sticky top-0 z-10 bg-gradient-to-r from-slate-900 to-slate-800 p-4 sm:p-6 border-b border-white/10 flex justify-between items-start backdrop-blur-sm">
+                        <div className="flex gap-3 sm:gap-4 flex-1 min-w-0">
+                            <div className="w-12 h-12 sm:w-16 sm:h-16 shrink-0 rounded-xl bg-purple-500/20 flex items-center justify-center border border-purple-500/30">
+                                <Building2 className="w-6 h-6 sm:w-8 sm:h-8 text-purple-400" />
                             </div>
-                            <div>
-                                <h2 className="text-2xl font-bold text-white flex items-center gap-2">
+                            <div className="min-w-0 flex-1">
+                                <h2 className="text-lg sm:text-2xl font-bold text-white flex items-center gap-2 flex-wrap">
                                     {lead.lead_number && (
-                                        <span className="text-lg text-purple-400 font-mono bg-purple-500/10 px-2 py-0.5 rounded border border-purple-500/20">
+                                        <span className="text-sm sm:text-lg text-purple-400 font-mono bg-purple-500/10 px-2 py-0.5 rounded border border-purple-500/20 shrink-0">
                                             #{lead.lead_number}
                                         </span>
                                     )}
-                                    {lead.business_name}
+                                    <span className="truncate">{lead.business_name}</span>
                                 </h2>
                                 <div className="flex items-center gap-2 text-purple-200 mt-1">
                                     <span className="px-2 py-0.5 rounded bg-purple-500/10 border border-purple-500/20 text-xs">
@@ -101,12 +101,12 @@ export default function LeadDetailModal({ isOpen, onClose, lead }: LeadDetailMod
                                 </div>
                             </div>
                         </div>
-                        <button onClick={onClose} className="p-2 hover:bg-white/10 rounded-lg text-gray-400 hover:text-white transition-colors">
-                            <X className="w-5 h-5" />
+                        <button onClick={onClose} className="p-2 hover:bg-white/10 rounded-lg text-gray-400 hover:text-white transition-colors touch-target shrink-0">
+                            <X className="w-6 h-6 sm:w-5 sm:h-5" />
                         </button>
                     </div>
 
-                    <div className="p-6 grid grid-cols-1 md:grid-cols-2 gap-8">
+                    <div className="p-4 sm:p-6 grid grid-cols-1 md:grid-cols-2 gap-6 sm:gap-8 overflow-y-auto">
                         {/* Left Column: Contact Info */}
                         <div className="space-y-6">
                             <h3 className="text-sm font-bold text-gray-400 uppercase tracking-wider mb-4">İletişim Bilgileri</h3>
@@ -167,7 +167,7 @@ export default function LeadDetailModal({ isOpen, onClose, lead }: LeadDetailMod
                                     <button
                                         onClick={handleEnrichment}
                                         disabled={isEnriching}
-                                        className="w-full py-3 bg-blue-600 hover:bg-blue-500 text-white rounded-lg font-bold flex items-center justify-center gap-2 transition-all shadow-lg shadow-blue-900/20"
+                                        className="w-full py-4 sm:py-3 bg-blue-600 hover:bg-blue-500 text-white rounded-lg font-bold flex items-center justify-center gap-2 transition-all shadow-lg shadow-blue-900/20 touch-target-large active:scale-95"
                                     >
                                         {isEnriching ? (
                                             <>
