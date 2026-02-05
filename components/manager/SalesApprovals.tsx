@@ -5,6 +5,7 @@ import { createClient } from '@/lib/supabase/client';
 import { CheckCircle, XCircle, DollarSign, Clock, User, Building2, Loader2, AlertCircle, TrendingUp, Calendar, Eye, ChevronDown, ChevronUp } from 'lucide-react';
 import { toast } from 'sonner';
 import { motion, AnimatePresence } from 'framer-motion';
+import { GlassButton } from '@/components/ui/glass-button';
 import LeadDetailModal from './LeadDetailModal';
 
 interface SaleRequest {
@@ -180,16 +181,19 @@ export default function SalesApprovals() {
                                     <div className="flex-1 space-y-2">
                                         <div className="flex items-center gap-2 text-purple-300">
                                             <Building2 className="w-4 h-4" />
-                                            <button
+                                            <GlassButton
                                                 onClick={() => setViewDetailRequest(request)}
-                                                className="font-semibold hover:text-white hover:underline transition-colors text-left"
+                                                className="text-left"
+                                                contentClassName="!p-0"
                                             >
-                                                {request.lead.business_name}
+                                                <span className="font-semibold text-purple-300 hover:text-white hover:underline transition-colors">
+                                                    {request.lead.business_name}
+                                                </span>
                                                 <span className="ml-2 text-xs bg-purple-500/20 px-2 py-0.5 rounded-full border border-purple-500/30 text-purple-200 no-underline inline-block">
                                                     <Eye className="w-3 h-3 inline mr-1" />
                                                     Detay
                                                 </span>
-                                            </button>
+                                            </GlassButton>
                                         </div>
                                         <div className="flex items-center gap-6">
                                             <div className="flex items-center gap-2 bg-green-500/10 px-3 py-1 rounded-lg border border-green-500/20">
@@ -205,20 +209,22 @@ export default function SalesApprovals() {
 
                                     {/* Actions */}
                                     <div className="flex gap-2 md:w-auto w-full">
-                                        <button
+                                        <GlassButton
                                             onClick={() => handleActionClick(request, 'approve')}
-                                            className="flex-1 md:flex-none px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg font-medium flex items-center justify-center gap-2 transition-colors shadow-lg shadow-green-900/20"
+                                            className="flex-1 md:flex-none [&>.glass-button]:!bg-green-600 hover:[&>.glass-button]:!bg-green-700 shadow-lg shadow-green-900/20"
+                                            contentClassName="flex items-center justify-center gap-2 !px-4 !py-2"
                                         >
                                             <CheckCircle className="w-4 h-4" />
                                             Onayla
-                                        </button>
-                                        <button
+                                        </GlassButton>
+                                        <GlassButton
                                             onClick={() => handleActionClick(request, 'reject')}
-                                            className="flex-1 md:flex-none px-4 py-2 bg-red-600/20 hover:bg-red-600/40 text-red-300 hover:text-white rounded-lg font-medium flex items-center justify-center gap-2 transition-colors border border-red-500/30"
+                                            className="flex-1 md:flex-none [&>.glass-button]:!bg-red-600/20 hover:[&>.glass-button]:!bg-red-600/40 [&>.glass-button]:!border-red-500/30"
+                                            contentClassName="flex items-center justify-center gap-2 !px-4 !py-2 text-red-300 hover:text-white"
                                         >
                                             <XCircle className="w-4 h-4" />
                                             Reddet
-                                        </button>
+                                        </GlassButton>
                                     </div>
                                 </div>
                             </motion.div>
@@ -228,9 +234,10 @@ export default function SalesApprovals() {
 
                 {/* Expand/Collapse Button */}
                 {requests.length > 3 && (
-                    <button
+                    <GlassButton
                         onClick={() => setIsExpanded(!isExpanded)}
-                        className="w-full py-3 bg-white/5 hover:bg-white/10 text-gray-400 hover:text-white text-sm font-medium transition-colors border-t border-white/5 flex items-center justify-center gap-2 group"
+                        className="w-full [&>.glass-button]:!bg-white/5 hover:[&>.glass-button]:!bg-white/10"
+                        contentClassName="flex items-center justify-center gap-2 !py-3 text-gray-400 hover:text-white"
                     >
                         {isExpanded ? (
                             <>
@@ -243,7 +250,7 @@ export default function SalesApprovals() {
                                 Tümünü Göster ({requests.length - 3} adet daha)
                             </>
                         )}
-                    </button>
+                    </GlassButton>
                 )}
             </div>
 
@@ -292,23 +299,25 @@ export default function SalesApprovals() {
                         </div>
 
                         <div className="p-4 bg-black/20 border-t border-white/10 flex gap-3 justify-end">
-                            <button
+                            <GlassButton
                                 onClick={() => { setSelectedRequest(null); setActionType(null); }}
-                                className="px-4 py-2 text-gray-400 hover:text-white transition-colors"
+                                className="[&>.glass-button]:!bg-transparent hover:[&>.glass-button]:!bg-white/5"
+                                contentClassName="!px-4 !py-2 text-gray-400 hover:text-white"
                             >
                                 İptal
-                            </button>
-                            <button
+                            </GlassButton>
+                            <GlassButton
                                 onClick={submitAction}
                                 disabled={processingId === selectedRequest.id || (actionType === 'reject' && !managerNote)}
-                                className={`px-6 py-2 rounded-lg font-bold text-white shadow-lg transition-all flex items-center gap-2 ${actionType === 'approve'
-                                    ? 'bg-green-600 hover:bg-green-700'
-                                    : 'bg-red-600 hover:bg-red-700 disabled:opacity-50 disabled:cursor-not-allowed'
+                                className={`transition-all ${actionType === 'approve'
+                                    ? '[&>.glass-button]:!bg-green-600 hover:[&>.glass-button]:!bg-green-700'
+                                    : '[&>.glass-button]:!bg-red-600 hover:[&>.glass-button]:!bg-red-700 disabled:opacity-50'
                                     }`}
+                                contentClassName="flex items-center gap-2 !px-6 !py-2 font-bold text-white"
                             >
                                 {processingId === selectedRequest.id && <Loader2 className="w-4 h-4 animate-spin" />}
                                 {actionType === 'approve' ? 'Onayla ve Primi İşle' : 'Reddet'}
-                            </button>
+                            </GlassButton>
                         </div>
                     </div>
                 </div>

@@ -1,5 +1,6 @@
 'use client';
 
+import { GlassButton } from '@/components/ui/glass-button';
 import { useState } from 'react';
 import { Profile } from '@/types';
 import dynamic from 'next/dynamic';
@@ -108,21 +109,22 @@ export default function ManagerDashboard({ profile }: ManagerDashboardProps) {
                                 { id: 'admin', icon: AlertTriangle, label: 'Admin' },
                                 { id: 'settings', icon: Settings, label: 'Ayarlar' },
                             ].map((item) => (
-                                <button
+                                <GlassButton
                                     key={item.id}
                                     onClick={() => setCurrentTab(item.id as Tab)}
-                                    className={`p-2 rounded-xl transition-all relative group ${currentTab === item.id
-                                        ? 'bg-purple-600 text-white shadow-lg shadow-purple-500/25'
-                                        : 'text-purple-200 hover:bg-white/10 hover:text-white'
+                                    size="icon"
+                                    className={`transition-all relative group ${currentTab === item.id
+                                        ? '!bg-purple-600 !border-purple-500 shadow-lg shadow-purple-500/25'
+                                        : 'opacity-70 hover:opacity-100'
                                         }`}
                                     title={item.label}
                                 >
-                                    <item.icon className="w-5 h-5" />
+                                    <item.icon className="w-5 h-5 text-white" />
                                     {/* Tooltip */}
-                                    <span className="absolute -bottom-8 left-1/2 -translate-x-1/2 text-[10px] bg-black/80 text-white px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap pointer-events-none">
+                                    <span className="absolute -bottom-10 left-1/2 -translate-x-1/2 text-[10px] bg-black/80 text-white px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap pointer-events-none z-50">
                                         {item.label}
                                     </span>
-                                </button>
+                                </GlassButton>
                             ))}
                         </div>
 
@@ -132,13 +134,14 @@ export default function ManagerDashboard({ profile }: ManagerDashboardProps) {
                                 <p className="text-xs text-purple-200">Hoş geldiniz,</p>
                                 <p className="text-sm font-semibold text-white truncate max-w-[120px]">{profile.full_name}</p>
                             </div>
-                            <button
+                            <GlassButton
                                 onClick={handleLogout}
-                                className="p-2 rounded-lg bg-white/10 hover:bg-white/20 text-white transition-colors"
+                                size="icon"
+                                className="bg-white/10 hover:bg-white/20"
                                 title="Çıkış Yap"
                             >
-                                <LogOut className="w-5 h-5" />
-                            </button>
+                                <LogOut className="w-5 h-5 text-white" />
+                            </GlassButton>
                         </div>
                     </div>
                 </div>
@@ -160,17 +163,18 @@ export default function ManagerDashboard({ profile }: ManagerDashboardProps) {
                         { id: 'admin', icon: AlertTriangle, label: 'Admin' },
                         { id: 'settings', icon: Settings, label: 'Ayarlar' },
                     ].map((item) => (
-                        <button
+                        <GlassButton
                             key={item.id}
                             onClick={() => setCurrentTab(item.id as Tab)}
-                            className={`p-3 rounded-lg flex flex-col items-center gap-1 min-w-[70px] transition-all touch-target active:scale-95 ${currentTab === item.id
-                                ? 'bg-purple-600 text-white shadow-lg'
-                                : 'text-purple-200 hover:bg-white/10'
+                            className={`min-w-[70px] transition-all touch-target active:scale-95 ${currentTab === item.id
+                                ? '[&>.glass-button]:!bg-purple-600 [&>.glass-button]:!border-purple-500 [&>.glass-button]:shadow-lg'
+                                : 'opacity-70 hover:opacity-100'
                                 }`}
+                            contentClassName="flex flex-col items-center gap-1 !p-3"
                         >
-                            <item.icon className="w-5 h-5" />
+                            <item.icon className="w-5 h-5 text-white" />
                             <span className="text-[10px] font-medium">{item.label}</span>
-                        </button>
+                        </GlassButton>
                     ))}
                 </div>
             </div>

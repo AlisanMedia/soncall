@@ -1,13 +1,17 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Activity, Loader2, Phone, Sparkles, Calendar, CheckCircle2, Package, TrendingUp, Eye, Search } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { playActivityNotification } from '@/lib/sounds';
 import { SectionInfo } from '@/components/ui/section-info';
+import { GlowingEffect } from '@/components/ui/glowing-effect';
+import { GlassButton } from '@/components/ui/glass-button';
 import { StatusIndicator, isAgentOnline } from '@/components/ui/status-indicator';
 import ActivityDetailModal from './ActivityDetailModal';
 import BatchDetailModal from './BatchDetailModal';
+import type { Profile } from '@/types';
+import { createClient } from '@/lib/supabase/client';
 
 interface ActivityItem {
     id: string;
@@ -281,7 +285,8 @@ export default function TeamMonitoring() {
             {/* Overview Cards */}
             {overview && (
                 <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-                    <div className="glass-card glass-card-hover p-6">
+                    <div className="glass-card glass-card-hover p-6 relative">
+                        <GlowingEffect spread={30} glow={true} disabled={false} proximity={80} borderWidth={2} />
                         <div className="flex items-center justify-between">
                             <div>
                                 <div className="flex items-center gap-2">
@@ -368,7 +373,8 @@ export default function TeamMonitoring() {
 
             <div className="space-y-6">
                 {/* Live Activity Feed */}
-                <div className="glass-card glass-card-hover p-6 min-h-[800px]">
+                <div className="glass-card glass-card-hover p-6 min-h-[800px] relative">
+                    <GlowingEffect spread={40} glow={true} disabled={false} proximity={64} borderWidth={3} />
                     <div className="flex flex-col md:flex-row md:items-center justify-between mb-6 gap-4">
                         <div className="flex items-center gap-2">
                             <Activity className="w-6 h-6 text-purple-400" />
@@ -437,13 +443,15 @@ export default function TeamMonitoring() {
                                                 {getPotentialLabel(activity.leads.potential_level)}
                                             </span>
 
-                                            <button
+                                            <GlassButton
                                                 onClick={() => setSelectedActivity(activity)}
-                                                className="ml-auto p-1.5 hover:bg-white/10 rounded-lg text-purple-300 hover:text-white transition-colors group"
+                                                className="ml-auto"
+                                                contentClassName="!p-1.5"
+                                                size="icon"
                                                 title="Detay Görüntüle"
                                             >
-                                                <Eye className="w-4 h-4 group-hover:scale-110 transition-transform" />
-                                            </button>
+                                                <Eye className="w-4 h-4 group-hover:scale-110 transition-transform text-purple-300 group-hover:text-white" />
+                                            </GlassButton>
                                         </div>
 
                                         {activity.note && (
@@ -469,10 +477,11 @@ export default function TeamMonitoring() {
                         )}
 
                         {hasMore && activities.length > 0 && (
-                            <button
+                            <GlassButton
                                 onClick={loadMoreActivities}
                                 disabled={loadingMore}
-                                className="w-full py-3 mt-4 text-sm font-medium text-purple-300 bg-white/5 border border-white/10 rounded-lg hover:bg-white/10 hover:text-white transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                                className="w-full mt-4"
+                                contentClassName="flex items-center justify-center gap-2 !py-3"
                             >
                                 {loadingMore ? (
                                     <>
@@ -482,7 +491,7 @@ export default function TeamMonitoring() {
                                 ) : (
                                     'Daha Fazla Yükle'
                                 )}
-                            </button>
+                            </GlassButton>
                         )}
                     </div>
                 </div>
@@ -565,13 +574,14 @@ export default function TeamMonitoring() {
                             text="Yüklediğiniz veri setlerinin (Excel/CSV) işlenme durumunu ve doluluk oranlarını takip edin."
                         />
                     </div>
-                    <button
+                    <GlassButton
                         onClick={() => setShowAllBatches(!showAllBatches)}
-                        className={`p-2 rounded-lg transition-colors ${showAllBatches ? 'bg-purple-600 text-white' : 'bg-white/5 text-purple-300 hover:text-white'}`}
+                        size="icon"
+                        className={`${showAllBatches ? '[&>.glass-button]:!bg-purple-600 [&>.glass-button]:text-white' : ''}`}
                         title={showAllBatches ? "Eskileri Gizle" : "Eskileri Göster"}
                     >
-                        <Eye className="w-5 h-5" />
-                    </button>
+                        <Eye className={`w-5 h-5 ${showAllBatches ? 'text-white' : 'text-purple-300'}`} />
+                    </GlassButton>
                 </div>
 
                 <div className={`grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 ${showAllBatches ? 'max-h-[350px] overflow-y-auto custom-scrollbar pr-2' : ''}`}>
@@ -579,13 +589,14 @@ export default function TeamMonitoring() {
                         <div key={batch.id} className="bg-white/5 rounded-lg p-4 border border-white/10 group hover:border-purple-500/30 transition-colors relative">
                             {/* Action Overlay (Visible on Hover) */}
                             <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity flex gap-1">
-                                <button
+                                <GlassButton
                                     onClick={() => setSelectedBatchId(batch.id)}
-                                    className="p-1.5 bg-purple-600 text-white rounded hover:bg-purple-500 shadow-lg"
+                                    size="icon"
+                                    className="scale-75 [&>.glass-button]:!bg-purple-600 [&>.glass-button]:!p-1.5 hover:[&>.glass-button]:!bg-purple-500 shadow-lg"
                                     title="Detaylı İncele"
                                 >
-                                    <Search className="w-3 h-3" />
-                                </button>
+                                    <Search className="w-3 h-3 text-white" />
+                                </GlassButton>
                                 {/* Direct quick export can also be added here, but inside modal is cleaner for filters */}
                             </div>
 

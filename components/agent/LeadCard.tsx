@@ -10,6 +10,8 @@ import {
 import { getWhatsAppUrl, formatPhoneNumber } from '@/lib/utils';
 import { playLeadTransition, playAppointment, playWhatsApp, playVictory, playError } from '@/lib/sounds';
 import VoiceRecorder from './VoiceRecorder';
+import { GlowingEffect } from '@/components/ui/glowing-effect';
+import { GlassButton } from '@/components/ui/glass-button';
 import AIAnalysisDisplay from './AIAnalysisDisplay';
 
 interface LeadCardProps {
@@ -444,38 +446,41 @@ export default function LeadCard({ agentId, onLeadProcessed, refreshKey }: LeadC
                     Potansiyel Seviyesi <span className="text-red-400">*</span>
                 </label>
                 <div className="grid grid-cols-3 gap-2 sm:gap-3">
-                    <button
+                    <GlassButton
                         onClick={() => setPotentialLevel('high')}
-                        className={`p-3 sm:p-4 rounded-lg border-2 transition-all touch-target ${potentialLevel === 'high'
-                            ? 'border-green-400 bg-green-500/20 text-green-100'
-                            : 'border-white/20 bg-white/5 text-purple-200 hover:border-green-400/50 active:scale-95'
+                        className={`transition-all touch-target h-auto ${potentialLevel === 'high'
+                            ? '[&>.glass-button]:!bg-green-500/20 [&>.glass-button]:!border-green-400 [&>.glass-button]:!text-green-100'
+                            : '[&>.glass-button]:!bg-white/5 [&>.glass-button]:!border-white/20 [&>.glass-button]:!text-purple-200 hover:[&>.glass-button]:!border-green-400/50'
                             }`}
+                        contentClassName="flex flex-col items-center justify-center p-3 sm:p-4 w-full h-full"
                     >
                         <Flame className="w-5 h-5 sm:w-6 sm:h-6 mx-auto mb-1 sm:mb-2" />
                         <div className="font-semibold text-sm sm:text-base">Yüksek</div>
-                    </button>
+                    </GlassButton>
 
-                    <button
+                    <GlassButton
                         onClick={() => setPotentialLevel('medium')}
-                        className={`p-3 sm:p-4 rounded-lg border-2 transition-all touch-target ${potentialLevel === 'medium'
-                            ? 'border-yellow-400 bg-yellow-500/20 text-yellow-100'
-                            : 'border-white/20 bg-white/5 text-purple-200 hover:border-yellow-400/50 active:scale-95'
+                        className={`transition-all touch-target h-auto ${potentialLevel === 'medium'
+                            ? '[&>.glass-button]:!bg-yellow-500/20 [&>.glass-button]:!border-yellow-400 [&>.glass-button]:!text-yellow-100'
+                            : '[&>.glass-button]:!bg-white/5 [&>.glass-button]:!border-white/20 [&>.glass-button]:!text-purple-200 hover:[&>.glass-button]:!border-yellow-400/50'
                             }`}
+                        contentClassName="flex flex-col items-center justify-center p-3 sm:p-4 w-full h-full"
                     >
                         <Zap className="w-5 h-5 sm:w-6 sm:h-6 mx-auto mb-1 sm:mb-2" />
                         <div className="font-semibold text-sm sm:text-base">Orta</div>
-                    </button>
+                    </GlassButton>
 
-                    <button
+                    <GlassButton
                         onClick={() => setPotentialLevel('low')}
-                        className={`p-3 sm:p-4 rounded-lg border-2 transition-all touch-target ${potentialLevel === 'low'
-                            ? 'border-red-400 bg-red-500/20 text-red-100'
-                            : 'border-white/20 bg-white/5 text-purple-200 hover:border-red-400/50 active:scale-95'
+                        className={`transition-all touch-target h-auto ${potentialLevel === 'low'
+                            ? '[&>.glass-button]:!bg-red-500/20 [&>.glass-button]:!border-red-400 [&>.glass-button]:!text-red-100'
+                            : '[&>.glass-button]:!bg-white/5 [&>.glass-button]:!border-white/20 [&>.glass-button]:!text-purple-200 hover:[&>.glass-button]:!border-red-400/50'
                             }`}
+                        contentClassName="flex flex-col items-center justify-center p-3 sm:p-4 w-full h-full"
                     >
                         <TrendingDown className="w-5 h-5 sm:w-6 sm:h-6 mx-auto mb-1 sm:mb-2" />
                         <div className="font-semibold text-sm sm:text-base">Düşük</div>
-                    </button>
+                    </GlassButton>
                 </div>
             </div>
 
@@ -529,36 +534,41 @@ export default function LeadCard({ agentId, onLeadProcessed, refreshKey }: LeadC
 
             {/* Action Buttons - Mobile Optimized */}
             <div className="grid grid-cols-1 xs:grid-cols-2 gap-3 sm:gap-4">
-                <button
+                <GlassButton
                     onClick={handleWhatsApp}
                     disabled={processing}
-                    className={`py-3 sm:py-4 px-4 sm:px-6 rounded-lg font-semibold transition-all flex items-center justify-center gap-2 touch-target ${actionTaken === 'whatsapp_sent'
-                        ? 'bg-green-600 text-white'
-                        : 'bg-green-500/20 border-2 border-green-500 text-green-100 hover:bg-green-500/30 active:scale-95'
+                    className={`transition-all touch-target ${actionTaken === 'whatsapp_sent'
+                        ? '[&>.glass-button]:!bg-green-600 [&>.glass-button]:text-white'
+                        : '[&>.glass-button]:!bg-green-500/20 [&>.glass-button]:!border-green-500 [&>.glass-button]:text-green-100 hover:[&>.glass-button]:!bg-green-500/30'
                         }`}
+                    contentClassName="flex items-center justify-center gap-2 py-3 sm:py-4 px-4 sm:px-6 font-semibold"
                 >
                     <Sparkles className="w-5 h-5" />
                     <span className="text-sm sm:text-base">WhatsApp'a Yönlendir</span>
-                </button>
+                </GlassButton>
 
-                <button
+                <GlassButton
                     onClick={handleAppointment}
                     disabled={processing}
-                    className={`py-3 sm:py-4 px-4 sm:px-6 rounded-lg font-semibold transition-all flex items-center justify-center gap-2 touch-target ${actionTaken === 'appointment_scheduled'
-                        ? 'bg-purple-600 text-white'
-                        : 'bg-purple-500/20 border-2 border-purple-500 text-purple-100 hover:bg-purple-500/30 active:scale-95'
+                    className={`transition-all touch-target ${actionTaken === 'appointment_scheduled'
+                        ? '[&>.glass-button]:!bg-purple-600 [&>.glass-button]:text-white'
+                        : '[&>.glass-button]:!bg-purple-500/20 [&>.glass-button]:!border-purple-500 [&>.glass-button]:text-purple-100 hover:[&>.glass-button]:!bg-purple-500/30'
                         }`}
+                    contentClassName="flex items-center justify-center gap-2 py-3 sm:py-4 px-4 sm:px-6 font-semibold"
                 >
                     <Calendar className="w-5 h-5" />
                     <span className="text-sm sm:text-base">Randevuya Çevir</span>
-                </button>
+                </GlassButton>
             </div>
 
             {/* Next Lead Button - Mobile Optimized */}
-            <button
+            {/* Next Lead Button - Mobile Optimized */}
+            <GlassButton
                 onClick={handleNextLead}
                 disabled={!isFormValid() || processing}
-                className="w-full py-4 sm:py-5 px-6 btn-primary-gradient text-white font-bold text-base sm:text-lg rounded-xl shadow-lg hover:shadow-xl transform hover:scale-[1.02] active:scale-95 transition-smooth disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none flex items-center justify-center gap-3 touch-target-large"
+                className="w-full shadow-lg hover:shadow-xl transform hover:scale-[1.02] active:scale-95 transition-smooth disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none touch-target-large"
+                contentClassName="flex items-center justify-center gap-3 py-4 sm:py-5 px-6 font-bold text-base sm:text-lg text-white"
+                size="lg"
             >
                 {processing ? (
                     <>
@@ -571,7 +581,7 @@ export default function LeadCard({ agentId, onLeadProcessed, refreshKey }: LeadC
                         <ArrowRight className="w-5 h-5 sm:w-6 sm:h-6" />
                     </>
                 )}
-            </button>
+            </GlassButton>
             {/* Appointment Modal */}
             {showAppointmentModal && (
                 <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
@@ -603,19 +613,21 @@ export default function LeadCard({ agentId, onLeadProcessed, refreshKey }: LeadC
                         </div>
 
                         <div className="flex gap-3">
-                            <button
+                            <GlassButton
                                 onClick={() => setShowAppointmentModal(false)}
-                                className="flex-1 py-3 px-4 bg-white/5 hover:bg-white/10 text-white rounded-lg font-medium transition-colors"
+                                className="flex-1 [&>.glass-button]:!bg-white/5 hover:[&>.glass-button]:!bg-white/10"
+                                contentClassName="py-3 px-4 text-white font-medium"
                             >
                                 İptal
-                            </button>
-                            <button
+                            </GlassButton>
+                            <GlassButton
                                 onClick={confirmAppointment}
-                                className="flex-1 py-3 px-4 bg-purple-600 hover:bg-purple-700 text-white rounded-lg font-bold transition-all shadow-lg hover:shadow-purple-500/25 flex items-center justify-center gap-2"
+                                className="flex-1 [&>.glass-button]:!bg-purple-600 hover:[&>.glass-button]:!bg-purple-700 shadow-lg hover:shadow-purple-500/25"
+                                contentClassName="flex items-center justify-center gap-2 py-3 px-4 text-white font-bold"
                             >
                                 <CheckCircle2 className="w-5 h-5" />
                                 Onayla ve Ekle
-                            </button>
+                            </GlassButton>
                         </div>
                     </div>
                 </div>

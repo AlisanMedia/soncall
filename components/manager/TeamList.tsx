@@ -3,6 +3,7 @@ import { Plus, Search, User, MoreHorizontal, Shield, BadgePercent, Pencil, Troph
 import { toast } from 'sonner';
 import AddMemberModal from './AddMemberModal';
 import { Profile } from '@/types';
+import { GlassButton } from '@/components/ui/glass-button';
 
 export default function TeamList() {
     const [team, setTeam] = useState<Profile[]>([]);
@@ -60,13 +61,14 @@ export default function TeamList() {
                             className="w-full bg-black/20 border border-white/10 rounded-lg pl-10 pr-3 sm:pr-4 py-2 sm:py-2.5 text-sm sm:text-base text-white placeholder-gray-500 focus:outline-none focus:border-purple-500 touch-target"
                         />
                     </div>
-                    <button
+                    <GlassButton
                         onClick={() => { setMemberToEdit(null); setIsAddModalOpen(true); }}
-                        className="bg-purple-600 hover:bg-purple-700 active:scale-95 text-white px-3 sm:px-4 py-2 sm:py-2.5 rounded-lg font-medium transition-all flex items-center gap-2 whitespace-nowrap touch-target text-sm sm:text-base"
+                        className="bg-purple-600 hover:bg-purple-700 active:scale-95 text-white font-medium transition-all touch-target"
+                        contentClassName="flex items-center gap-2 !px-3 sm:!px-4 !py-2 sm:!py-2.5"
                     >
                         <Plus className="w-4 h-4" />
                         <span className="hidden sm:inline">Üye</span> Ekle
-                    </button>
+                    </GlassButton>
                 </div>
             </div>
 
@@ -141,13 +143,15 @@ export default function TeamList() {
                                             </div>
                                         </td>
                                         <td className="px-6 py-4 text-right">
-                                            <button
+                                            <GlassButton
                                                 onClick={() => { setMemberToEdit(member); setIsAddModalOpen(true); }}
-                                                className="p-2 hover:bg-white/10 rounded-lg text-gray-400 hover:text-white transition-colors"
+                                                size="icon"
+                                                className="hover:[&>.glass-button]:!bg-white/10"
+                                                contentClassName="!p-2"
                                             >
-                                                <Pencil className="w-4 h-4" />
-                                            </button>
-                                            <button
+                                                <Pencil className="w-4 h-4 text-gray-400 group-hover:text-white" />
+                                            </GlassButton>
+                                            <GlassButton
                                                 onClick={async () => {
                                                     if (window.confirm(`${member.full_name} isimli kullanıcıyı silmek istediğinize emin misiniz?`)) {
                                                         try {
@@ -163,11 +167,13 @@ export default function TeamList() {
                                                         }
                                                     }
                                                 }}
-                                                className="p-2 hover:bg-red-500/20 rounded-lg text-gray-400 hover:text-red-400 transition-colors ml-1"
+                                                size="icon"
+                                                className="ml-1 hover:[&>.glass-button]:!bg-red-500/20"
+                                                contentClassName="!p-2"
                                                 title="Sil"
                                             >
-                                                <Trash2 className="w-4 h-4" />
-                                            </button>
+                                                <Trash2 className="w-4 h-4 text-gray-400 group-hover:text-red-400" />
+                                            </GlassButton>
                                         </td>
                                     </tr>
                                 ))
@@ -197,13 +203,15 @@ function PasswordCell({ password }: { password?: string }) {
             <span className="font-mono text-xs text-white/90">
                 {isVisible ? password : '••••••••'}
             </span>
-            <button
+            <GlassButton
                 onClick={() => setIsVisible(!isVisible)}
-                className="p-1 hover:bg-white/10 rounded text-gray-400 hover:text-white transition-colors"
+                size="icon"
+                className="hover:[&>.glass-button]:!bg-white/10"
+                contentClassName="!p-1"
                 title={isVisible ? "Gizle" : "Göster"}
             >
-                {isVisible ? <EyeOff className="w-3 h-3" /> : <Eye className="w-3 h-3" />}
-            </button>
+                {isVisible ? <EyeOff className="w-3 h-3 text-gray-400 group-hover:text-white" /> : <Eye className="w-3 h-3 text-gray-400 group-hover:text-white" />}
+            </GlassButton>
         </div>
     );
 }

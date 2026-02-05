@@ -7,6 +7,7 @@ import { toast } from 'sonner';
 
 
 import TransferModal from './TransferModal';
+import { GlassButton } from '@/components/ui/glass-button';
 import StuckLeadsPanel from './StuckLeadsPanel';
 import { createClient } from '@/lib/supabase/client';
 import { SectionInfo } from '@/components/ui/section-info';
@@ -234,12 +235,13 @@ export default function LeadManagementView() {
                                 <option value="yesterday">Dün</option>
                                 <option value="this_week">Son 7 Gün</option>
                             </select>
-                            <button
+                            <GlassButton
                                 onClick={loadData}
-                                className="px-4 py-3 sm:py-2 bg-white/10 rounded-lg text-white text-sm hover:bg-white/20 active:scale-95 whitespace-nowrap touch-target transition-all"
+                                className="[&>.glass-button]:!bg-white/10 hover:[&>.glass-button]:!bg-white/20"
+                                contentClassName="!px-4 !py-3 sm:!py-2 text-white text-sm"
                             >
                                 Yenile
-                            </button>
+                            </GlassButton>
                         </div>
                     </div>
                 </div>
@@ -253,12 +255,13 @@ export default function LeadManagementView() {
                         <span className="font-semibold">{agents.find(a => a.id === agentFilter)?.full_name}</span> üzerindeki yetkiler
                         <SectionInfo text="Seçili temsilcinin üzerindeki TÜM bekleyen leadleri tek tıkla havuza geri alır. Acil durumlar içindir." />
                     </div>
-                    <button
+                    <GlassButton
                         onClick={() => handleEmergencyRevoke(agentFilter)}
-                        className="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-lg text-sm font-bold shadow-lg transition-all"
+                        className="[&>.glass-button]:!bg-red-600 hover:[&>.glass-button]:!bg-red-700 shadow-lg"
+                        contentClassName="!px-4 !py-2 text-white text-sm font-bold"
                     >
                         TÜMÜNÜ GERİ ÇEK (REVOKE)
-                    </button>
+                    </GlassButton>
                 </div>
             )}
 
@@ -269,13 +272,20 @@ export default function LeadManagementView() {
                     <div className="bg-purple-600 p-3 sm:p-3 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 animate-in slide-in-from-top-2">
                         <span className="text-white font-bold ml-2 text-sm">{selectedLeads.length} lead seçildi</span>
                         <div className="flex gap-2 w-full sm:w-auto">
-                            <button
+                            <GlassButton
                                 onClick={() => setTransferModalOpen(true)}
-                                className="flex-1 sm:flex-none bg-white text-purple-600 px-4 py-2 rounded-lg font-bold text-sm hover:bg-gray-100 active:scale-95 flex items-center justify-center gap-2 touch-target transition-all"
+                                className="flex-1 sm:flex-none [&>.glass-button]:!bg-white hover:[&>.glass-button]:!bg-gray-100"
+                                contentClassName="text-purple-600 !px-4 !py-2 font-bold text-sm flex items-center justify-center gap-2"
                             >
                                 <ArrowRightLeft className="w-4 h-4" /> Transfer Et
-                            </button>
-                            <button onClick={() => setSelectedLeads([])} className="text-purple-200 hover:text-white px-3 py-2 text-sm touch-target active:scale-95 transition-all">İptal</button>
+                            </GlassButton>
+                            <GlassButton
+                                onClick={() => setSelectedLeads([])}
+                                className="hover:[&>.glass-button]:!bg-white/5"
+                                contentClassName="text-purple-200 hover:text-white !px-3 !py-2 text-sm"
+                            >
+                                İptal
+                            </GlassButton>
                         </div>
                     </div>
                 )}
