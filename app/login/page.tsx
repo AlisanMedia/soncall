@@ -118,7 +118,7 @@ export default function LoginPage() {
                 {/* Login Card */}
                 <div className="relative">
                     <GlowingEffect spread={40} glow={true} disabled={false} proximity={64} borderWidth={3} />
-                    <Card className="p-8 animate-scale-in relative">
+                    <Card className="p-8 animate-scale-in relative !bg-transparent !border-none !shadow-none !backdrop-filter-none">
                         <h2 className="text-3xl font-bold text-white mb-8 text-center">Giriş Yap</h2>
 
                         {error && (
