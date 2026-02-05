@@ -143,7 +143,7 @@ export default function MessageInput({ onSend, placeholder = 'Type a message...'
                 <button
                     onClick={handleSend}
                     disabled={!message.trim() || sending || disabled}
-                    className="bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 text-white p-3 rounded-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed flex-shrink-0"
+                    className="btn-primary-gradient text-white p-3 rounded-xl transition-smooth disabled:opacity-50 disabled:cursor-not-allowed flex-shrink-0 hover:scale-105 active:scale-95"
                 >
                     <Send className="w-5 h-5" />
                 </button>

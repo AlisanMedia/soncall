@@ -61,6 +61,13 @@ export async function GET() {
 
         const agentStats = await Promise.all(
             (agents || []).map(async (agent) => {
+                // Get agent progress data (level, rank, last activity)
+                const { data: progressData } = await supabase
+                    .from('agent_progress')
+                    .select('total_xp, current_level, last_activity_timestamp')
+                    .eq('agent_id', agent.id)
+                    .single();
+
                 // Total assigned
                 const { count: assigned } = await supabase
                     .from('leads')
@@ -96,9 +103,8 @@ export async function GET() {
                     .eq('assigned_to', agent.id)
                     .eq('status', 'appointment');
 
-                // Calculate Dynamic Level & Rank
-                const processedCount = totalCompleted || 0;
-                const level = Math.floor(processedCount / 50) + 1;
+                // Use level from agent_progress if available, otherwise calculate
+                const level = progressData?.current_level || Math.floor((totalCompleted || 0) / 50) + 1;
 
                 let rank = 'Çaylak'; // Junior
                 if (level >= 5) rank = 'Uzman';
@@ -114,10 +120,11 @@ export async function GET() {
                     rank,
                     total_assigned: assigned || 0,
                     completed_today: completedToday || 0,
-                    total_completed: processedCount,
+                    total_completed: totalCompleted || 0,
                     pending: pending || 0,
                     appointments: appointments || 0,
                     completion_rate: assigned ? Math.round(((totalCompleted || 0) / assigned) * 100) : 0,
+                    last_activity_timestamp: progressData?.last_activity_timestamp || null,
                 };
             })
         );

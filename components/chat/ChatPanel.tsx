@@ -135,9 +135,10 @@ export default function ChatPanel({ userId, isOpen, onClose, leadId, receiverId,
     if (!isOpen) return null;
 
     return (
-        <div className="fixed inset-0 sm:inset-y-0 sm:right-0 sm:left-auto w-full sm:w-96 md:w-[420px] bg-slate-900/95 sm:bg-slate-900/80 backdrop-blur-xl shadow-2xl z-50 flex flex-col border-l border-white/10">
+        <div className="fixed inset-0 sm:inset-y-0 sm:right-0 sm:left-auto w-full sm:w-96 md:w-[420px] glass-card backdrop-blur-2xl shadow-2xl z-50 flex flex-col border-l border-white/20">
             {/* Header */}
-            <div className="bg-white/5 backdrop-blur-md border-b border-white/10 p-4 flex items-center justify-between relative shadow-lg">
+            <div className="glass-nav p-4 flex items-center justify-between relative shadow-lg">
+
                 <div className="flex items-center gap-3">
                     <div className="p-2 bg-gradient-to-br from-purple-500/20 to-blue-500/20 rounded-lg border border-white/10">
                         <Sparkles className="w-5 h-5 text-purple-300" />

@@ -313,10 +313,10 @@ export default function LeadCard({ agentId, onLeadProcessed, refreshKey }: LeadC
 
     if (loading) {
         return (
-            <div className="bg-white/10 backdrop-blur-lg rounded-2xl shadow-2xl p-12 border border-white/20 flex items-center justify-center min-h-[500px]">
+            <div className="glass-card p-12 flex items-center justify-center min-h-[500px] animate-scale-in">
                 <div className="text-center">
                     <img src="/loading-logo.png" alt="Loading" className="w-24 h-8 animate-pulse mx-auto mb-4 object-contain" />
-                    <p className="text-purple-200">Sistem Hazırlanıyor...</p>
+                    <p className="text-zinc-400">Sistem Hazırlanıyor...</p>
                 </div>
             </div>
         );
@@ -324,18 +324,18 @@ export default function LeadCard({ agentId, onLeadProcessed, refreshKey }: LeadC
 
     if (!currentLead) {
         return (
-            <div className="bg-white/10 backdrop-blur-lg rounded-2xl shadow-2xl p-12 border border-white/20 flex items-center justify-center min-h-[500px]">
+            <div className="glass-card p-12 flex items-center justify-center min-h-[500px] animate-scale-in">
                 <div className="text-center">
                     <CheckCircle2 className="w-16 h-16 text-green-400 mx-auto mb-4" />
                     <h3 className="text-2xl font-bold text-white mb-2">Tebrikler!</h3>
-                    <p className="text-purple-200">Tüm lead'lerinizi tamamladınız.</p>
+                    <p className="text-zinc-400">Tüm lead'lerinizi tamamladınız.</p>
                 </div>
             </div>
         );
     }
 
     return (
-        <div className="bg-white/10 backdrop-blur-lg rounded-2xl shadow-2xl p-8 border border-white/20 space-y-6">
+        <div className="glass-card glass-card-hover p-8 space-y-6 animate-fade-in-up">
             {/* Header */}
             <div className="flex items-start justify-between">
                 <div>
@@ -558,7 +558,7 @@ export default function LeadCard({ agentId, onLeadProcessed, refreshKey }: LeadC
             <button
                 onClick={handleNextLead}
                 disabled={!isFormValid() || processing}
-                className="w-full py-4 sm:py-5 px-6 bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 text-white font-bold text-base sm:text-lg rounded-lg shadow-lg hover:shadow-xl transform hover:scale-[1.02] active:scale-95 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none flex items-center justify-center gap-3 touch-target-large"
+                className="w-full py-4 sm:py-5 px-6 btn-primary-gradient text-white font-bold text-base sm:text-lg rounded-xl shadow-lg hover:shadow-xl transform hover:scale-[1.02] active:scale-95 transition-smooth disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none flex items-center justify-center gap-3 touch-target-large"
             >
                 {processing ? (
                     <>

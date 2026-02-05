@@ -5,6 +5,7 @@ import { Activity, Loader2, Phone, Sparkles, Calendar, CheckCircle2, Package, Tr
 import { motion } from 'framer-motion';
 import { playActivityNotification } from '@/lib/sounds';
 import { SectionInfo } from '@/components/ui/section-info';
+import { StatusIndicator, isAgentOnline } from '@/components/ui/status-indicator';
 import ActivityDetailModal from './ActivityDetailModal';
 import BatchDetailModal from './BatchDetailModal';
 
@@ -65,6 +66,7 @@ interface AgentStat {
     pending: number;
     appointments: number;
     completion_rate: number;
+    last_activity_timestamp?: string | null;
 }
 
 export default function TeamMonitoring() {
@@ -279,7 +281,7 @@ export default function TeamMonitoring() {
             {/* Overview Cards */}
             {overview && (
                 <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-                    <div className="bg-white/10 backdrop-blur-lg rounded-xl p-6 border border-white/20">
+                    <div className="glass-card glass-card-hover p-6">
                         <div className="flex items-center justify-between">
                             <div>
                                 <div className="flex items-center gap-2">
@@ -364,9 +366,9 @@ export default function TeamMonitoring() {
                 </div>
             )}
 
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            <div className="space-y-6">
                 {/* Live Activity Feed */}
-                <div className="lg:col-span-2 bg-white/10 backdrop-blur-lg rounded-2xl shadow-2xl p-6 border border-white/20">
+                <div className="glass-card glass-card-hover p-6 min-h-[800px]">
                     <div className="flex flex-col md:flex-row md:items-center justify-between mb-6 gap-4">
                         <div className="flex items-center gap-2">
                             <Activity className="w-6 h-6 text-purple-400" />
@@ -395,7 +397,7 @@ export default function TeamMonitoring() {
                         </div>
                     </div>
 
-                    <div className="space-y-3 overflow-y-auto pr-2 custom-scrollbar max-h-[350px]">
+                    <div className="space-y-3 overflow-y-auto pr-2 custom-scrollbar max-h-[1400px]">
                         {activities.map((activity) => (
                             <div
                                 key={activity.id}
@@ -486,7 +488,7 @@ export default function TeamMonitoring() {
                 </div>
 
                 {/* Agent Stats */}
-                <div className="bg-white/10 backdrop-blur-lg rounded-2xl shadow-2xl p-6 border border-white/20">
+                <div className="glass-card glass-card-hover p-6">
                     <div className="flex items-center gap-2 mb-6">
                         <TrendingUp className="w-6 h-6 text-purple-400" />
                         <h2 className="text-xl font-bold text-white">Agent İstatistikleri</h2>
@@ -513,6 +515,8 @@ export default function TeamMonitoring() {
                                                         {agent.agent_name.charAt(0)}
                                                     </div>
                                                 )}
+                                                {/* Online Status Indicator */}
+                                                <StatusIndicator isOnline={isAgentOnline(agent.last_activity_timestamp)} size="sm" />
                                                 <div className="absolute -bottom-1 -right-1 bg-black/80 text-white text-[9px] px-1 py-0.5 rounded-full border border-white/20 font-mono">
                                                     Lvl {agent.level || 1}
                                                 </div>

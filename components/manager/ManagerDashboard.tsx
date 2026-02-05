@@ -67,10 +67,17 @@ export default function ManagerDashboard({ profile }: ManagerDashboardProps) {
     };
 
     return (
-        <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 pb-20 relative overflow-hidden isolate">
-            <BGPattern variant="dots" fill="#ffffff" className="opacity-20" mask="fade-edges" />
+        <div className="min-h-screen pb-20 relative overflow-hidden isolate animate-fade-in">
+            {/* Animated Background Grid */}
+            <div className="fixed inset-0 -z-10">
+                <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top_right,_rgba(168,85,247,0.15)_0%,_transparent_50%)]" />
+                <div className="absolute inset-0" style={{
+                    backgroundImage: 'linear-gradient(rgba(255, 255, 255, 0.02) 1px, transparent 1px), linear-gradient(90deg, rgba(255, 255, 255, 0.02) 1px, transparent 1px)',
+                    backgroundSize: '50px 50px'
+                }} />
+            </div>
             {/* Header */}
-            <header className="bg-white/10 backdrop-blur-lg border-b border-white/20 sticky top-0 z-50">
+            <header className="glass-nav sticky top-0 z-50">
                 <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-2">
                     <div className="flex items-center justify-between gap-2 min-h-[56px]">
                         {/* Left Side: Logo */}

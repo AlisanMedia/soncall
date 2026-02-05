@@ -3,7 +3,10 @@
 import { useState, useEffect } from 'react';
 import { createClient } from '@/lib/supabase/client';
 import { useRouter } from 'next/navigation';
-import { Mail, Lock, LogIn, LayoutDashboard, User } from 'lucide-react';
+import { Mail, Lock, LogIn, LayoutDashboard, User, Sparkles } from 'lucide-react';
+import { Button } from '@/components/ui/elevenlabs/button';
+import { Input } from '@/components/ui/elevenlabs/input';
+import { Card } from '@/components/ui/elevenlabs/card';
 
 export default function LoginPage() {
     const [email, setEmail] = useState('');
@@ -83,27 +86,34 @@ export default function LoginPage() {
     };
 
     return (
-        <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 px-4">
-            <div className="w-full max-w-md">
+        <div className="min-h-screen flex items-center justify-center px-4 animate-fade-in">
+            {/* Animated Background Grid */}
+            <div className="fixed inset-0 -z-10">
+                <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,_rgba(168,85,247,0.15)_0%,_transparent_50%)]" />
+                <div className="absolute inset-0" style={{
+                    backgroundImage: 'linear-gradient(rgba(255, 255, 255, 0.03) 1px, transparent 1px), linear-gradient(90deg, rgba(255, 255, 255, 0.03) 1px, transparent 1px)',
+                    backgroundSize: '50px 50px'
+                }} />
+            </div>
+
+            <div className="w-full max-w-md animate-fade-in-up">
                 {/* Logo/Brand */}
-                <div className="text-center mb-8">
-                    <img
-                        src="/artificagent-logo.png"
-                        alt="ArtificAgent Logo"
-                        className="h-16 mx-auto mb-4 opacity-90"
-                    />
-                    <h1 className="text-4xl font-bold text-white mb-2 tracking-tight">
+                <div className="text-center mb-10">
+                    <div className="inline-flex items-center justify-center w-20 h-20 mb-6 rounded-2xl gradient-purple-cyan">
+                        <Sparkles className="w-10 h-10 text-white" />
+                    </div>
+                    <h1 className="text-5xl font-black gradient-text-vivid mb-3 tracking-tight">
                         ArtificAgent
                     </h1>
-                    <p className="text-purple-200">Cold Calling Management System</p>
+                    <p className="text-zinc-400 text-lg">Cold Calling Management System</p>
                 </div>
 
                 {/* Login Card */}
-                <div className="bg-white/10 backdrop-blur-lg rounded-2xl shadow-2xl p-8 border border-white/20">
-                    <h2 className="text-2xl font-semibold text-white mb-6">Giriş Yap</h2>
+                <Card className="p-8 animate-scale-in">
+                    <h2 className="text-3xl font-bold text-white mb-8 text-center">Giriş Yap</h2>
 
                     {error && (
-                        <div className="bg-red-500/20 border border-red-500/50 text-red-100 px-4 py-3 rounded-lg mb-6">
+                        <div className="bg-red-500/10 border border-red-500/30 text-red-200 px-4 py-3 rounded-xl mb-6 backdrop-blur-sm animate-fade-in">
                             {error}
                         </div>
                     )}
@@ -111,18 +121,18 @@ export default function LoginPage() {
                     <form onSubmit={handleLogin} className="space-y-6">
                         {/* Email Input */}
                         <div>
-                            <label htmlFor="email" className="block text-sm font-medium text-purple-200 mb-2">
+                            <label htmlFor="email" className="block text-sm font-semibold text-zinc-300 mb-2">
                                 Email
                             </label>
                             <div className="relative">
-                                <Mail className="absolute left-3 top-1/2 -translate-y-1/2 text-purple-300 w-5 h-5" />
-                                <input
+                                <Mail className="absolute left-4 top-1/2 -translate-y-1/2 text-zinc-400 w-5 h-5" />
+                                <Input
                                     id="email"
                                     type="email"
                                     value={email}
                                     onChange={(e) => setEmail(e.target.value)}
                                     required
-                                    className="w-full pl-11 pr-4 py-3 bg-white/10 border border-white/20 rounded-lg text-white placeholder-purple-300/50 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent transition"
+                                    className="pl-12"
                                     placeholder="ornek@email.com"
                                     disabled={loading}
                                 />
@@ -131,8 +141,8 @@ export default function LoginPage() {
 
                         {/* DASHBOARD SELECTOR - Appears only for specific emails */}
                         {showDashboardSelector && (
-                            <div className="animate-in fade-in slide-in-from-top-4 duration-300">
-                                <label className="block text-sm font-medium text-yellow-300 mb-3 flex items-center gap-2">
+                            <div className="animate-fade-in">
+                                <label className="block text-sm font-semibold text-yellow-300 mb-3 flex items-center gap-2">
                                     <span className="w-2 h-2 rounded-full bg-yellow-400 animate-pulse" />
                                     Hedef Panel Seçimi
                                 </label>
@@ -140,13 +150,13 @@ export default function LoginPage() {
                                     <button
                                         type="button"
                                         onClick={() => setTargetDashboard('manager')}
-                                        className={`flex flex-col items-center justify-center p-3 rounded-xl border transition-all duration-200 ${targetDashboard === 'manager'
-                                            ? 'bg-purple-600 border-purple-400 shadow-[0_0_15px_rgba(147,51,234,0.5)] scale-105'
-                                            : 'bg-white/5 border-white/10 hover:bg-white/10 text-gray-400'
+                                        className={`flex flex-col items-center justify-center p-4 rounded-xl border transition-smooth ${targetDashboard === 'manager'
+                                                ? 'glass-card border-purple-500/50 shadow-[0_0_20px_rgba(168,85,247,0.4)] scale-105'
+                                                : 'glass-card border-white/10 hover:border-white/20'
                                             }`}
                                     >
-                                        <LayoutDashboard className={`w-6 h-6 mb-2 ${targetDashboard === 'manager' ? 'text-white' : 'text-gray-400'}`} />
-                                        <span className={`text-xs font-semibold ${targetDashboard === 'manager' ? 'text-white' : 'text-gray-400'}`}>
+                                        <LayoutDashboard className={`w-7 h-7 mb-2 ${targetDashboard === 'manager' ? 'text-purple-400' : 'text-zinc-400'}`} />
+                                        <span className={`text-sm font-semibold ${targetDashboard === 'manager' ? 'text-white' : 'text-zinc-400'}`}>
                                             Yönetici
                                         </span>
                                     </button>
@@ -154,13 +164,13 @@ export default function LoginPage() {
                                     <button
                                         type="button"
                                         onClick={() => setTargetDashboard('agent')}
-                                        className={`flex flex-col items-center justify-center p-3 rounded-xl border transition-all duration-200 ${targetDashboard === 'agent'
-                                            ? 'bg-blue-600 border-blue-400 shadow-[0_0_15px_rgba(37,99,235,0.5)] scale-105'
-                                            : 'bg-white/5 border-white/10 hover:bg-white/10 text-gray-400'
+                                        className={`flex flex-col items-center justify-center p-4 rounded-xl border transition-smooth ${targetDashboard === 'agent'
+                                                ? 'glass-card border-cyan-500/50 shadow-[0_0_20px_rgba(6,182,212,0.4)] scale-105'
+                                                : 'glass-card border-white/10 hover:border-white/20'
                                             }`}
                                     >
-                                        <User className={`w-6 h-6 mb-2 ${targetDashboard === 'agent' ? 'text-white' : 'text-gray-400'}`} />
-                                        <span className={`text-xs font-semibold ${targetDashboard === 'agent' ? 'text-white' : 'text-gray-400'}`}>
+                                        <User className={`w-7 h-7 mb-2 ${targetDashboard === 'agent' ? 'text-cyan-400' : 'text-zinc-400'}`} />
+                                        <span className={`text-sm font-semibold ${targetDashboard === 'agent' ? 'text-white' : 'text-zinc-400'}`}>
                                             Agent
                                         </span>
                                     </button>
@@ -170,18 +180,18 @@ export default function LoginPage() {
 
                         {/* Password Input */}
                         <div>
-                            <label htmlFor="password" className="block text-sm font-medium text-purple-200 mb-2">
+                            <label htmlFor="password" className="block text-sm font-semibold text-zinc-300 mb-2">
                                 Şifre
                             </label>
                             <div className="relative">
-                                <Lock className="absolute left-3 top-1/2 -translate-y-1/2 text-purple-300 w-5 h-5" />
-                                <input
+                                <Lock className="absolute left-4 top-1/2 -translate-y-1/2 text-zinc-400 w-5 h-5" />
+                                <Input
                                     id="password"
                                     type="password"
                                     value={password}
                                     onChange={(e) => setPassword(e.target.value)}
                                     required
-                                    className="w-full pl-11 pr-4 py-3 bg-white/10 border border-white/20 rounded-lg text-white placeholder-purple-300/50 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent transition"
+                                    className="pl-12"
                                     placeholder="••••••••"
                                     disabled={loading}
                                 />
@@ -189,13 +199,12 @@ export default function LoginPage() {
                         </div>
 
                         {/* Submit Button */}
-                        <button
+                        <Button
                             type="submit"
                             disabled={loading}
-                            className={`w-full py-3 px-4 bg-gradient-to-r text-white font-semibold rounded-lg shadow-lg hover:shadow-xl transform hover:scale-[1.02] transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none flex items-center justify-center gap-2 ${targetDashboard === 'manager' ? 'from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700' :
-                                targetDashboard === 'agent' ? 'from-blue-600 to-cyan-600 hover:from-blue-700 hover:to-cyan-700' :
-                                    'from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700'
-                                }`}
+                            variant="primary"
+                            size="lg"
+                            className="w-full mt-8"
                         >
                             {loading ? (
                                 <>
@@ -208,15 +217,13 @@ export default function LoginPage() {
                                     {targetDashboard ? `${targetDashboard === 'manager' ? 'Yönetici' : 'Agent'} Paneline Gir` : 'Giriş Yap'}
                                 </>
                             )}
-                        </button>
+                        </Button>
                     </form>
-
-
-                </div>
+                </Card>
 
                 {/* Footer */}
-                <p className="text-center text-purple-300/60 text-sm mt-6">
-                    © 2026 ArtificAgent. All rights reserved.
+                <p className="text-center text-zinc-500 text-sm mt-8">
+                    © 2026 ArtificAgent. Tüm hakları saklıdır.
                 </p>
             </div>
         </div>
