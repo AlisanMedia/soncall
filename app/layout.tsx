@@ -23,8 +23,8 @@ export const metadata: Metadata = {
     userScalable: true,
   },
   themeColor: [
-    { media: '(prefers-color-scheme: light)', color: '#a855f7' },
-    { media: '(prefers-color-scheme: dark)', color: '#7c3aed' },
+    { media: '(prefers-color-scheme: light)', color: '#0B0E11' },
+    { media: '(prefers-color-scheme: dark)', color: '#0B0E11' },
   ],
   appleWebApp: {
     capable: true,
