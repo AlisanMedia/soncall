@@ -4,6 +4,8 @@ import { useState, useEffect } from 'react';
 import { BarChart3, TrendingUp, Loader2, Zap, Flame, Target } from 'lucide-react';
 import type { LeaderboardEntry } from '@/types';
 
+import { GlowingEffect } from '@/components/ui/glowing-effect';
+
 interface ExtendedLeaderboardEntry extends LeaderboardEntry {
     remaining_count?: number;
     last_activity?: string;
@@ -86,7 +88,8 @@ export default function Leaderboard({ agentId, refreshKey }: LeaderboardProps) {
     }
 
     return (
-        <div className="bg-white/10 backdrop-blur-lg rounded-2xl shadow-2xl p-6 border border-white/20 space-y-6">
+        <div className="bg-white/10 backdrop-blur-lg rounded-2xl shadow-2xl p-6 border border-white/20 space-y-6 relative overflow-hidden">
+            <GlowingEffect spread={40} glow={true} disabled={false} proximity={64} borderWidth={3} />
             {/* Header with Online Status */}
             <div className="flex items-center justify-between border-b border-white/20 pb-4">
                 <div className="flex items-center gap-2">

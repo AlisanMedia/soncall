@@ -337,7 +337,8 @@ export default function LeadCard({ agentId, onLeadProcessed, refreshKey }: LeadC
     }
 
     return (
-        <div className="glass-card glass-card-hover p-8 space-y-6 animate-fade-in-up">
+        <div className="glass-card glass-card-hover p-8 space-y-6 animate-fade-in-up relative">
+            <GlowingEffect spread={40} glow={true} disabled={false} proximity={64} borderWidth={3} />
             {/* Header */}
             <div className="flex items-start justify-between">
                 <div>

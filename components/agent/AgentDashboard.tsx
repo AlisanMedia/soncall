@@ -2,7 +2,8 @@
 
 import { useState, useEffect } from 'react';
 import { Profile } from '@/types';
-import { LogOut, Sparkles, Settings, Phone, Target, List, DollarSign, UserPlus } from 'lucide-react';
+import { LogOut, MessageCircle, Settings, Phone, Target, List, DollarSign, UserPlus } from 'lucide-react';
+import { GlowingEffect } from '@/components/ui/glowing-effect';
 import ManualLeadDialog from './ManualLeadDialog';
 import { createClient } from '@/lib/supabase/client';
 import { useRouter } from 'next/navigation';
@@ -360,8 +361,10 @@ export default function AgentDashboard({ profile: initialProfile }: AgentDashboa
                                 refreshKey={refreshKey}
                             />
 
+
                             {/* Tasks Section */}
-                            <div className="glass-card glass-card-hover p-6">
+                            <div className="glass-card glass-card-hover p-6 relative">
+                                <GlowingEffect spread={40} glow={true} disabled={false} proximity={64} borderWidth={3} />
                                 <h3 className="text-lg font-bold text-white mb-4 flex items-center gap-2">
                                     <Target className="w-5 h-5 text-purple-400" />
                                     Görevler
@@ -395,7 +398,7 @@ export default function AgentDashboard({ profile: initialProfile }: AgentDashboa
                     title="Open Chat"
                     aria-label="Open Chat"
                 >
-                    <Sparkles className="w-6 h-6 md:w-7 md:h-7" />
+                    <MessageCircle className="w-6 h-6 md:w-7 md:h-7" />
                     <ChatNotificationBadge userId={profile.id} />
                 </button>
             )}

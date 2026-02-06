@@ -178,30 +178,32 @@ export default function SalesApprovals() {
                                     </div>
 
                                     {/* Lead & Sale Info */}
-                                    <div className="flex-1 space-y-2">
-                                        <div className="flex items-center gap-2 text-purple-300">
-                                            <Building2 className="w-4 h-4" />
+                                    <div className="flex-1 space-y-3">
+                                        <div className="flex items-center gap-2 text-purple-300 min-w-0">
+                                            <Building2 className="w-4 h-4 flex-shrink-0" />
                                             <GlassButton
                                                 onClick={() => setViewDetailRequest(request)}
-                                                className="text-left"
-                                                contentClassName="!p-0"
+                                                className="text-left min-w-0 flex-1"
+                                                contentClassName="!p-0 w-full"
                                             >
-                                                <span className="font-semibold text-purple-300 hover:text-white hover:underline transition-colors">
-                                                    {request.lead.business_name}
-                                                </span>
-                                                <span className="ml-2 text-xs bg-purple-500/20 px-2 py-0.5 rounded-full border border-purple-500/30 text-purple-200 no-underline inline-block">
-                                                    <Eye className="w-3 h-3 inline mr-1" />
-                                                    Detay
-                                                </span>
+                                                <div className="flex items-center gap-2 w-full">
+                                                    <span className="font-semibold text-purple-300 hover:text-white hover:underline transition-colors truncate">
+                                                        {request.lead.business_name}
+                                                    </span>
+                                                    <span className="flex-shrink-0 text-xs bg-purple-500/20 px-2 py-0.5 rounded-full border border-purple-500/30 text-purple-200 no-underline flex items-center gap-1">
+                                                        <Eye className="w-3 h-3" />
+                                                        Detay
+                                                    </span>
+                                                </div>
                                             </GlassButton>
                                         </div>
-                                        <div className="flex items-center gap-6">
-                                            <div className="flex items-center gap-2 bg-green-500/10 px-3 py-1 rounded-lg border border-green-500/20">
-                                                <DollarSign className="w-4 h-4 text-green-400" />
-                                                <span className="text-green-400 font-bold text-lg">${request.amount.toLocaleString()}</span>
+                                        <div className="flex items-center gap-4 flex-wrap">
+                                            <div className="flex items-center gap-2 bg-green-500/10 px-4 py-2 rounded-xl border border-green-500/20 shadow-sm shadow-green-900/10">
+                                                <DollarSign className="w-5 h-5 text-green-400" />
+                                                <span className="text-green-400 font-bold text-xl tracking-wide">{typeof request.amount === 'number' ? request.amount.toLocaleString() : String(request.amount).replace('$', '')}</span>
                                             </div>
-                                            <div className="flex items-center gap-2 text-gray-400 text-xs">
-                                                <Calendar className="w-3 h-3" />
+                                            <div className="flex items-center gap-2 text-zinc-400 text-xs bg-white/5 px-3 py-1.5 rounded-lg border border-white/5">
+                                                <Calendar className="w-3.5 h-3.5" />
                                                 {new Date(request.created_at).toLocaleString('tr-TR')}
                                             </div>
                                         </div>
@@ -264,7 +266,7 @@ export default function SalesApprovals() {
                                 {actionType === 'approve' ? 'Satışı Onayla' : 'Satışı Reddet'}
                             </h3>
                             <p className="text-gray-400 text-sm mt-1">
-                                {selectedRequest.lead.business_name} - ${selectedRequest.amount.toLocaleString()}
+                                {selectedRequest.lead.business_name} - ${typeof selectedRequest.amount === 'number' ? selectedRequest.amount.toLocaleString() : String(selectedRequest.amount).replace('$', '')}
                             </p>
                         </div>
 

@@ -166,14 +166,16 @@ export default function ManagerDashboard({ profile }: ManagerDashboardProps) {
                         <GlassButton
                             key={item.id}
                             onClick={() => setCurrentTab(item.id as Tab)}
-                            className={`w-[85px] h-[85px] transition-all touch-target active:scale-95 flex flex-col items-center justify-center gap-1 !p-0 ${currentTab === item.id
+                            className={`flex-shrink-0 w-[84px] h-[84px] rounded-2xl transition-all touch-target active:scale-95 flex flex-col items-center justify-center gap-1 !p-0 mx-1 ${currentTab === item.id
                                 ? '[&>.glass-button]:!bg-purple-600 [&>.glass-button]:!border-purple-500 [&>.glass-button]:shadow-lg'
                                 : 'opacity-70 hover:opacity-100'
                                 }`}
-                            contentClassName="flex flex-col items-center justify-center gap-1 !p-0 w-full h-full"
+                            contentClassName="flex flex-col items-center justify-center gap-1.5 !p-0 w-full h-full"
                         >
-                            <item.icon className="w-5 h-5 text-white" />
-                            <span className="text-[10px] font-medium">{item.label}</span>
+                            <item.icon className="w-6 h-6 text-white mb-0.5" />
+                            <span className="text-[10px] font-medium leading-tight text-center px-1 w-full truncate">
+                                {item.label}
+                            </span>
                         </GlassButton>
                     ))}
                 </div>

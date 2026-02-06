@@ -88,13 +88,17 @@ export default function LoginPage() {
     };
 
     return (
-        <div className="min-h-screen flex items-center justify-center px-4 animate-fade-in">
+        <div className="min-h-screen flex items-center justify-center px-4 animate-fade-in" style={{ background: '#000000' }}>
             {/* Animated Background Grid */}
-            <div className="fixed inset-0 -z-10">
-                <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,_rgba(168,85,247,0.15)_0%,_transparent_50%)]" />
+            <div className="fixed inset-0 -z-10 bg-black">
+                {/* Subtle spotlight to make grid pop */}
                 <div className="absolute inset-0" style={{
-                    backgroundImage: 'linear-gradient(rgba(255, 255, 255, 0.03) 1px, transparent 1px), linear-gradient(90deg, rgba(255, 255, 255, 0.03) 1px, transparent 1px)',
-                    backgroundSize: '50px 50px'
+                    background: 'radial-gradient(circle at center, rgba(255,255,255,0.1) 0%, transparent 70%)'
+                }} />
+                {/* Grid Pattern */}
+                <div className="absolute inset-0" style={{
+                    backgroundImage: 'linear-gradient(rgba(255, 255, 255, 0.15) 1px, transparent 1px), linear-gradient(90deg, rgba(255, 255, 255, 0.15) 1px, transparent 1px)',
+                    backgroundSize: '40px 40px'
                 }} />
             </div>
 
@@ -211,7 +215,7 @@ export default function LoginPage() {
                             <GlassButton
                                 type="submit"
                                 disabled={loading}
-                                className="w-full py-6 text-lg"
+                                className="w-full py-6 text-lg whitespace-nowrap"
                             >
                                 {loading ? (
                                     <>
