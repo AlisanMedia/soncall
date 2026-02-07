@@ -30,7 +30,7 @@ export async function GET() {
 
         const { data: team, error } = await adminAuthClient
             .from('profiles')
-            .select('id, full_name, role, email, avatar_url')
+            .select('id, full_name, role, email, avatar_url, phone_number')
             .in('role', ['agent', 'admin', 'founder'])
             .order('full_name');
 

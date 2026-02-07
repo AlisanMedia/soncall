@@ -8,6 +8,7 @@ export async function GET(request: Request) {
         // Verify authentication
         const { data: { user } } = await supabase.auth.getUser();
         if (!user) {
+            console.log('[ActivityAPI] Unauthorized');
             return NextResponse.json({ message: 'Unauthorized' }, { status: 401 });
         }
 
@@ -19,6 +20,7 @@ export async function GET(request: Request) {
             .single();
 
         if (!['manager', 'admin', 'founder'].includes(profile?.role || '')) {
+            console.log('[ActivityAPI] Forbidden role:', profile?.role);
             return NextResponse.json({ message: 'Forbidden' }, { status: 403 });
         }
 
@@ -28,12 +30,15 @@ export async function GET(request: Request) {
         const offset = parseInt(searchParams.get('offset') || '0');
         const search = searchParams.get('search') || '';
 
+        console.log(`[ActivityAPI] Fetching limit=${limit} offset=${offset} search=${search}`);
+
         let query = supabase
             .from('lead_activity_log')
             .select('id')
             .order('created_at', { ascending: false });
 
         if (search) {
+            console.log(`[ActivityAPI] Search active: ${search}`);
             let targetLeadIds: string[] = [];
 
             // 0. Check for Lead Number Search (SC-xxxx or just xxxx)
@@ -83,9 +88,18 @@ export async function GET(request: Request) {
 
         const { data: activityIds, error: idsError } = await query.range(offset, offset + limit - 1);
 
-        if (idsError) throw idsError;
+        if (idsError) {
+            console.error('[ActivityAPI] ID Fetch Error:', idsError);
+            throw idsError;
+        }
+
+        console.log(`[ActivityAPI] Found ${activityIds?.length || 0} IDs`);
 
         const uniqueIds = [...new Set(activityIds?.map(a => a.id) || [])];
+
+        if (uniqueIds.length === 0) {
+            return NextResponse.json({ activities: [] });
+        }
 
         // Now fetch full data for these unique IDs
         const { data: activities, error: activitiesError } = await supabase
@@ -112,7 +126,12 @@ export async function GET(request: Request) {
             .in('id', uniqueIds)
             .order('created_at', { ascending: false });
 
-        if (activitiesError) throw activitiesError;
+        if (activitiesError) {
+            console.error('[ActivityAPI] Detail Fetch Error:', activitiesError);
+            throw activitiesError;
+        }
+
+        console.log(`[ActivityAPI] Fetched ${activities?.length || 0} details`);
 
         // Get notes for these activities
         const leadIds = activities?.map(a => a.lead_id) || [];

@@ -17,13 +17,14 @@ const AdminPanel = dynamic(() => import('./AdminPanel'));
 const GoalManager = dynamic(() => import('./GoalManager'));
 const AppointmentCalendar = dynamic(() => import('./AppointmentCalendar'));
 const ProfileSettings = dynamic(() => import('./ProfileSettings'));
+const SmsLogs = dynamic(() => import('./SmsLogs'));
 
 // Keep default tab components static for faster LCP
 import TeamMonitoring from '@/components/manager/TeamMonitoring';
 import TopSellers from './TopSellers';
 import SalesApprovals from './SalesApprovals';
 
-import { LogOut, Upload, Users, BarChart3, Activity, TrendingUp, Trophy, Sparkles, AlertTriangle, Target, Calendar, Briefcase, Settings } from 'lucide-react';
+import { LogOut, Upload, Users, BarChart3, Activity, TrendingUp, Trophy, Sparkles, AlertTriangle, Target, Calendar, Briefcase, Settings, MessageSquare } from 'lucide-react';
 import { createClient } from '@/lib/supabase/client';
 import { useRouter } from 'next/navigation';
 import ChatPanel from '../chat/ChatPanel';
@@ -36,7 +37,7 @@ interface ManagerDashboardProps {
 }
 
 type Step = 'upload' | 'distribute';
-type Tab = 'upload' | 'monitor' | 'reports' | 'analytics' | 'rankings' | 'leads' | 'admin' | 'goals' | 'calendar' | 'team' | 'settings';
+type Tab = 'upload' | 'monitor' | 'reports' | 'analytics' | 'rankings' | 'leads' | 'admin' | 'goals' | 'calendar' | 'team' | 'settings' | 'sms-logs';
 
 export default function ManagerDashboard({ profile }: ManagerDashboardProps) {
     const [currentTab, setCurrentTab] = useState<Tab>('monitor');
@@ -107,6 +108,7 @@ export default function ManagerDashboard({ profile }: ManagerDashboardProps) {
                                 { id: 'goals', icon: Target, label: 'Hedefler' },
                                 { id: 'upload', icon: Upload, label: 'Yükle' },
                                 { id: 'admin', icon: AlertTriangle, label: 'Admin' },
+                                { id: 'sms-logs', icon: MessageSquare, label: 'SMS Geçmişi' },
                                 { id: 'settings', icon: Settings, label: 'Ayarlar' },
                             ].map((item) => (
                                 <GlassButton
@@ -161,6 +163,7 @@ export default function ManagerDashboard({ profile }: ManagerDashboardProps) {
                         { id: 'goals', icon: Target, label: 'Hedefler' },
                         { id: 'upload', icon: Upload, label: 'Yükle' },
                         { id: 'admin', icon: AlertTriangle, label: 'Admin' },
+                        { id: 'sms-logs', icon: MessageSquare, label: 'SMS Geçmişi' },
                         { id: 'settings', icon: Settings, label: 'Ayarlar' },
                     ].map((item) => (
                         <GlassButton
@@ -232,6 +235,7 @@ export default function ManagerDashboard({ profile }: ManagerDashboardProps) {
                                 <FileUpload onUploadSuccess={handleUploadSuccess} />
                             )}
 
+
                             {currentStep === 'distribute' && batchId && (
                                 <LeadDistribution
                                     batchId={batchId}
@@ -242,6 +246,8 @@ export default function ManagerDashboard({ profile }: ManagerDashboardProps) {
                         </div>
                     </>
                 )}
+
+                {currentTab === 'sms-logs' && <SmsLogs />}
             </main>
 
             {/* Floating Action Buttons - Mobile Optimized */}
@@ -268,3 +274,4 @@ export default function ManagerDashboard({ profile }: ManagerDashboardProps) {
         </div>
     );
 }
+

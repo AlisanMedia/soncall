@@ -11,16 +11,16 @@ interface ActivityItem {
     lead_id: string;
     note: string | null;
     action_taken: string | null;
-    profiles: {
+    profiles?: {
         full_name: string;
         avatar_url?: string;
-    };
-    leads: {
+    } | null;
+    leads?: {
         business_name: string;
         phone_number: string;
         status: string;
         potential_level: string;
-    };
+    } | null;
 }
 
 interface ActivityDetailModalProps {
@@ -62,20 +62,20 @@ export default function ActivityDetailModal({ isOpen, onClose, activity }: Activ
                     {/* Header */}
                     <div className="p-6 border-b border-white/10 flex justify-between items-start bg-white/5">
                         <div className="flex items-center gap-4">
-                            {activity.profiles.avatar_url ? (
+                            {activity.profiles?.avatar_url ? (
                                 <img
                                     src={activity.profiles.avatar_url}
-                                    alt={activity.profiles.full_name}
+                                    alt={activity.profiles.full_name || 'Agent'}
                                     className="w-12 h-12 rounded-full object-cover border-2 border-purple-400/50"
                                 />
                             ) : (
                                 <div className="w-12 h-12 rounded-full bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center text-white font-bold text-lg border-2 border-purple-400/50">
-                                    {activity.profiles.full_name.charAt(0)}
+                                    {(activity.profiles?.full_name || '?').charAt(0)}
                                 </div>
                             )}
                             <div>
                                 <h3 className="text-lg font-bold text-white">
-                                    {activity.profiles.full_name}
+                                    {activity.profiles?.full_name || 'Bilinmeyen Ajan'}
                                 </h3>
                                 <p className="text-purple-300 text-sm">
                                     Aktivite Detayı
@@ -99,16 +99,18 @@ export default function ActivityDetailModal({ isOpen, onClose, activity }: Activ
                                 <div>
                                     <div className="flex items-center gap-2 text-white font-semibold mb-1">
                                         <Building2 className="w-4 h-4 text-purple-400" />
-                                        {activity.leads.business_name}
+                                        {activity.leads?.business_name || 'Bilinmeyen Müşteri'}
                                     </div>
                                     <div className="flex items-center gap-2 text-gray-400 text-sm">
                                         <Phone className="w-3 h-3" />
-                                        {activity.leads.phone_number}
+                                        {activity.leads?.phone_number || '-'}
                                     </div>
                                 </div>
-                                <span className={`text-xs px-2 py-1 rounded border ${getPotentialColor(activity.leads.potential_level)}`}>
-                                    {getPotentialLabel(activity.leads.potential_level)}
-                                </span>
+                                {activity.leads?.potential_level && (
+                                    <span className={`text-xs px-2 py-1 rounded border ${getPotentialColor(activity.leads.potential_level)}`}>
+                                        {getPotentialLabel(activity.leads.potential_level)}
+                                    </span>
+                                )}
                             </div>
                         </div>
 

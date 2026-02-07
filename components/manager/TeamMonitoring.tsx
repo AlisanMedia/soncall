@@ -1,8 +1,8 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
-import { Activity, Loader2, Phone, Sparkles, Calendar, CheckCircle2, Package, TrendingUp, Eye, Search } from 'lucide-react';
-import { motion } from 'framer-motion';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
+import { Activity, Loader2, Phone, Sparkles, Calendar, CheckCircle2, Package, TrendingUp, Eye, Search, ArrowUp } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
 import { playActivityNotification } from '@/lib/sounds';
 import { SectionInfo } from '@/components/ui/section-info';
 import { GlowingEffect } from '@/components/ui/glowing-effect';
@@ -21,16 +21,16 @@ interface ActivityItem {
     lead_id: string;
     note: string | null;
     action_taken: string | null;
-    profiles: {
+    profiles?: {
         full_name: string;
         avatar_url?: string;
-    };
-    leads: {
+    } | null;
+    leads?: {
         business_name: string;
         phone_number: string;
         status: string;
         potential_level: string;
-    };
+    } | null;
 }
 
 interface BatchStat {
@@ -85,22 +85,69 @@ export default function TeamMonitoring() {
     const [loadingMore, setLoadingMore] = useState(false);
     const [hasMore, setHasMore] = useState(true);
     const [searchTerm, setSearchTerm] = useState('');
+    const [newActivitiesCount, setNewActivitiesCount] = useState(0);
+
+    // Refs for infinite scroll and scroll management
+    const observerTarget = useRef<HTMLDivElement>(null);
+    const scrollContainerRef = useRef<HTMLDivElement>(null);
+    const isUserScrolled = useRef(false);
 
     useEffect(() => {
         const timeoutId = setTimeout(() => {
+            setActivities([]); // Clear on search change
+            setHasMore(true);
             loadInitialData();
         }, 300); // Debounce search
 
-        // Auto-refresh every 10 seconds ONLY if no search term active
-        if (!searchTerm) {
-            const interval = setInterval(() => loadLatestActivities(), 10000);
-            return () => {
-                clearInterval(interval);
-                clearTimeout(timeoutId);
-            };
-        }
-        return () => clearTimeout(timeoutId);
+        // Auto-refresh every 5 seconds for "Live" feel
+        const interval = setInterval(() => loadLatestActivities(), 5000);
+
+        return () => {
+            clearInterval(interval);
+            clearTimeout(timeoutId);
+        };
     }, [searchTerm]);
+
+    // Infinite Scroll Observer
+    useEffect(() => {
+        const observer = new IntersectionObserver(
+            entries => {
+                if (entries[0].isIntersecting && hasMore && !loadingMore && !loading) {
+                    loadMoreActivities();
+                }
+            },
+            { threshold: 0.1 }
+        );
+
+        if (observerTarget.current) {
+            observer.observe(observerTarget.current);
+        }
+
+        return () => {
+            if (observerTarget.current) {
+                observer.unobserve(observerTarget.current);
+            }
+        };
+    }, [hasMore, loadingMore, loading, activities.length]);
+
+    const handleScroll = () => {
+        if (scrollContainerRef.current) {
+            const { scrollTop } = scrollContainerRef.current;
+            // If scrolled down more than 50px, consider user "scrolled away"
+            isUserScrolled.current = scrollTop > 50;
+
+            if (scrollTop <= 50) {
+                setNewActivitiesCount(0); // Reset badge when at top
+            }
+        }
+    };
+
+    const scrollToTop = () => {
+        if (scrollContainerRef.current) {
+            scrollContainerRef.current.scrollTo({ top: 0, behavior: 'smooth' });
+            setNewActivitiesCount(0);
+        }
+    };
 
     const loadInitialData = async () => {
         try {
@@ -137,50 +184,48 @@ export default function TeamMonitoring() {
     };
 
     const loadLatestActivities = async () => {
-        if (loading || searchTerm) return; // Don't auto-refresh if searching
+        if (loading || loadingMore || searchTerm) return; // Don't auto-refresh during intensive operations or search
 
         try {
-            // Fetch only latest 50 to keep top fresh
-            const res = await fetch('/api/manager/activity?limit=50&offset=0');
+            // Fetch only the very latest few to check for updates
+            const res = await fetch('/api/manager/activity?limit=20&offset=0');
             if (res.ok) {
                 const data = await res.json();
-                const newActivities = data.activities || [];
+                const fetchedActivities = data.activities || [];
+
+                if (fetchedActivities.length === 0) return;
 
                 setActivities(prev => {
-                    // Combine new and old
-                    const combined = [...newActivities, ...prev];
+                    const currentIds = new Set(prev.map(a => a.id));
+                    const newItems = fetchedActivities.filter((a: ActivityItem) => !currentIds.has(a.id));
 
-                    // Deduplicate
-                    const uniqueActivities = combined.filter((activity: ActivityItem, index: number, self: ActivityItem[]) => {
-                        const firstIndexById = self.findIndex((a) => a.id === activity.id);
-                        return index === firstIndexById;
-                    });
-
-                    // Check for new activity for sound
-                    if (prev.length > 0 && uniqueActivities.length > 0 && uniqueActivities[0].id !== prev[0].id) {
+                    if (newItems.length > 0) {
                         playActivityNotification();
-                    }
 
-                    return uniqueActivities;
+                        // If user is scrolled down, just track count
+                        if (isUserScrolled.current) {
+                            setNewActivitiesCount(n => n + newItems.length);
+                        }
+
+                        const combined = [...newItems, ...prev];
+                        // Limit to 1000 items in memory to prevent performance issues
+                        return combined.slice(0, 1000);
+                    }
+                    return prev;
                 });
             }
 
-            // Also refresh stats
-            const [batchesRes, overviewRes] = await Promise.all([
+            // Refresh stats silently
+            Promise.all([
                 fetch('/api/manager/batches'),
                 fetch('/api/manager/overview'),
-            ]);
-
-            if (batchesRes.ok) {
-                const data = await batchesRes.json();
-                setBatches(data.batches || []);
-            }
-
-            if (overviewRes.ok) {
-                const data = await overviewRes.json();
-                setOverview(data.overview);
-                setAgentStats(data.agent_stats || []);
-            }
+            ]).then(([batchesRes, overviewRes]) => {
+                if (batchesRes.ok) batchesRes.json().then(d => setBatches(d.batches || []));
+                if (overviewRes.ok) overviewRes.json().then(d => {
+                    setOverview(d.overview);
+                    setAgentStats(d.agent_stats || []);
+                });
+            });
 
         } catch (err) {
             console.error('Error refreshing data:', err);
@@ -188,12 +233,19 @@ export default function TeamMonitoring() {
     };
 
     const loadMoreActivities = async () => {
-        if (loadingMore) return;
+        if (loadingMore || !hasMore) return;
         setLoadingMore(true);
         try {
             const currentCount = activities.length;
-            const limit = 50; // Smaller chunks for smooth loading
+            const limit = 50;
             const searchQuery = searchTerm ? `&search=${encodeURIComponent(searchTerm)}` : '';
+
+            // Don't load more if we reached strict 1000 limit
+            if (currentCount >= 1000) {
+                setHasMore(false);
+                setLoadingMore(false);
+                return;
+            }
 
             const res = await fetch(`/api/manager/activity?limit=${limit}&offset=${currentCount}${searchQuery}`);
 
@@ -202,16 +254,17 @@ export default function TeamMonitoring() {
                 const olderActivities = data.activities || [];
 
                 if (olderActivities.length < limit) {
-                    setHasMore(false); // No more data to load
+                    setHasMore(false);
                 }
 
                 if (olderActivities.length > 0) {
                     setActivities(prev => {
                         const combined = [...prev, ...olderActivities];
-                        // Deduplicate just in case
-                        return combined.filter((activity, index, self) =>
+                        // Deduplicate
+                        const unique = combined.filter((activity, index, self) =>
                             index === self.findIndex((a) => a.id === activity.id)
                         );
+                        return unique;
                     });
                 } else {
                     setHasMore(false);
@@ -373,126 +426,155 @@ export default function TeamMonitoring() {
 
             <div className="space-y-6">
                 {/* Live Activity Feed */}
-                <div className="glass-card glass-card-hover p-6 min-h-[800px] relative">
-                    <GlowingEffect spread={40} glow={true} disabled={false} proximity={64} borderWidth={3} />
-                    <div className="flex flex-col md:flex-row md:items-center justify-between mb-6 gap-4">
+                <div className="glass-card glass-card-hover p-0 overflow-hidden relative border border-purple-500/20 shadow-2xl">
+                    {/* Header */}
+                    <div className="p-6 border-b border-white/5 bg-white/5 backdrop-blur-md sticky top-0 z-20 flex flex-col md:flex-row md:items-center justify-between gap-4">
                         <div className="flex items-center gap-2">
-                            <Activity className="w-6 h-6 text-purple-400" />
-                            <h2 className="text-xl font-bold text-white">Canlı Aktivite</h2>
-                            <SectionInfo
-                                text="Takımınızın anlık aramalarını, notlarını ve müşteri etkileşimlerini canlı olarak buradan izleyebilirsiniz."
-                            />
+                            <div className="relative">
+                                <div className="absolute inset-0 bg-green-500 blur-md opacity-20 animate-pulse"></div>
+                                <Activity className="w-6 h-6 text-green-400 relative z-10" />
+                            </div>
+                            <div>
+                                <h2 className="text-xl font-bold text-white flex items-center gap-2">
+                                    Canlı Aktivite Akışı
+                                    <span className="text-[10px] bg-green-500/20 text-green-400 px-2 py-0.5 rounded-full border border-green-500/30 animate-pulse">
+                                        LIVE
+                                    </span>
+                                </h2>
+                                <p className="text-xs text-purple-300 mt-0.5">Takımınızın anlık aksiyonlarını buradan takip edin.</p>
+                            </div>
                         </div>
+
                         <div className="flex items-center gap-3">
                             <div className="relative">
                                 <Search className="w-4 h-4 text-purple-300 absolute left-3 top-1/2 -translate-y-1/2" />
                                 <input
                                     type="text"
-                                    placeholder="Aktivite Ara..."
+                                    placeholder="Aktivite veya Personel Ara..."
                                     value={searchTerm}
                                     onChange={(e) => setSearchTerm(e.target.value)}
-                                    className="bg-black/20 border border-white/10 rounded-full pl-9 pr-4 py-1.5 text-sm text-white focus:outline-none focus:border-purple-500/50 w-full md:w-48 transition-all focus:w-64"
+                                    className="bg-black/40 border border-white/10 rounded-full pl-9 pr-4 py-2 text-sm text-white focus:outline-none focus:border-purple-500/50 w-full md:w-64 transition-all focus:bg-black/60 focus:ring-1 focus:ring-purple-500/50"
                                 />
                             </div>
-                            {!searchTerm && (
-                                <div className="flex items-center gap-2">
-                                    <div className="w-2 h-2 bg-green-400 rounded-full animate-pulse"></div>
-                                    <span className="text-xs text-green-300 hidden md:inline">Canlı</span>
-                                </div>
-                            )}
                         </div>
                     </div>
 
-                    <div className="space-y-3 overflow-y-auto pr-2 custom-scrollbar max-h-[1400px]">
-                        {activities.map((activity) => (
-                            <div
-                                key={activity.id}
-                                className="bg-white/5 rounded-lg p-4 border border-white/10 hover:bg-white/10 transition-colors"
+                    {/* New Activity Notification Badge */}
+                    <AnimatePresence>
+                        {newActivitiesCount > 0 && (
+                            <motion.button
+                                initial={{ opacity: 0, y: -20 }}
+                                animate={{ opacity: 1, y: 0 }}
+                                exit={{ opacity: 0, y: -20 }}
+                                onClick={scrollToTop}
+                                className="absolute top-24 left-1/2 -translate-x-1/2 z-30 bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded-full shadow-lg border border-white/20 flex items-center gap-2 text-sm font-medium transition-colors"
                             >
-                                <div className="flex items-start gap-3">
-                                    {/* Agent Avatar */}
-                                    <div className="mt-1 flex-shrink-0">
-                                        {activity.profiles.avatar_url ? (
-                                            <img
-                                                src={activity.profiles.avatar_url}
-                                                alt={activity.profiles.full_name}
-                                                className="w-10 h-10 rounded-full object-cover border-2 border-purple-400/50"
-                                            />
-                                        ) : (
-                                            <div className="w-10 h-10 rounded-full bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center text-white font-bold border-2 border-purple-400/50">
-                                                {activity.profiles.full_name.charAt(0)}
+                                <ArrowUp className="w-4 h-4" />
+                                {newActivitiesCount} Yeni Aktivite
+                            </motion.button>
+                        )}
+                    </AnimatePresence>
+
+                    {/* Scrollable Feed Container - Fixed Height */}
+                    <div
+                        ref={scrollContainerRef}
+                        onScroll={handleScroll}
+                        className="overflow-y-auto custom-scrollbar h-[600px] relative bg-black/20"
+                    >
+                        <div className="p-4 space-y-3">
+                            {activities.map((activity, index) => (
+                                <motion.div
+                                    key={activity.id}
+                                    initial={{ opacity: 0, x: -20 }}
+                                    animate={{ opacity: 1, x: 0 }}
+                                    transition={{ delay: index < 10 ? index * 0.05 : 0 }}
+                                    className="bg-gradient-to-r from-white/5 to-transparent rounded-xl p-4 border border-white/5 hover:border-purple-500/30 hover:bg-white/10 transition-all group relative"
+                                >
+                                    <div className="flex items-start gap-4">
+                                        {/* Agent Avatar */}
+                                        <div className="mt-1 flex-shrink-0 relative">
+                                            {activity.profiles?.avatar_url ? (
+                                                <img
+                                                    src={activity.profiles.avatar_url}
+                                                    alt={activity.profiles.full_name || 'Agent'}
+                                                    className="w-12 h-12 rounded-full object-cover border-2 border-white/10 group-hover:border-purple-500/50 transition-colors"
+                                                />
+                                            ) : (
+                                                <div className="w-12 h-12 rounded-full bg-gradient-to-br from-gray-800 to-gray-700 flex items-center justify-center text-white font-bold border-2 border-white/10 group-hover:border-purple-500/50 transition-colors">
+                                                    {(activity.profiles?.full_name || '?').charAt(0)}
+                                                </div>
+                                            )}
+                                            {/* Action Badge */}
+                                            <div className="absolute -bottom-1 -right-1 bg-slate-900 rounded-full p-1.5 border border-white/10 shadow-sm">
+                                                {getActionIcon(activity.action_taken)}
                                             </div>
-                                        )}
-                                    </div>
+                                        </div>
 
-                                    {/* Action Icon (smaller, positioned top-right of avatar) */}
-                                    <div className="-ml-5 mt-8 z-10 bg-slate-900 rounded-full p-1">
-                                        {getActionIcon(activity.action_taken)}
-                                    </div>
+                                        <div className="flex-1 min-w-0">
+                                            <div className="flex items-center gap-2 flex-wrap mb-1">
+                                                <span className="font-bold text-white text-base">
+                                                    {activity.profiles?.full_name || 'Bilinmeyen Ajan'}
+                                                </span>
+                                                <span className="text-purple-400/50 text-xs">●</span>
+                                                <span className="text-purple-200 font-medium truncate max-w-[200px]">
+                                                    {activity.leads?.business_name || 'Bilinmeyen Müşteri'}
+                                                </span>
+                                                {activity.leads?.potential_level && (
+                                                    <span className={`text-[10px] px-2 py-0.5 rounded-full border ml-auto ${getPotentialColor(activity.leads.potential_level)}`}>
+                                                        {activity.leads.potential_level?.toUpperCase()}
+                                                    </span>
+                                                )}
+                                            </div>
 
-                                    <div className="flex-1">
-                                        <div className="flex items-center gap-2 flex-wrap">
-                                            <span className="font-semibold text-purple-200">
-                                                {activity.profiles.full_name}
-                                            </span>
-                                            <span className="text-purple-300 text-sm">→</span>
-                                            <span className="text-white font-medium">
-                                                {activity.leads.business_name}
-                                            </span>
-                                            <span className={`text-xs px-2 py-0.5 rounded-full border ${getPotentialColor(activity.leads.potential_level)}`}>
-                                                {getPotentialLabel(activity.leads.potential_level)}
-                                            </span>
+                                            {activity.note && (
+                                                <div className="bg-black/30 rounded-lg p-3 mt-2 border border-white/5">
+                                                    <p className="text-sm text-gray-300 leading-relaxed italic">
+                                                        "{activity.note}"
+                                                    </p>
+                                                </div>
+                                            )}
 
+                                            <div className="flex items-center justify-between mt-3">
+                                                <div className="flex items-center gap-3 text-xs text-gray-500">
+                                                    <span className="flex items-center gap-1">
+                                                        <Phone className="w-3 h-3" />
+                                                        {activity.leads?.phone_number || '-'}
+                                                    </span>
+                                                </div>
+                                                <span className="text-xs font-mono text-purple-400/70">
+                                                    {formatTime(activity.created_at)}
+                                                </span>
+                                            </div>
+                                        </div>
+
+                                        <div className="self-center opacity-0 group-hover:opacity-100 transition-opacity">
                                             <GlassButton
                                                 onClick={() => setSelectedActivity(activity)}
-                                                className="ml-auto"
-                                                contentClassName="!p-1.5"
                                                 size="icon"
-                                                title="Detay Görüntüle"
+                                                className="bg-white/5 hover:bg-purple-600"
                                             >
-                                                <Eye className="w-4 h-4 group-hover:scale-110 transition-transform text-purple-300 group-hover:text-white" />
+                                                <Eye className="w-4 h-4 text-white" />
                                             </GlassButton>
                                         </div>
-
-                                        {activity.note && (
-                                            <p className="text-sm text-purple-200 mt-2 line-clamp-2">
-                                                💬 {activity.note}
-                                            </p>
-                                        )}
-
-                                        <div className="flex items-center gap-3 mt-2 text-xs text-purple-300">
-                                            <span>{activity.leads.phone_number}</span>
-                                            <span>•</span>
-                                            <span>{formatTime(activity.created_at)}</span>
-                                        </div>
                                     </div>
-                                </div>
-                            </div>
-                        ))}
+                                </motion.div>
+                            ))}
 
-                        {activities.length === 0 && (
-                            <div className="text-center py-12 text-purple-300">
-                                {searchTerm ? 'Sonuç bulunamadı' : 'Henüz aktivite yok'}
-                            </div>
-                        )}
-
-                        {hasMore && activities.length > 0 && (
-                            <GlassButton
-                                onClick={loadMoreActivities}
-                                disabled={loadingMore}
-                                className="w-full mt-4"
-                                contentClassName="flex items-center justify-center gap-2 !py-3"
-                            >
-                                {loadingMore ? (
-                                    <>
-                                        <Loader2 className="w-4 h-4 animate-spin" />
-                                        Yükleniyor...
-                                    </>
-                                ) : (
-                                    'Daha Fazla Yükle'
+                            {/* Sentinel for Infinite Scroll */}
+                            <div ref={observerTarget} className="h-10 flex items-center justify-center w-full">
+                                {loadingMore && <Loader2 className="w-6 h-6 animate-spin text-purple-500" />}
+                                {!hasMore && activities.length > 0 && (
+                                    <span className="text-xs text-gray-600">— Tüm kayıtlar yüklendi —</span>
                                 )}
-                            </GlassButton>
-                        )}
+                            </div>
+
+                            {activities.length === 0 && !loading && (
+                                <div className="text-center py-20 bg-white/5 rounded-xl border border-dashed border-white/10">
+                                    <Activity className="w-12 h-12 text-gray-600 mx-auto mb-4" />
+                                    <p className="text-gray-400 font-medium">Henüz bir aktivite kaydı bulunmuyor.</p>
+                                </div>
+                            )}
+                        </div>
                     </div>
                 </div>
 
