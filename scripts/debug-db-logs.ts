@@ -25,7 +25,7 @@ async function checkLogs() {
         return;
     }
 
-    data.forEach(msg => {
+    data.forEach((msg: any) => {
         console.log(`[${msg.direction}] To/From: ${msg.sent_to} | Body: ${msg.message_body} | Time: ${msg.created_at}`);
     });
 }

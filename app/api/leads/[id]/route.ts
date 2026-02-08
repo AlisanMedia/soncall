@@ -16,7 +16,7 @@ export async function PATCH(
         }
 
         const body = await request.json();
-        const { status, potentialLevel, note, actionTaken } = body;
+        const { status, potentialLevel, note, actionTaken, appointmentDate } = body;
 
         if (!status || !potentialLevel || !note) {
             return NextResponse.json({ message: 'Missing required fields' }, { status: 400 });
@@ -36,16 +36,43 @@ export async function PATCH(
         }
 
         // Update lead
+        const updateData: any = {
+            status,
+            potential_level: potentialLevel,
+            current_agent_id: null, // Unlock
+            locked_at: null,
+            processed_at: new Date().toISOString(),
+        };
+
+        if (appointmentDate) {
+            updateData.appointment_date = appointmentDate;
+        }
+
         const { error: updateError } = await supabase
             .from('leads')
-            .update({
-                status,
-                potential_level: potentialLevel,
-                current_agent_id: null, // Unlock
-                locked_at: null,
-                processed_at: new Date().toISOString(),
-            })
+            .update(updateData)
             .eq('id', id);
+
+        if (updateError) throw updateError;
+
+        // SEND SMS CONFIRMATION
+        if (status === 'appointment' && appointmentDate) {
+            try {
+                const { sendSMS } = await import('@/lib/sms');
+                const dateObj = new Date(appointmentDate);
+                const formattedDate = new Intl.DateTimeFormat('tr-TR', {
+                    dateStyle: 'full',
+                    timeStyle: 'short'
+                }).format(dateObj);
+
+                const message = `Sayın Yetkili, Randevunuz oluşturulmuştur. Tarih: ${formattedDate}. Görüşmek üzere. - ArtificAgent`;
+
+                // Send async - don't block response
+                sendSMS(lead.phone_number, message, lead.business_name).catch(console.error);
+            } catch (smsError) {
+                console.error("Failed to initiate SMS:", smsError);
+            }
+        }
 
         if (updateError) throw updateError;
 

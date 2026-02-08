@@ -7,23 +7,17 @@ export async function GET(request: Request) {
         const { searchParams } = new URL(request.url);
         const agentFilter = searchParams.get('agent');
 
+        // Parse filters
+        const statusFilter = searchParams.get('status'); // 'confirmed', 'attempted', 'missed', 'pending'
+        const potentialFilter = searchParams.get('potential'); // 'high', 'medium', 'low'
+        const dateStart = searchParams.get('start');
+        const dateEnd = searchParams.get('end');
+
         // Verify manager authentication
         const { data: { user } } = await supabase.auth.getUser();
         if (!user) {
             return NextResponse.json({ message: 'Unauthorized' }, { status: 401 });
         }
-
-        const { data: profile } = await supabase
-            .from('profiles')
-            .select('role')
-            .eq('id', user.id)
-            .single();
-
-        if (!['manager', 'admin', 'founder'].includes(profile?.role || '')) {
-            return NextResponse.json({ message: 'Forbidden' }, { status: 403 });
-        }
-
-        // Build query
         let query = supabase
             .from('leads')
             .select(`
@@ -34,6 +28,7 @@ export async function GET(request: Request) {
                 appointment_date,
                 assigned_to,
                 processed_at,
+                status,
                 profiles!leads_assigned_to_fkey(
                     id,
                     full_name,
@@ -44,9 +39,21 @@ export async function GET(request: Request) {
             .or('appointment_date.not.is.null,status.eq.appointment')
             .order('appointment_date', { ascending: true });
 
-        // Apply filter if selected
+        // Apply filters
         if (agentFilter && agentFilter !== 'all') {
             query = query.eq('assigned_to', agentFilter);
+        }
+
+        if (potentialFilter && potentialFilter !== 'all') {
+            query = query.eq('potential_level', potentialFilter);
+        }
+
+        // Date Range Filter
+        if (dateStart) {
+            query = query.gte('appointment_date', dateStart);
+        }
+        if (dateEnd) {
+            query = query.lte('appointment_date', dateEnd);
         }
 
         const { data: leads, error } = await query;
@@ -59,6 +66,14 @@ export async function GET(request: Request) {
             .from('lead_notes')
             .select('lead_id, note, created_at')
             .in('lead_id', leadIds)
+            .order('created_at', { ascending: false });
+
+        // [NEW] Fetch activity logs for call verification
+        const { data: activities } = await supabase
+            .from('lead_activity_log')
+            .select('lead_id, action, created_at, metadata')
+            .in('lead_id', leadIds)
+            .in('action', ['call_recording', 'completed']) // We care about calls and completion
             .order('created_at', { ascending: false });
 
         // Transform data to match frontend interface
@@ -77,14 +92,13 @@ export async function GET(request: Request) {
 
                     const dateStr = match[1].trim();
                     // Format: "26 Ocak 2026 Pazartesi 13:19"
-                    // Split by space
                     const parts = dateStr.split(' ');
                     if (parts.length < 5) return null;
 
                     const day = parseInt(parts[0]);
                     const monthName = parts[1].toLowerCase();
                     const year = parseInt(parts[2]);
-                    const time = parts[4]; // Skip day name (parts[3])
+                    const time = parts[4];
                     const [hour, minute] = time.split(':').map(Number);
 
                     const months: Record<string, number> = {
@@ -102,7 +116,7 @@ export async function GET(request: Request) {
                 }
             };
 
-            // Fallback to parsed note date or processed_at if appointment_date is missing
+            // Fallback to parsed note date or processed_at
             const parsedDate = parseTurkishDate(noteText);
             const dateStr = lead.appointment_date || parsedDate || lead.processed_at || new Date().toISOString();
 
@@ -125,7 +139,44 @@ export async function GET(request: Request) {
                 timeUntil = `${diffDays} gün kaldı`;
             }
 
-            // Theme colors map (matching frontend)
+            // [NEW] Logic for Call Status
+            // Filter activities for this lead that happened ON or AFTER the appointment creation (roughly)
+            // Actually better: Check if there is ANY call log on the Appointment Day?
+            // Or just check if there is a call log created AFTER the appointment date?
+            // "Randevu Takibi" usually means "Did we call them at the appointment time?"
+
+            // Let's look for calls happening on the same day as the appointment
+            const leadCalls = activities?.filter(a => {
+                const actDate = new Date(a.created_at);
+                return a.lead_id === lead.id &&
+                    actDate.toDateString() === appDate.toDateString();
+            }) || [];
+
+            const callCount = leadCalls.length;
+            const hasCall = callCount > 0;
+            const lastCall = leadCalls[0]; // Most recent since ordered desc
+
+            let callStatus: 'confirmed' | 'attempted' | 'missed' | 'pending' = 'pending';
+
+            if (hasCall) {
+                // If we have activities, we assume it was attempted at least
+                // Check duration if available in metadata (future proofing)
+                const duration = lastCall.metadata?.duration || 0;
+                if (duration > 60 || lastCall.action === 'completed') {
+                    callStatus = 'confirmed';
+                } else {
+                    callStatus = 'attempted';
+                }
+            } else {
+                // No calls found
+                if (diffMs < -30 * 60 * 1000) { // If 30 mins passed since appointment time
+                    callStatus = 'missed';
+                } else {
+                    callStatus = 'pending';
+                }
+            }
+
+            // Theme colors map
             const colors: Record<string, { from: string, to: string }> = {
                 purple: { from: '#9333ea', to: '#4f46e5' },
                 blue: { from: '#2563eb', to: '#0891b2' },
@@ -135,11 +186,11 @@ export async function GET(request: Request) {
                 default: { from: '#9333ea', to: '#4f46e5' }
             };
 
-            const agentColor = colors[agent?.theme_color || 'purple'] || colors.default;
+            const agentColor = colors[(agent?.theme_color) || 'purple'] || colors.default;
 
             return {
                 id: lead.id,
-                appointment_date: dateStr, // Use the effective date
+                appointment_date: dateStr,
                 business_name: lead.business_name || 'İsimsiz İşletme',
                 phone_number: lead.phone_number,
                 potential_level: lead.potential_level || 'medium',
@@ -150,13 +201,24 @@ export async function GET(request: Request) {
                 is_urgent: lead.potential_level === 'high',
                 is_today: isToday,
                 time_until: timeUntil,
-                notes: noteText // Use the fetched note
+                notes: noteText,
+                status: lead.status, // Original lead status
+                call_status: callStatus, // Calculated call status
+                call_count: callCount,
+                last_call_at: lastCall?.created_at || null
             };
         }) || [];
 
+        // Apply Status Filter (Post-processing because status is calculated)
+        // statusFilter maps to 'callStatus'
+        let filteredAppointments = appointments;
+        if (statusFilter && statusFilter !== 'all') {
+            filteredAppointments = appointments.filter(apt => apt.call_status === statusFilter);
+        }
+
         return NextResponse.json({
             success: true,
-            appointments
+            appointments: filteredAppointments
         });
 
     } catch (error: any) {

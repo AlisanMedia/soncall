@@ -33,6 +33,7 @@ export default function LeadCard({ agentId, onLeadProcessed, refreshKey }: LeadC
     const [isAiProcessing, setIsAiProcessing] = useState(false);
     const [savedAudioUrl, setSavedAudioUrl] = useState<string | null>(null);
     const [aiAnalysis, setAiAnalysis] = useState<any>(null);
+    const [callCount, setCallCount] = useState(0);
 
     const supabase = createClient();
     const lastPlayedLeadId = useRef<string | null>(null);
@@ -40,6 +41,15 @@ export default function LeadCard({ agentId, onLeadProcessed, refreshKey }: LeadC
     // Clear AI analysis when lead changes
     useEffect(() => {
         setAiAnalysis(null);
+        if (currentLead?.id) {
+            // Fetch call count
+            supabase
+                .from('lead_activity_log')
+                .select('*', { count: 'exact', head: true })
+                .eq('lead_id', currentLead.id)
+                .in('action', ['call_recording', 'completed'])
+                .then(({ count }) => setCallCount(count || 0));
+        }
     }, [currentLead?.id]);
 
     // Load lead on mount - check localStorage first for persistence across page refreshes
@@ -55,7 +65,8 @@ export default function LeadCard({ agentId, onLeadProcessed, refreshKey }: LeadC
                         .select('*')
                         .eq('id', savedLeadId)
                         .eq('assigned_to', agentId)
-                        .eq('status', 'pending')
+                        // [CHANGED] Allow loading pending OR appointment status (for callback workflow)
+                        .in('status', ['pending', 'appointment'])
                         .single();
 
                     if (!error && savedLead) {
@@ -227,7 +238,8 @@ export default function LeadCard({ agentId, onLeadProcessed, refreshKey }: LeadC
                     status: actionTaken === 'appointment_scheduled' ? 'appointment' : 'contacted',
                     potentialLevel,
                     note,
-                    actionTaken: actionTaken || undefined, // Send undefined if empty
+                    actionTaken: actionTaken || undefined,
+                    appointmentDate: actionTaken === 'appointment_scheduled' ? appointmentDate : null,
                 }),
             });
 
@@ -342,7 +354,14 @@ export default function LeadCard({ agentId, onLeadProcessed, refreshKey }: LeadC
             {/* Header */}
             <div className="flex items-start justify-between">
                 <div>
-                    <h2 className="text-3xl font-bold text-white mb-2">{currentLead.business_name}</h2>
+                    <div className="flex items-center gap-3 mb-2">
+                        <h2 className="text-3xl font-bold text-white">{currentLead.business_name}</h2>
+                        {callCount > 0 && (
+                            <span className="px-3 py-1 bg-blue-500/20 text-blue-300 border border-blue-500/30 rounded-full text-sm font-bold animate-pulse">
+                                {callCount + 1}. ARAMA
+                            </span>
+                        )}
+                    </div>
                     <div className="flex items-center gap-2 text-purple-200">
                         <span className="px-3 py-1 bg-purple-500/30 rounded-full text-sm">
                             {currentLead.category || 'Kategori yok'}

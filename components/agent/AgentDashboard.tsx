@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { Profile } from '@/types';
-import { LogOut, MessageCircle, Settings, Phone, Target, List, DollarSign, UserPlus } from 'lucide-react';
+import { LogOut, MessageCircle, Settings, Phone, Target, List, DollarSign, UserPlus, Calendar } from 'lucide-react';
 import { GlowingEffect } from '@/components/ui/glowing-effect';
 import ManualLeadDialog from './ManualLeadDialog';
 import { createClient } from '@/lib/supabase/client';
@@ -10,15 +10,16 @@ import { useRouter } from 'next/navigation';
 import LeadCard from './LeadCard';
 import Leaderboard from './Leaderboard';
 import NotificationToast from './NotificationToast';
+import { GlobalMissionTimer } from './GlobalMissionTimer';
 import GamificationBar from './GamificationBar';
-import AgentTasks from './AgentTasks';
-import ChatPanel from '../chat/ChatPanel';
-import ChatNotificationBadge from '../chat/ChatNotificationBadge';
-import AgentSettings from './AgentSettings';
+import AgentSchedule from './AgentSchedule';
+import { ExpandableTabs } from '@/components/ui/expandable-tabs';
 import LeadHistoryView from './LeadHistoryView';
 import MySales from './MySales';
-import { ExpandableTabs } from '@/components/ui/expandable-tabs';
-import { BGPattern } from '@/components/ui/bg-pattern';
+import AgentSettings from './AgentSettings';
+import ChatNotificationBadge from '../chat/ChatNotificationBadge';
+import ChatPanel from '../chat/ChatPanel';
+import AgentTasks from './AgentTasks';
 
 const getRankColor = (rank?: string) => {
     switch (rank) {
@@ -54,7 +55,7 @@ interface Notification {
 
 export default function AgentDashboard({ profile: initialProfile }: AgentDashboardProps) {
     const [profile, setProfile] = useState<Profile>(initialProfile);
-    const [activeTab, setActiveTab] = useState<'work' | 'history' | 'sales' | 'settings'>('work');
+    const [activeTab, setActiveTab] = useState<'work' | 'history' | 'sales' | 'appointments' | 'settings'>('work');
     const [refreshKey, setRefreshKey] = useState(0);
     const [notifications, setNotifications] = useState<Notification[]>([]);
     const [chatOpen, setChatOpen] = useState(false);
@@ -232,72 +233,83 @@ export default function AgentDashboard({ profile: initialProfile }: AgentDashboa
                                     <p className="text-xs text-purple-200">Agent Panel</p>
                                 </div>
                             </div>
+                        </div>
 
-                            {/* Navigation Tabs - Integrated into header for easy access */}
-                            <div className="hidden sm:block">
-                                <ExpandableTabs
-                                    tabs={[
-                                        { title: "Çağrı", icon: Phone },
-                                        { title: "Geçmiş", icon: List },
-                                        { title: "Satışlarım", icon: DollarSign },
-                                        { type: "separator" },
-                                        { title: "Ayarlar", icon: Settings },
-                                    ]}
-                                    className="bg-black/20 border-white/5"
-                                    activeColor="text-purple-400 bg-purple-500/10"
-                                    defaultIndex={activeTab === 'work' ? 0 : activeTab === 'history' ? 1 : activeTab === 'sales' ? 2 : 4}
-                                    onChange={(index) => {
-                                        if (index === 0) setActiveTab('work');
-                                        if (index === 1) setActiveTab('history');
-                                        if (index === 2) setActiveTab('sales');
-                                        if (index === 4) setActiveTab('settings');
-                                    }}
-                                />
-                            </div>
+                        {/* Global Mission HUD - Always visible if critical */}
+                        <GlobalMissionTimer />
 
-                            {/* Manual Lead Button */}
+                        {/* Navigation Tabs - Integrated into header for easy access */}
+                        <div className="hidden sm:block">
+                            <ExpandableTabs
+                                tabs={[
+                                    { title: "Çağrı", icon: Phone },
+                                    { title: "Randevular", icon: Calendar },
+                                    { title: "Geçmiş", icon: List },
+                                    { title: "Satışlarım", icon: DollarSign },
+                                    { type: "separator" },
+                                    { title: "Ayarlar", icon: Settings },
+                                ]}
+                                className="bg-black/20 border-white/5"
+                                activeColor="text-purple-400 bg-purple-500/10"
+                                defaultIndex={activeTab === 'work' ? 0 : activeTab === 'appointments' ? 1 : activeTab === 'history' ? 2 : activeTab === 'sales' ? 3 : 5}
+                                onChange={(index) => {
+                                    if (index === 0) setActiveTab('work');
+                                    if (index === 1) setActiveTab('appointments');
+                                    if (index === 2) setActiveTab('history');
+                                    if (index === 3) setActiveTab('sales');
+                                    if (index === 5) setActiveTab('settings');
+                                }}
+                            />
+                        </div>
+
+                        {/* Manual Lead Button */}
+                        <button
+                            onClick={() => setManualLeadOpen(true)}
+                            className="hidden sm:flex items-center gap-2 px-4 py-2 btn-primary-gradient rounded-xl text-white text-sm font-semibold hover:scale-105 active:scale-95 transition-smooth"
+                            title="Yeni Müşteri Ekle"
+                        >
+                            <UserPlus className="w-4 h-4" />
+                            <span className="hidden lg:inline">Manuel Ekle</span>
+                        </button>
+                        {/* Mobile Fallback - Simplified */}
+                        <nav className="flex sm:hidden items-center gap-1 bg-black/20 p-1 rounded-lg border border-white/5">
+                            <button
+                                onClick={() => setActiveTab('work')}
+                                className={`p-2 rounded-md transition-all ${activeTab === 'work' ? 'bg-purple-600 text-white' : 'text-gray-300'}`}
+                            >
+                                <Phone className="w-5 h-5" />
+                            </button>
+                            <button
+                                onClick={() => setActiveTab('appointments')}
+                                className={`p-2 rounded-md transition-all ${activeTab === 'appointments' ? 'bg-purple-600 text-white' : 'text-gray-300'}`}
+                            >
+                                <Calendar className="w-5 h-5" />
+                            </button>
                             <button
                                 onClick={() => setManualLeadOpen(true)}
-                                className="hidden sm:flex items-center gap-2 px-4 py-2 btn-primary-gradient rounded-xl text-white text-sm font-semibold hover:scale-105 active:scale-95 transition-smooth"
-                                title="Yeni Müşteri Ekle"
+                                className="p-2 rounded-md text-purple-400 hover:bg-white/5 transition-all active:scale-95"
                             >
-                                <UserPlus className="w-4 h-4" />
-                                <span className="hidden lg:inline">Manuel Ekle</span>
+                                <UserPlus className="w-5 h-5" />
                             </button>
-                            {/* Mobile Fallback - Simplified */}
-                            <nav className="flex sm:hidden items-center gap-1 bg-black/20 p-1 rounded-lg border border-white/5">
-                                <button
-                                    onClick={() => setActiveTab('work')}
-                                    className={`p-2 rounded-md transition-all ${activeTab === 'work' ? 'bg-purple-600 text-white' : 'text-gray-300'}`}
-                                >
-                                    <Phone className="w-5 h-5" />
-                                </button>
-                                <button
-                                    onClick={() => setManualLeadOpen(true)}
-                                    className="p-2 rounded-md text-purple-400 hover:bg-white/5 transition-all active:scale-95"
-                                >
-                                    <UserPlus className="w-5 h-5" />
-                                </button>
-                                <button
-                                    onClick={() => setActiveTab('history')}
-                                    className={`p-2 rounded-md transition-all ${activeTab === 'history' ? 'bg-purple-600 text-white' : 'text-gray-300'}`}
-                                >
-                                    <List className="w-5 h-5" />
-                                </button>
-                                <button
-                                    onClick={() => setActiveTab('sales')}
-                                    className={`p-2 rounded-md transition-all ${activeTab === 'sales' ? 'bg-purple-600 text-white' : 'text-gray-300'}`}
-                                >
-                                    <DollarSign className="w-5 h-5" />
-                                </button>
-                                <button
-                                    onClick={() => setActiveTab('settings')}
-                                    className={`p-2 rounded-md transition-all ${activeTab === 'settings' ? 'bg-purple-600 text-white' : 'text-gray-300'}`}
-                                >
-                                    <Settings className="w-5 h-5" />
-                                </button>
-                            </nav>
-                        </div>
+                            <button
+                                onClick={() => setActiveTab('history')}
+                                className={`p-2 rounded-md transition-all ${activeTab === 'history' ? 'bg-purple-600 text-white' : 'text-gray-300'}`}
+                            >
+                                <List className="w-5 h-5" />
+                            </button>
+                            <button
+                                onClick={() => setActiveTab('sales')}
+                                className={`p-2 rounded-md transition-all ${activeTab === 'sales' ? 'bg-purple-600 text-white' : 'text-gray-300'}`}
+                            >
+                                <DollarSign className="w-5 h-5" />
+                            </button>
+                            <button
+                                onClick={() => setActiveTab('settings')}
+                                className={`p-2 rounded-md transition-all ${activeTab === 'settings' ? 'bg-purple-600 text-white' : 'text-gray-300'}`}
+                            >
+                                <Settings className="w-5 h-5" />
+                            </button>
+                        </nav>
 
                         {/* User Profile Info */}
                         <div className="flex items-center gap-3 flex-shrink-0">
@@ -333,15 +345,16 @@ export default function AgentDashboard({ profile: initialProfile }: AgentDashboa
                     </div>
                 </div>
             </header>
-
             {/* Notifications */}
-            {notifications.slice(0, 3).map((notification, index) => (
-                <NotificationToast
-                    key={notification.id}
-                    notification={notification}
-                    onClose={removeNotification}
-                />
-            ))}
+            {
+                notifications.slice(0, 3).map((notification, index) => (
+                    <NotificationToast
+                        key={notification.id}
+                        notification={notification}
+                        onClose={removeNotification}
+                    />
+                ))
+            }
 
             {/* Main Content */}
             <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-8">
@@ -380,6 +393,13 @@ export default function AgentDashboard({ profile: initialProfile }: AgentDashboa
                     </div>
                 </div>
 
+                {/* Appointments Tab [NEW] */}
+                {activeTab === 'appointments' && (
+                    <div className="animate-fade-in-up">
+                        <AgentSchedule agentId={profile.id} />
+                    </div>
+                )}
+
                 {/* History Tab */}
                 {activeTab === 'history' && <LeadHistoryView />}
 
@@ -391,17 +411,19 @@ export default function AgentDashboard({ profile: initialProfile }: AgentDashboa
             </main>
 
             {/* Floating Chat Button (Only show in Work tab) - Optimized for Mobile */}
-            {(activeTab === 'work' || activeTab === 'history') && (
-                <button
-                    onClick={() => setChatOpen(!chatOpen)}
-                    className="fixed bottom-6 right-6 z-40 bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 text-white w-14 h-14 md:w-16 md:h-16 rounded-full shadow-2xl transition-all hover:scale-110 active:scale-95 flex items-center justify-center safe-bottom safe-right touch-target-large"
-                    title="Open Chat"
-                    aria-label="Open Chat"
-                >
-                    <MessageCircle className="w-6 h-6 md:w-7 md:h-7" />
-                    <ChatNotificationBadge userId={profile.id} />
-                </button>
-            )}
+            {
+                (activeTab === 'work' || activeTab === 'history' || activeTab === 'appointments') && (
+                    <button
+                        onClick={() => setChatOpen(!chatOpen)}
+                        className="fixed bottom-6 right-6 z-40 bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 text-white w-14 h-14 md:w-16 md:h-16 rounded-full shadow-2xl transition-all hover:scale-110 active:scale-95 flex items-center justify-center safe-bottom safe-right touch-target-large"
+                        title="Open Chat"
+                        aria-label="Open Chat"
+                    >
+                        <MessageCircle className="w-6 h-6 md:w-7 md:h-7" />
+                        <ChatNotificationBadge userId={profile.id} />
+                    </button>
+                )
+            }
 
             {/* Chat Panel - Defaulting to Team Chat (Broadcast) so agents can talk to each other */}
 
@@ -418,6 +440,6 @@ export default function AgentDashboard({ profile: initialProfile }: AgentDashboa
                 onSuccess={handleManualLeadSuccess}
                 agentId={profile.id}
             />
-        </div>
+        </div >
     );
 }
