@@ -1,5 +1,7 @@
+
 import { createClient } from '@/lib/supabase/server';
 import { NextRequest, NextResponse } from 'next/server';
+import { createClient as createAdminClient } from '@supabase/supabase-js';
 
 export async function PATCH(
     request: NextRequest,
@@ -88,13 +90,32 @@ export async function PATCH(
 
         if (noteError) throw noteError;
 
-        // Log activity
-        await supabase.from('lead_activity_log').insert({
-            lead_id: id,
-            agent_id: user.id,
-            action: 'completed',
-            metadata: { status, potential_level: potentialLevel, action_taken: actionTaken },
-        });
+        // Log activity USING ADMIN CLIENT
+        try {
+            const adminClient = createAdminClient(
+                process.env.NEXT_PUBLIC_SUPABASE_URL!,
+                process.env.SUPABASE_SERVICE_ROLE_KEY!,
+                {
+                    auth: {
+                        autoRefreshToken: false,
+                        persistSession: false
+                    }
+                }
+            );
+
+            const { error: logError } = await adminClient.from('lead_activity_log').insert({
+                lead_id: id,
+                agent_id: user.id,
+                action: 'completed',
+                metadata: { status, potential_level: potentialLevel, action_taken: actionTaken },
+            });
+
+            if (logError) {
+                console.error('Failed to log activity via admin client:', logError);
+            }
+        } catch (logErr) {
+            console.error('Failed to init admin client for logging:', logErr);
+        }
 
         // GAMIFICATION 2.0: Award XP based on outcome
         const { awardXP } = await import('@/lib/gamification');

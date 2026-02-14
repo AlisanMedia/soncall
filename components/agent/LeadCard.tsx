@@ -140,11 +140,15 @@ export default function LeadCard({ agentId, onLeadProcessed, refreshKey }: LeadC
             if (lockError) throw lockError;
 
             // Log 'viewed' action for handle time tracking
-            await supabase.from('lead_activity_log').insert({
-                lead_id: lead.id,
-                agent_id: agentId,
-                action: 'viewed',
-                metadata: { source: 'agent_dashboard' }
+            // Log 'viewed' action via API to avoid RLS issues
+            await fetch('/api/agent/activity', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    lead_id: lead.id,
+                    action: 'viewed',
+                    metadata: { source: 'agent_dashboard' }
+                })
             });
 
             setCurrentLead(lead);
@@ -251,15 +255,21 @@ export default function LeadCard({ agentId, onLeadProcessed, refreshKey }: LeadC
 
             // Save call recording metadata if available
             if (savedAudioUrl) {
-                await supabase.from('lead_activity_log').insert({
-                    lead_id: currentLead.id,
-                    agent_id: agentId,
-                    action: 'call_recording',
-                    metadata: {
-                        recording_url: savedAudioUrl,
-                        source: 'agent_dashboard'
-                    }
-                });
+                if (savedAudioUrl) {
+                    // Log via API to avoid RLS issues
+                    await fetch('/api/agent/activity', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            lead_id: currentLead.id,
+                            action: 'call_recording',
+                            metadata: {
+                                recording_url: savedAudioUrl,
+                                source: 'agent_dashboard'
+                            }
+                        })
+                    });
+                }
             }
 
             // Clear saved lead from localStorage since it's been processed

@@ -207,7 +207,7 @@ export async function GET(request: Request) {
                 profiles: profileData || { full_name: 'Unknown Agent', avatar_url: null }, // Fallback
                 leads: leadData || { business_name: 'Unknown Lead', phone_number: '', lead_number: '', status: 'unknown', potential_level: 'not_assessed' }, // Fallback
                 note: relatedNote?.note || null,
-                action_taken: relatedNote?.action_taken || activity.metadata?.action || null,
+                action_taken: relatedNote?.action_taken || activity.metadata?.action_taken || activity.metadata?.action || null,
             };
         }) || [];
 
