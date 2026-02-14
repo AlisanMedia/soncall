@@ -162,6 +162,7 @@ export default function TeamMonitoring() {
 
             if (activitiesRes.ok) {
                 const data = await activitiesRes.json();
+                console.log('[TeamMonitoring] Initial Data:', data);
                 setActivities(data.activities || []);
                 setHasMore(true); // Reset hasMore on new search
             }
@@ -191,6 +192,7 @@ export default function TeamMonitoring() {
             const res = await fetch('/api/manager/activity?limit=20&offset=0');
             if (res.ok) {
                 const data = await res.json();
+                console.log('[TeamMonitoring] Latest Activities:', data);
                 const fetchedActivities = data.activities || [];
 
                 if (fetchedActivities.length === 0) return;
