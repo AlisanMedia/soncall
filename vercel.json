@@ -6,7 +6,7 @@
         },
         {
             "path": "/api/cron/reminders",
-            "schedule": "*/10 * * * *"
+            "schedule": "0 10 * * *"
         }
     ]
 }
