@@ -1,9 +1,21 @@
 
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
+import { createClient as createServerClient } from '@/lib/supabase/server';
 
 export async function POST(request: NextRequest) {
     try {
+        // Auth & Authorization check
+        const supabaseAuth = await createServerClient();
+        const { data: { user } } = await supabaseAuth.auth.getUser();
+        if (!user) {
+            return NextResponse.json({ success: false, error: 'Unauthorized' }, { status: 401 });
+        }
+        const { data: profile } = await supabaseAuth.from('profiles').select('role').eq('id', user.id).single();
+        if (!['manager', 'admin', 'founder'].includes(profile?.role || '')) {
+            return NextResponse.json({ success: false, error: 'Forbidden' }, { status: 403 });
+        }
+
         const username = process.env.VERIMOR_USERNAME;
         const password = process.env.VERIMOR_PASSWORD;
         const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;

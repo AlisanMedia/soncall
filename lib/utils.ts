@@ -36,26 +36,28 @@ export function formatTimeAgo(date: string): string {
 }
 
 export function normalizePhone(phone: string): string {
+    const clean = standardizePhone(phone);
+    return '+' + clean;
+}
+
+/**
+ * Standardizes phone numbers to the format used by the SMS provider and DB (905XXXXXXXXX).
+ * Removes all non-digit characters and ensures 90 prefix.
+ */
+export function standardizePhone(phone: string): string {
+    if (!phone) return '';
+
     // Remove all non-digit characters
     let clean = phone.replace(/\D/g, '');
 
-    // If it starts with 90, keep it
-    if (clean.startsWith('90') && clean.length === 12) {
-        return '+' + clean;
-    }
+    // Skip special cases or short numbers (not valid TR mobile anyway)
+    if (clean.length < 10) return clean;
 
-    // If it starts with 0, remove it and add +90
-    if (clean.startsWith('0') && clean.length === 11) {
-        return '+90' + clean.substring(1);
-    }
+    // Get last 10 digits
+    const last10 = clean.slice(-10);
 
-    // If it's 10 digits, add +90
-    if (clean.length === 10) {
-        return '+90' + clean;
-    }
-
-    // Otherwise return as is (maybe with + if it was there)
-    return phone.startsWith('+') ? phone : '+' + clean;
+    // Return in 90XXXXXXXXXX format
+    return '90' + last10;
 }
 
 export function generatePhoneVariants(phone: string): string[] {

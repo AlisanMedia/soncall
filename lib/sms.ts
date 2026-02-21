@@ -1,6 +1,6 @@
-import { normalizePhone } from './utils';
+import { normalizePhone, standardizePhone } from './utils';
 
-export async function sendSMS(phone: string, message: string, recipientName?: string) {
+export async function sendSMS(phone: string, message: string, recipientName?: string, triggerType: string = 'manual') {
     const username = process.env.VERIMOR_USERNAME;
     const password = process.env.VERIMOR_PASSWORD;
     const header = process.env.VERIMOR_HEADER;
@@ -11,11 +11,7 @@ export async function sendSMS(phone: string, message: string, recipientName?: st
     }
 
     // Standardize phone number for Verimor (905xxxxxxxxx)
-    // normalizePhone returns +905..., we need 905... (remove +)
-    let cleanPhone = normalizePhone(phone);
-    if (cleanPhone.startsWith('+')) {
-        cleanPhone = cleanPhone.substring(1);
-    }
+    let cleanPhone = standardizePhone(phone);
 
     // Fallback cleanup if normalizePhone wasn't used/failed
     cleanPhone = cleanPhone.replace(/[^0-9]/g, '');
@@ -52,7 +48,7 @@ export async function sendSMS(phone: string, message: string, recipientName?: st
         console.log(`[SMS] Sent to ${cleanPhone}. Response:`, responseText);
 
         // Log to Database (Async, don't block return)
-        logSmsToDb(username, password, cleanPhone, message, 'success', responseText, recipientName).catch(err =>
+        logSmsToDb(username, password, cleanPhone, message, 'success', responseText, recipientName, triggerType).catch(err =>
             console.error('[SMS] Failed to log success to DB:', err)
         );
 
@@ -62,7 +58,7 @@ export async function sendSMS(phone: string, message: string, recipientName?: st
         console.error('[SMS] Network/System Error:', e.message);
 
         // Log failure to Database
-        logSmsToDb(username, password, cleanPhone, message, 'failed', e.message, recipientName).catch(err =>
+        logSmsToDb(username, password, cleanPhone, message, 'failed', e.message, recipientName, triggerType).catch(err =>
             console.error('[SMS] Failed to log failure to DB:', err)
         );
 
@@ -77,7 +73,8 @@ async function logSmsToDb(
     message: string,
     status: 'success' | 'failed',
     providerResponse: string,
-    recipientName?: string
+    recipientName?: string,
+    triggerType: string = 'manual'
 ) {
     try {
         const { createClient } = require('@supabase/supabase-js');
@@ -98,8 +95,9 @@ async function logSmsToDb(
             recipient_name: recipientName || null,
             message_body: message,
             status: status,
+            direction: 'outbound',
             provider_response: providerResponse,
-            trigger_type: 'motivation' // Defaulting to motivation or generic for now, ideally passed in
+            trigger_type: triggerType
         });
 
     } catch (e) {

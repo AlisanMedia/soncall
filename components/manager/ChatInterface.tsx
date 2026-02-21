@@ -5,6 +5,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { Loader2, Send, Search, MessageSquare, Phone, User, CheckCheck, Clock, Sparkles, RefreshCw } from 'lucide-react';
 import { createClient } from '@/lib/supabase/client';
 import { toast } from 'sonner';
+import { standardizePhone } from '@/lib/utils';
 
 interface Contact {
     id: string;
@@ -48,14 +49,8 @@ export default function ChatInterface() {
         fetchContacts();
     }, []);
 
-    // Helper to normalize phone for matching SMS logs (must match lib/sms.ts logic)
-    const normalizeForMatching = (phone: string) => {
-        // Simple logic to match lib/sms.ts: 905xxxxxxxxx
-        let clean = phone.replace(/[^0-9]/g, '');
-        if (clean.startsWith('0')) clean = clean.substring(1);
-        if (!clean.startsWith('90')) clean = '90' + clean;
-        return clean;
-    };
+    // Use centralized standardizePhone instead of local normalization
+    const normalizeForMatching = (phone: string) => standardizePhone(phone);
 
     // Fetch messages when contact selected
     useEffect(() => {
@@ -213,6 +208,17 @@ export default function ChatInterface() {
         return new Date(dateStr).toLocaleTimeString('tr-TR', { hour: '2-digit', minute: '2-digit' });
     };
 
+    const [expandedMsgIds, setExpandedMsgIds] = useState<Set<string>>(new Set());
+
+    const toggleExpand = (id: string) => {
+        setExpandedMsgIds(prev => {
+            const next = new Set(prev);
+            if (next.has(id)) next.delete(id);
+            else next.add(id);
+            return next;
+        });
+    };
+
     // Auto-sync every 15 seconds to simulate real-time
     useEffect(() => {
         const interval = setInterval(() => {
@@ -229,7 +235,7 @@ export default function ChatInterface() {
                     })
                     .catch(e => console.error('Auto-sync failed', e));
             }
-        }, 15000); // 15 seconds
+        }, 30000); // Increased to 30 seconds to reduce load
 
         return () => clearInterval(interval);
     }, [selectedContact, isSyncing, sending]);
@@ -349,18 +355,30 @@ export default function ChatInterface() {
                                 </div>
                             ) : (
                                 messages.map((msg, index) => {
-                                    const isOutbound = msg.direction === 'outbound' || !msg.direction;
+                                    const isOutbound = msg.direction === 'outbound';
                                     const isSuccess = msg.status === 'success';
+                                    const lines = msg.message_body?.split('\n').filter(Boolean) || [];
+                                    const isExpanded = expandedMsgIds.has(msg.id);
+                                    const hasMultipleLines = lines.length > 1;
 
                                     return (
                                         <div key={msg.id} className={`flex mb-6 ${isOutbound ? 'justify-end' : 'justify-start'}`}>
-                                            <div className={`max-w-[65%] group relative ${isOutbound ? 'items-end' : 'items-start'} flex flex-col`}>
+                                            <div className={`max-w-[75%] group relative ${isOutbound ? 'items-end' : 'items-start'} flex flex-col`}>
 
-                                                <div className={`px-6 py-4 rounded-3xl text-[15px] leading-relaxed shadow-lg backdrop-blur-sm border transition-all duration-300 hover:scale-[1.01] ${isOutbound
-                                                    ? 'bg-gradient-to-br from-purple-600 to-indigo-600 text-white rounded-br-none border-purple-500/30 shadow-[0_4px_20px_rgba(124,58,237,0.25)] hover:shadow-[0_8px_25px_rgba(124,58,237,0.4)]'
-                                                    : 'bg-[#1e1e2d] text-gray-200 rounded-bl-none border-white/5 shadow-black/20 hover:bg-[#252535]'
-                                                    }`}>
-                                                    <p className="whitespace-pre-wrap font-light tracking-wide">{msg.message_body}</p>
+                                                <div
+                                                    onClick={() => hasMultipleLines && toggleExpand(msg.id)}
+                                                    className={`px-6 py-4 rounded-3xl text-[15px] leading-relaxed shadow-lg backdrop-blur-sm border transition-all duration-300 hover:scale-[1.01] ${hasMultipleLines ? 'cursor-pointer' : ''} ${isOutbound
+                                                        ? 'bg-gradient-to-br from-purple-600 to-indigo-600 text-white rounded-br-none border-purple-500/30 shadow-[0_4px_20px_rgba(124,58,237,0.25)] hover:shadow-[0_8px_25px_rgba(124,58,237,0.4)]'
+                                                        : 'bg-[#1e1e2d] text-gray-200 rounded-bl-none border-white/5 shadow-black/20 hover:bg-[#252535]'
+                                                        }`}>
+                                                    {hasMultipleLines && !isExpanded ? (
+                                                        <div className="flex items-center justify-between gap-4">
+                                                            <p className="font-light tracking-wide truncate">{lines[0]}</p>
+                                                            <span className="text-[10px] bg-white/10 px-2 py-0.5 rounded-full shrink-0">Devamı...</span>
+                                                        </div>
+                                                    ) : (
+                                                        <p className="whitespace-pre-wrap font-light tracking-wide">{msg.message_body}</p>
+                                                    )}
                                                 </div>
 
                                                 <div className={`flex items-center gap-1.5 mt-2 px-1 text-[11px] font-medium opacity-60 ${isOutbound ? 'text-purple-200' : 'text-gray-500'}`}>

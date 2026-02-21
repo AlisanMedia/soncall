@@ -187,7 +187,7 @@ export default function Contacts() {
 
                                 {contact.notes && (
                                     <div className="mt-3 pt-3 border-t border-white/5 text-xs text-gray-500 italic">
-                                        "{contact.notes}"
+                                        &ldquo;{contact.notes}&rdquo;
                                     </div>
                                 )}
                             </div>

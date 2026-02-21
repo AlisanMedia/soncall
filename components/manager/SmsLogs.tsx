@@ -3,7 +3,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { createClient } from '@/lib/supabase/client';
-import { Loader2, MessageSquare, Search, Phone, CheckCircle2, XCircle, Clock, Plus, Sparkles, Send, X, Users, MessageCircle } from 'lucide-react';
+import { Loader2, MessageSquare, Search, Phone, CheckCircle2, XCircle, Clock, Plus, Sparkles, Send, X, Users, MessageCircle, ChevronDown, ChevronUp } from 'lucide-react';
 import { GlassButton } from '@/components/ui/glass-button';
 import { SectionInfo } from '@/components/ui/section-info';
 import { toast } from 'sonner';
@@ -86,6 +86,7 @@ function LogsContent() {
     const [page, setPage] = useState(0);
     const [hasMore, setHasMore] = useState(true);
     const LIMIT = 50;
+    const [expandedLogId, setExpandedLogId] = useState<string | null>(null);
 
     // Send Message Modal State
     const [isModalOpen, setIsModalOpen] = useState(false);
@@ -139,6 +140,12 @@ function LogsContent() {
             }
 
             const { data, error } = await query;
+
+            if (error) {
+                console.error('SMS Logs error:', error);
+                toast.error('Loglar yüklenirken hata oluştu: ' + error.message);
+                return;
+            }
 
             if (data) {
                 if (reset) {
@@ -338,41 +345,83 @@ function LogsContent() {
                                     </td>
                                 </tr>
                             ) : (
-                                logs.map((log) => (
-                                    <tr key={log.id} className="hover:bg-white/5 transition-colors">
-                                        <td className="px-4 py-3 whitespace-nowrap">
-                                            <div className="flex items-center gap-2">
-                                                {getStatusIcon(log.status)}
-                                                <span className={`capitalize ${log.status === 'success' ? 'text-green-300' :
-                                                    log.status === 'failed' ? 'text-red-300' : 'text-yellow-300'
-                                                    }`}>
-                                                    {log.status === 'success' ? 'Başarılı' :
-                                                        log.status === 'failed' ? 'Hata' : 'Beklemede'}
-                                                </span>
-                                            </div>
-                                        </td>
-                                        <td className="px-4 py-3 whitespace-nowrap text-purple-300 font-mono text-xs">
-                                            {formatTime(log.created_at)}
-                                        </td>
-                                        <td className="px-4 py-3 whitespace-nowrap">
-                                            <div className="flex flex-col">
-                                                <span className="text-white font-medium text-sm">{log.recipient_name || '-'}</span>
-                                                <div className="flex items-center gap-1 text-xs text-gray-400">
-                                                    <Phone className="w-3 h-3" />
-                                                    <span>{log.sent_to}</span>
+                                logs.map((log) => {
+                                    const isExpanded = expandedLogId === log.id;
+                                    const lines = log.message_body?.split('\n').filter(Boolean) || [];
+                                    const title = lines[0] || log.message_body || '-';
+                                    const hasMore = lines.length > 1;
+
+                                    return (
+                                        <tr
+                                            key={log.id}
+                                            className={`hover:bg-white/5 transition-colors ${hasMore ? 'cursor-pointer' : ''}`}
+                                            onClick={() => hasMore && setExpandedLogId(isExpanded ? null : log.id)}
+                                        >
+                                            <td className="px-4 py-3 whitespace-nowrap">
+                                                <div className="flex items-center gap-2">
+                                                    {getStatusIcon(log.status)}
+                                                    <span className={`capitalize ${log.status === 'success' ? 'text-green-300' :
+                                                        log.status === 'failed' ? 'text-red-300' : 'text-yellow-300'
+                                                        }`}>
+                                                        {log.status === 'success' ? 'Başarılı' :
+                                                            log.status === 'failed' ? 'Hata' : 'Beklemede'}
+                                                    </span>
                                                 </div>
-                                            </div>
-                                        </td>
-                                        <td className="px-4 py-3 max-w-md truncate" title={log.message_body}>
-                                            {log.message_body}
-                                        </td>
-                                        <td className="px-4 py-3 whitespace-nowrap">
-                                            <span className="bg-purple-500/10 px-2 py-0.5 rounded text-purple-300 text-xs border border-purple-500/20">
-                                                {log.trigger_type || 'system'}
-                                            </span>
-                                        </td>
-                                    </tr>
-                                ))
+                                            </td>
+                                            <td className="px-4 py-3 whitespace-nowrap text-purple-300 font-mono text-xs">
+                                                {formatTime(log.created_at)}
+                                            </td>
+                                            <td className="px-4 py-3 whitespace-nowrap">
+                                                <div className="flex flex-col">
+                                                    <span className="text-white font-medium text-sm">{log.recipient_name || '-'}</span>
+                                                    <div className="flex items-center gap-1 text-xs text-gray-400">
+                                                        <Phone className="w-3 h-3" />
+                                                        <span>{log.sent_to}</span>
+                                                    </div>
+                                                </div>
+                                            </td>
+                                            <td className="px-4 py-3 max-w-md">
+                                                <div className="flex items-start gap-2">
+                                                    <div className="flex-1">
+                                                        <p className="text-white text-sm font-medium">{title}</p>
+                                                        {isExpanded && hasMore && (
+                                                            <p className="text-gray-400 text-sm mt-2 whitespace-pre-line border-t border-white/10 pt-2">
+                                                                {lines.slice(1).join('\n')}
+                                                            </p>
+                                                        )}
+                                                    </div>
+                                                    {hasMore && (
+                                                        <span className="text-purple-400 mt-0.5 shrink-0">
+                                                            {isExpanded
+                                                                ? <ChevronUp className="w-4 h-4" />
+                                                                : <ChevronDown className="w-4 h-4" />}
+                                                        </span>
+                                                    )}
+                                                </div>
+                                            </td>
+                                            <td className="px-4 py-3 whitespace-nowrap">
+                                                {(() => {
+                                                    const type = log.trigger_type || 'system';
+                                                    const colors: Record<string, string> = {
+                                                        sales: 'bg-green-500/10 text-green-300 border-green-500/20',
+                                                        motivation: 'bg-blue-500/10 text-blue-300 border-blue-500/20',
+                                                        manual: 'bg-purple-500/10 text-purple-300 border-purple-500/20',
+                                                        bulk: 'bg-orange-500/10 text-orange-300 border-orange-500/20',
+                                                        system: 'bg-gray-500/10 text-gray-400 border-gray-500/20',
+                                                        '5h_reminder': 'bg-yellow-500/10 text-yellow-300 border-yellow-500/20',
+                                                        '1h_reminder': 'bg-red-500/10 text-red-300 border-red-500/20'
+                                                    };
+                                                    const colorClass = colors[type] || colors.system;
+                                                    return (
+                                                        <span className={`${colorClass} px-2 py-0.5 rounded text-xs border capitalize`}>
+                                                            {type.replace('_', ' ')}
+                                                        </span>
+                                                    );
+                                                })()}
+                                            </td>
+                                        </tr>
+                                    );
+                                })
                             )}
                         </tbody>
                     </table>

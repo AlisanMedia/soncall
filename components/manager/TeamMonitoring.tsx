@@ -184,33 +184,42 @@ export default function TeamMonitoring() {
         }
     };
 
+    // Use ref to prevent partial closures / overlaps
+    const isPolling = useRef(false);
+
     const loadLatestActivities = async () => {
-        if (loading || loadingMore || searchTerm) return; // Don't auto-refresh during intensive operations or search
+        // Prevent multiple simultaneous polls
+        if (isPolling.current || searchTerm) return;
 
         try {
-            // Fetch only the very latest few to check for updates
+            isPolling.current = true;
+            // Fetch only the latest 20 to check for updates
             const res = await fetch('/api/manager/activity?limit=20&offset=0');
             if (res.ok) {
                 const data = await res.json();
-                console.log('[TeamMonitoring] Latest Activities:', data);
+                console.log('[TeamMonitoring] Polling Latest:', data.activities?.length || 0);
                 const fetchedActivities = data.activities || [];
 
-                if (fetchedActivities.length === 0) return;
+                if (fetchedActivities.length === 0) {
+                    isPolling.current = false;
+                    return;
+                }
 
                 setActivities(prev => {
                     const currentIds = new Set(prev.map(a => a.id));
                     const newItems = fetchedActivities.filter((a: ActivityItem) => !currentIds.has(a.id));
 
+                    console.log(`[TeamMonitoring Update] Logic -> Prev: ${prev.length}, Incoming: ${fetchedActivities.length}, New: ${newItems.length}`);
+
                     if (newItems.length > 0) {
                         playActivityNotification();
 
-                        // If user is scrolled down, just track count
                         if (isUserScrolled.current) {
                             setNewActivitiesCount(n => n + newItems.length);
                         }
 
+                        // Combine and keep mostly unique
                         const combined = [...newItems, ...prev];
-                        // Limit to 1000 items in memory to prevent performance issues
                         return combined.slice(0, 1000);
                     }
                     return prev;
@@ -231,6 +240,8 @@ export default function TeamMonitoring() {
 
         } catch (err) {
             console.error('Error refreshing data:', err);
+        } finally {
+            isPolling.current = false;
         }
     };
 
@@ -296,7 +307,9 @@ export default function TeamMonitoring() {
         if (!action) return <CheckCircle2 className="w-4 h-4" />;
         if (action.includes('whatsapp')) return <Sparkles className="w-4 h-4 text-green-400" />;
         if (action.includes('appointment') || action.includes('randevu')) return <Calendar className="w-4 h-4 text-purple-400" />;
-        return <Phone className="w-4 h-4 text-blue-400" />;
+        if (action.includes('call') || action.includes('arama')) return <Phone className="w-4 h-4 text-blue-400" />;
+        if (action.includes('view') || action.includes('goruntuleme')) return <Eye className="w-4 h-4 text-gray-400" />;
+        return <Activity className="w-4 h-4 text-gray-400" />; // Fallback
     };
 
     const getPotentialColor = (level: string) => {
@@ -327,13 +340,6 @@ export default function TeamMonitoring() {
         }
     };
 
-    if (loading) {
-        return (
-            <div className="flex items-center justify-center py-32">
-                <img src="/loading-logo.png" alt="Loading" className="w-20 h-10 animate-pulse object-contain" />
-            </div>
-        );
-    }
 
     return (
         <div className="space-y-6">
@@ -484,6 +490,12 @@ export default function TeamMonitoring() {
                         className="overflow-y-auto custom-scrollbar h-[600px] relative bg-black/20"
                     >
                         <div className="p-4 space-y-3">
+                            {loading && activities.length === 0 && (
+                                <div className="flex flex-col items-center justify-center py-20 space-y-4">
+                                    <Loader2 className="w-10 h-10 animate-spin text-purple-500" />
+                                    <p className="text-purple-300 text-sm animate-pulse">Aktiviteler Yükleniyor...</p>
+                                </div>
+                            )}
                             {activities.map((activity, index) => (
                                 <motion.div
                                     key={activity.id}
