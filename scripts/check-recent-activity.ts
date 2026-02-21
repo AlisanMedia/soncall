@@ -63,10 +63,11 @@ async function run() {
         console.error('Error fetching logs:', error);
     } else {
         console.log(`Found ${logs.length} recent logs:`);
-        logs.forEach(log => {
-            const agentName = log.profiles ? (Array.isArray(log.profiles) ? log.profiles[0].full_name : log.profiles.full_name) : 'Unknown';
+        (logs as any[]).forEach(log => {
+            const profiles = log.profiles;
+            const agentName = profiles ? (Array.isArray(profiles) ? profiles[0]?.full_name : (profiles as any).full_name) : 'Unknown';
             console.log(`[${new Date(log.created_at).toLocaleString()}] ${agentName} - ${log.action}`);
-            console.log(`   Metadata:`, JSON.stringify(log.metadata));
+            console.log(`   Metadata:`, JSON.stringify(log.metadata || {}));
         });
     }
 }
