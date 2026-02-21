@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect, useRef, useCallback } from 'react';
-import { Activity, Loader2, Phone, Sparkles, Calendar, CheckCircle2, Package, TrendingUp, Eye, Search, ArrowUp } from 'lucide-react';
+import { Activity, Loader2, Phone, Sparkles, Calendar, CheckCircle2, Package, TrendingUp, Eye, Search, ArrowUp, XCircle, Clock } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { playActivityNotification } from '@/lib/sounds';
 import { SectionInfo } from '@/components/ui/section-info';
@@ -86,6 +86,7 @@ export default function TeamMonitoring() {
     const [hasMore, setHasMore] = useState(true);
     const [searchTerm, setSearchTerm] = useState('');
     const [newActivitiesCount, setNewActivitiesCount] = useState(0);
+    const [error, setError] = useState<string | null>(null);
 
     // Refs for infinite scroll and scroll management
     const observerTarget = useRef<HTMLDivElement>(null);
@@ -152,6 +153,7 @@ export default function TeamMonitoring() {
     const loadInitialData = async () => {
         try {
             setLoading(true);
+            setError(null);
             const query = searchTerm ? `?limit=50&offset=0&search=${encodeURIComponent(searchTerm)}` : '?limit=50&offset=0';
 
             const [activitiesRes, batchesRes, overviewRes] = await Promise.all([
@@ -162,9 +164,13 @@ export default function TeamMonitoring() {
 
             if (activitiesRes.ok) {
                 const data = await activitiesRes.json();
-                console.log('[TeamMonitoring] Initial Data:', data);
+                console.log('[TeamMonitoring] Initial Data Success:', data);
                 setActivities(data.activities || []);
-                setHasMore(true); // Reset hasMore on new search
+                setHasMore(true);
+            } else {
+                const errData = await activitiesRes.json().catch(() => ({}));
+                console.error('[TeamMonitoring] API Error:', activitiesRes.status, errData);
+                setError(errData.message || 'Aktiviteler yüklenirken bir hata oluştu.');
             }
 
             if (batchesRes.ok) {
@@ -178,7 +184,8 @@ export default function TeamMonitoring() {
                 setAgentStats(data.agent_stats || []);
             }
         } catch (err) {
-            console.error('Team monitoring load error:', err);
+            console.error('[TeamMonitoring] Load Error:', err);
+            setError('Sunucuya bağlanırken bir sorun oluştu.');
         } finally {
             setLoading(false);
         }
@@ -582,7 +589,20 @@ export default function TeamMonitoring() {
                                 )}
                             </div>
 
-                            {activities.length === 0 && !loading && (
+                            {error && (
+                                <div className="text-center py-10 bg-red-500/10 rounded-xl border border-red-500/20 m-4">
+                                    <XCircle className="w-10 h-10 text-red-500 mx-auto mb-3" />
+                                    <p className="text-red-300 font-medium">{error}</p>
+                                    <button
+                                        onClick={() => loadInitialData()}
+                                        className="mt-4 px-4 py-2 bg-red-500/20 hover:bg-red-500/30 text-red-200 rounded-lg text-sm transition-all"
+                                    >
+                                        Tekrar Dene
+                                    </button>
+                                </div>
+                            )}
+
+                            {activities.length === 0 && !loading && !error && (
                                 <div className="text-center py-20 bg-white/5 rounded-xl border border-dashed border-white/10">
                                     <Activity className="w-12 h-12 text-gray-600 mx-auto mb-4" />
                                     <p className="text-gray-400 font-medium">Henüz bir aktivite kaydı bulunmuyor.</p>

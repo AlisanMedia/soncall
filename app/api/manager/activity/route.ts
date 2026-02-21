@@ -6,24 +6,29 @@ export async function GET(request: Request) {
     console.log('[ActivityAPI] ========== REQUEST START ==========');
     try {
         const supabase = await createClient();
+
+        // Auth check
+        const { data: { user } } = await supabase.auth.getUser();
+        if (!user) return NextResponse.json({ message: 'Unauthorized' }, { status: 401 });
+
+        // Admin client specifically for bypassing potential RLS or fetching cross-table stats if needed
+        // but try to use standard supabase client first for production safety
         const adminClient = createAdminClient(
             process.env.NEXT_PUBLIC_SUPABASE_URL!,
             process.env.SUPABASE_SERVICE_ROLE_KEY!,
             { auth: { autoRefreshToken: false, persistSession: false } }
         );
 
-        const { data: { user } } = await supabase.auth.getUser();
-        if (!user) return NextResponse.json({ message: 'Unauthorized' }, { status: 401 });
-
-        const { data: profile } = await adminClient
+        // Verify role using adminClient to ensure we see the profile
+        const { data: profile, error: profileError } = await adminClient
             .from('profiles')
             .select('role')
             .eq('id', user.id)
             .single();
 
-        if (!['manager', 'admin', 'founder'].includes(profile?.role || '')) {
-            console.log('[ActivityAPI] Forbidden role:', profile?.role);
-            return NextResponse.json({ message: 'Forbidden' }, { status: 403 });
+        if (profileError || !['manager', 'admin', 'founder'].includes(profile?.role || '')) {
+            console.log('[ActivityAPI] Access denied. Role:', profile?.role, 'Error:', profileError);
+            return NextResponse.json({ message: 'Forbidden', role: profile?.role }, { status: 403 });
         }
 
         const { searchParams } = new URL(request.url);
@@ -33,7 +38,8 @@ export async function GET(request: Request) {
 
         console.log(`[ActivityAPI] Fetching limit=${limit} offset=${offset} search=${search}`);
 
-        // Base Query with JOINs - Efficient range-based fetch
+        // Base Query - Selective fields to avoid overhead
+        // Use adminClient here since managers need to see ALL agent activities
         let query = adminClient
             .from('lead_activity_log')
             .select(`
@@ -43,96 +49,96 @@ export async function GET(request: Request) {
                 metadata,
                 agent_id,
                 lead_id,
-                profiles (full_name, avatar_url),
-                leads (business_name, phone_number, lead_number, status, potential_level)
-            `)
+                profiles:agent_id (full_name, avatar_url),
+                leads:lead_id (business_name, phone_number, lead_number, status, potential_level)
+            `, { count: 'exact' })
             .order('created_at', { ascending: false });
 
+        // Search logic
         if (search) {
-            let targetLeadIds: string[] = [];
             const cleanSearch = search.replace(/^(sc-?|#)/i, '');
             const isNumberSearch = /^\d+$/.test(cleanSearch);
 
             if (isNumberSearch) {
-                const { data: numLeads } = await adminClient.from('leads').select('id').eq('lead_number', parseInt(cleanSearch));
-                if (numLeads) targetLeadIds.push(...numLeads.map(l => l.id));
-            }
-
-            const { data: agentIds } = await adminClient.from('profiles').select('id').ilike('full_name', `%${search}%`);
-            const { data: textLeads } = await adminClient.from('leads').select('id').or(`business_name.ilike.%${search}%,phone_number.ilike.%${search}%`);
-            if (textLeads) targetLeadIds.push(...textLeads.map(l => l.id));
-
-            const targetAgentIds = agentIds?.map(a => a.id) || [];
-            targetLeadIds = [...new Set(targetLeadIds)];
-
-            if (targetAgentIds.length > 0 || targetLeadIds.length > 0) {
-                const orConditions: string[] = [];
-                if (targetAgentIds.length > 0) orConditions.push(`agent_id.in.(${targetAgentIds.join(',')})`);
-                if (targetLeadIds.length > 0) orConditions.push(`lead_id.in.(${targetLeadIds.join(',')})`);
-                query = query.or(orConditions.join(','));
+                const { data: leadsByNum } = await adminClient.from('leads').select('id').eq('lead_number', parseInt(cleanSearch));
+                const leadIds = leadsByNum?.map(l => l.id) || [];
+                if (leadIds.length > 0) query = query.in('lead_id', leadIds);
             } else {
-                return NextResponse.json({ activities: [] });
+                const { data: agentsByName } = await adminClient.from('profiles').select('id').ilike('full_name', `%${search}%`);
+                const { data: leadsByName } = await adminClient.from('leads').select('id').or(`business_name.ilike.%${search}%,phone_number.ilike.%${search}%`);
+
+                const agentIds = agentsByName?.map(a => a.id) || [];
+                const leadIds = leadsByName?.map(l => l.id) || [];
+
+                if (agentIds.length > 0 || leadIds.length > 0) {
+                    const conditions = [];
+                    if (agentIds.length > 0) conditions.push(`agent_id.in.(${agentIds.join(',')})`);
+                    if (leadIds.length > 0) conditions.push(`lead_id.in.(${leadIds.join(',')})`);
+                    query = query.or(conditions.join(','));
+                } else {
+                    return NextResponse.json({ activities: [], count: 0 });
+                }
             }
         }
 
-        const { data: rawActivities, error: activitiesError } = await query.range(offset, offset + limit - 1);
-        if (activitiesError) throw activitiesError;
+        const { data: rawActivities, error: activitiesError, count } = await query.range(offset, offset + limit - 1);
 
-        if (!rawActivities || rawActivities.length === 0) return NextResponse.json({ activities: [] });
-
-        // Fetch notes only for the business days/agents present in the current page
-        const leadIds = rawActivities.map(a => a.lead_id).filter(id => id);
-        let notes: any[] = [];
-        if (leadIds.length > 0) {
-            const { data: fetchedNotes } = await adminClient
-                .from('lead_notes')
-                .select('lead_id, note, action_taken, created_at, agent_id')
-                .in('lead_id', leadIds)
-                .order('created_at', { ascending: false })
-                .limit(200); // Reasonable limit for notes in one page
-            if (fetchedNotes) notes = fetchedNotes;
+        if (activitiesError) {
+            console.error('[ActivityAPI] Query Error:', activitiesError);
+            throw activitiesError;
         }
 
-        // Map notes to a lead_id based structure for faster lookup
+        if (!rawActivities || rawActivities.length === 0) {
+            console.log('[ActivityAPI] No activities found for this query');
+            return NextResponse.json({ activities: [], count: 0 });
+        }
+
+        // Fetch notes for enrichment
+        const leadIds = rawActivities.map(a => a.lead_id).filter(Boolean);
+        const { data: notes } = await adminClient
+            .from('lead_notes')
+            .select('lead_id, note, action_taken, created_at, agent_id')
+            .in('lead_id', leadIds)
+            .order('created_at', { ascending: false })
+            .limit(200);
+
         const notesMap = new Map();
-        notes.forEach(note => {
-            if (!notesMap.has(note.lead_id)) notesMap.set(note.lead_id, []);
-            notesMap.get(note.lead_id).push(note);
+        (notes || []).forEach(n => {
+            if (!notesMap.has(n.lead_id)) notesMap.set(n.lead_id, []);
+            notesMap.get(n.lead_id).push(n);
         });
 
-        const enrichedActivities = rawActivities.map(activity => {
-            const profileData = Array.isArray(activity.profiles) ? activity.profiles[0] : activity.profiles;
-            const leadData = Array.isArray(activity.leads) ? activity.leads[0] : activity.leads;
+        // Mapping and Enrichment
+        const activities = rawActivities.map((act: any) => {
+            // Handle Supabase join object vs array inconsistency
+            const profile = Array.isArray(act.profiles) ? act.profiles[0] : act.profiles;
+            const lead = Array.isArray(act.leads) ? act.leads[0] : act.leads;
 
-            // Optimization: Filter notes only for this lead and agent
-            const leadNotes = notesMap.get(activity.lead_id) || [];
-            const relatedNote = leadNotes.find((n: any) =>
-                n.agent_id === activity.agent_id &&
-                Math.abs(new Date(n.created_at).getTime() - new Date(activity.created_at).getTime()) < 60000
+            // Find related note within 2 minutes of the log
+            const leadNotes = notesMap.get(act.lead_id) || [];
+            const matchingNote = leadNotes.find((n: any) =>
+                n.agent_id === act.agent_id &&
+                Math.abs(new Date(n.created_at).getTime() - new Date(act.created_at).getTime()) < 120000
             );
 
             return {
-                ...activity,
-                profiles: profileData || { full_name: 'Unknown Agent', avatar_url: null },
-                leads: leadData || { business_name: 'Unknown Lead', phone_number: '', lead_number: '', status: 'unknown', potential_level: 'not_assessed' },
-                note: relatedNote?.note || null,
-                action_taken: relatedNote?.action_taken || activity.metadata?.action_taken || activity.action || 'unknown',
+                ...act,
+                profiles: profile || { full_name: 'Sistem', avatar_url: null },
+                leads: lead || { business_name: 'Bilinmeyen Müşteri' },
+                note: matchingNote?.note || act.metadata?.note || null,
+                action_taken: matchingNote?.action_taken || act.metadata?.action_taken || act.action
             };
         });
 
-        // Unique check
-        const uniqueActivities = enrichedActivities.filter((activity, index, self) =>
-            index === self.findIndex((a) => a.id === activity.id)
-        );
+        console.log(`[ActivityAPI] Returning ${activities.length} rows. Total count: ${count}`);
+        return NextResponse.json({ activities, totalCount: count });
 
-        console.log(`[ActivityAPI] Success. Returned ${uniqueActivities.length} activities.`);
-        return NextResponse.json({ activities: uniqueActivities });
-
-    } catch (error: any) {
-        console.error('[ActivityAPI] CRASH:', error.message);
-        return NextResponse.json(
-            { message: error.message || 'Failed to fetch activities', error: error.toString() },
-            { status: 500 }
-        );
+    } catch (err: any) {
+        console.error('[ActivityAPI] Critical Failure:', err);
+        return NextResponse.json({
+            message: 'Internal Server Error',
+            details: err.message,
+            stack: process.env.NODE_ENV === 'development' ? err.stack : undefined
+        }, { status: 500 });
     }
 }
