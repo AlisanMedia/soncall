@@ -45,8 +45,8 @@ export async function GET(request: Request) {
                 metadata,
                 agent_id,
                 lead_id,
-                profiles (full_name, avatar_url),
-                leads (business_name, phone_number, lead_number, status, potential_level)
+                profiles:agent_id (full_name, avatar_url),
+                leads:lead_id (business_name, phone_number, lead_number, status, potential_level)
             `)
             .order('created_at', { ascending: false });
 
