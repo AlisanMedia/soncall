@@ -11,6 +11,8 @@ interface ActivityItem {
     lead_id: string;
     note: string | null;
     action_taken: string | null;
+    ai_summary?: string | null;
+    ai_score?: number | null;
     profiles?: {
         full_name: string;
         avatar_url?: string;
@@ -151,6 +153,32 @@ export default function ActivityDetailModal({ isOpen, onClose, activity }: Activ
                                 </div>
                             </div>
                         </div>
+
+                        {/* AI Analysis (New) */}
+                        {(activity.ai_summary || activity.ai_score) && (
+                            <motion.div
+                                initial={{ opacity: 0, y: 10 }}
+                                animate={{ opacity: 1, y: 0 }}
+                                className="bg-gradient-to-br from-indigo-500/10 to-purple-500/10 rounded-xl p-4 border border-purple-500/20"
+                            >
+                                <h4 className="text-xs text-indigo-300 uppercase mb-3 font-semibold tracking-wider flex items-center justify-between">
+                                    <div className="flex items-center gap-2">
+                                        <Sparkles className="w-3 h-3" />
+                                        AI Analiz Detayları
+                                    </div>
+                                    {activity.ai_score && (
+                                        <span className="bg-indigo-500/20 text-indigo-300 px-2 py-0.5 rounded-full border border-indigo-500/30 font-mono">
+                                            Skor: {activity.ai_score}/10
+                                        </span>
+                                    )}
+                                </h4>
+                                {activity.ai_summary && (
+                                    <p className="text-sm text-indigo-100 leading-relaxed italic">
+                                        "{activity.ai_summary}"
+                                    </p>
+                                )}
+                            </motion.div>
+                        )}
                     </div>
 
                     {/* Footer */}

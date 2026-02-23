@@ -45,6 +45,8 @@ export async function GET(request: Request) {
                 metadata,
                 agent_id,
                 lead_id,
+                ai_summary,
+                ai_score,
                 profiles:agent_id (full_name, avatar_url),
                 leads:lead_id (business_name, phone_number, lead_number, status, potential_level)
             `)

@@ -21,6 +21,8 @@ interface ActivityItem {
     lead_id: string;
     note: string | null;
     action_taken: string | null;
+    ai_summary?: string | null;
+    ai_score?: number | null;
     profiles?: {
         full_name: string;
         avatar_url?: string;

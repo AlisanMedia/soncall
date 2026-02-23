@@ -56,3 +56,13 @@ export const getRankInfo = (lvl: number): RankInfo => {
         border: 'border-purple-500/30'
     };
 };
+
+/**
+ * Triggers a global celebration event (confetti, sounds, etc)
+ */
+export const triggerCelebration = (type: 'level_up' | 'achievement' = 'level_up') => {
+    if (typeof window !== 'undefined') {
+        const event = new CustomEvent('artific-celebration', { detail: { type } });
+        window.dispatchEvent(event);
+    }
+};

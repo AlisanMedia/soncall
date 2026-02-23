@@ -86,10 +86,8 @@ export async function POST(request: NextRequest) {
                 console.error('❌ [Enrichment] Google Search failed:', err);
             }
         } else {
-            // STRICT MODE: No keys = Error
-            return NextResponse.json({
-                error: 'Google API Key eksik! Lütfen sistem yöneticisiyle iletişime geçin. (Strict Mode A)'
-            }, { status: 500 });
+            console.warn('⚠️ [Enrichment] Google Search API keys missing. Proceeding with limited results.');
+            searchSource = 'no_keys_fallback';
         }
 
         // 2. Website Scraping (If website found)

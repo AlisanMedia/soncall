@@ -354,6 +354,20 @@ export async function POST(request: NextRequest) {
             duration_seconds: 0
         });
 
+        // D) Log to Activity Feed (Explicitly with AI details)
+        await supabase.from('lead_activity_log').insert({
+            lead_id: leadId,
+            agent_id: user.id,
+            action: 'call_analyzed',
+            metadata: {
+                summary: analysis.summary,
+                potential_level: analysis.potential_level,
+                sentiment_score: analysis.sentiment_score
+            },
+            ai_summary: analysis.summary,
+            ai_score: analysis.sentiment_score
+        });
+
         console.log('🎉 [AI Analysis] Process complete for lead:', leadId);
 
         return NextResponse.json({

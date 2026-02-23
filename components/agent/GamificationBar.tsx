@@ -51,6 +51,15 @@ export default function GamificationBar({ agentId }: { agentId: string }) {
                     },
                     (payload) => {
                         console.log('Realtime XP Update:', payload.new);
+
+                        // Detect Level Up
+                        const oldLevel = (payload.old as any)?.current_level;
+                        const newLevel = (payload.new as any)?.current_level;
+
+                        if (newLevel > oldLevel) {
+                            import('@/lib/gamification-utils').then(m => m.triggerCelebration('level_up'));
+                        }
+
                         setProgress(payload.new as any);
                     }
                 )

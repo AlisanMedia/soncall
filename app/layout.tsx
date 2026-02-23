@@ -36,6 +36,8 @@ export const metadata: Metadata = {
   },
 };
 
+import ErrorToast from "@/components/ui/ErrorToast";
+
 export default function RootLayout({
   children,
 }: Readonly<{
@@ -48,6 +50,7 @@ export default function RootLayout({
       >
         {children}
         <Toaster richColors position="top-center" theme="dark" />
+        <ErrorToast />
       </body>
     </html>
   );
