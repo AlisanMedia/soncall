@@ -191,7 +191,7 @@ export default function ChatInterface() {
 
     const handleAICorrect = async () => {
         const text = messageText.trim();
-        if (!text || isCorrecting) return;
+        if (!text || isCorrecting) return null;
 
         setIsCorrecting(true);
         setSuggestedText(null);
@@ -206,16 +206,18 @@ export default function ChatInterface() {
             });
             const data = await res.json();
             if (data.message) {
-                setSuggestedText(data.message);
-                toast.success('Düzeltme önerisi hazır ✨');
+                // Return the text directly instead of just setting suggestedText
+                setHasBeenChecked(true);
+                return data.message;
             } else {
-                toast.error('Düzeltme önerisi alınamadı');
+                toast.error('Düzeltme hizmeti şu an yoğun, lütfen tekrar deneyin.');
+                return null;
             }
         } catch (error) {
             toast.error('AI servisine erişilemedi');
+            return null;
         } finally {
             setIsCorrecting(false);
-            setHasBeenChecked(true);
         }
     };
 
@@ -226,26 +228,21 @@ export default function ChatInterface() {
         }
     };
 
-    const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    const handleKeyDown = async (e: React.KeyboardEvent<HTMLInputElement>) => {
         if (e.key === 'Enter' && !e.shiftKey) {
             e.preventDefault();
 
-            // Case 1: Suggestion is visible -> Apply and Send
-            if (suggestedText) {
-                const finalContent = suggestedText;
-                setSuggestedText(null);
-                setMessageText(finalContent);
-                handleSendMessage(undefined, finalContent);
+            // Step 1: Handle correction if not checked
+            if (!hasBeenChecked && messageText.trim()) {
+                const corrected = await handleAICorrect();
+                if (corrected) {
+                    setMessageText(corrected);
+                    // Don't send yet, wait for second Enter
+                }
                 return;
             }
 
-            // Case 2: Not checked yet -> AI Correct
-            if (!hasBeenChecked) {
-                handleAICorrect();
-                return;
-            }
-
-            // Case 3: Already checked or ignored -> Send
+            // Step 2: Second Enter (or already checked) -> Send
             handleSendMessage();
         }
     };
@@ -454,42 +451,7 @@ export default function ChatInterface() {
                         <div className="p-6 border-t border-white/5 bg-[#12121e]/50 backdrop-blur-md z-20">
                             <form onSubmit={(e) => handleSendMessage(e)} className="flex gap-4 items-center relative">
                                 <div className="flex-1 relative group">
-                                    {suggestedText && (
-                                        <div className="absolute bottom-full left-0 right-0 mb-3 animate-in fade-in slide-in-from-bottom-2 duration-300">
-                                            <div className="bg-purple-900/40 backdrop-blur-md border border-purple-500/30 rounded-2xl p-4 shadow-2xl flex flex-col gap-3">
-                                                <div className="flex items-center justify-between">
-                                                    <span className="text-[10px] uppercase tracking-widest text-purple-300 font-bold flex items-center gap-2">
-                                                        <Sparkles className="w-3 h-3" />
-                                                        AI Düzeltme Önerisi
-                                                    </span>
-                                                    <button
-                                                        type="button"
-                                                        onClick={() => setSuggestedText(null)}
-                                                        className="text-gray-400 hover:text-white transition-colors"
-                                                    >
-                                                        <RefreshCw className="w-3 h-3" />
-                                                    </button>
-                                                </div>
-                                                <p className="text-sm text-gray-200 italic leading-relaxed">"{suggestedText}"</p>
-                                                <div className="flex gap-2">
-                                                    <button
-                                                        type="button"
-                                                        onClick={applySuggestion}
-                                                        className="flex-1 bg-purple-600 hover:bg-purple-500 text-white text-xs font-bold py-2 rounded-xl transition-all"
-                                                    >
-                                                        Uygula
-                                                    </button>
-                                                    <button
-                                                        type="button"
-                                                        onClick={() => setSuggestedText(null)}
-                                                        className="px-4 bg-white/5 hover:bg-white/10 text-gray-400 text-xs py-2 rounded-xl transition-all"
-                                                    >
-                                                        Yoksay
-                                                    </button>
-                                                </div>
-                                            </div>
-                                        </div>
-                                    )}
+                                    {/* AI Suggestion UI removed per user request for "direct" correction */}
                                     <input
                                         type="text"
                                         placeholder="Bir şeyler yazın..."
