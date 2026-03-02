@@ -39,11 +39,6 @@ export async function sendSMS(phone: string, message: string, recipientName?: st
 
         const responseText = await response.text();
 
-        // Log to file immediately for debugging
-        const fs = require('fs');
-        const logEntry = `\n[${new Date().toISOString()}] To: ${cleanPhone} | Status: ${response.status} | Msg: ${message} | Response: ${responseText}\n`;
-        fs.appendFileSync('verimor_debug_log.txt', logEntry);
-
         if (!response.ok) {
             console.error(`[SMS] Verimor API Error (${response.status}):`, responseText);
 
@@ -62,13 +57,6 @@ export async function sendSMS(phone: string, message: string, recipientName?: st
     } catch (e: any) {
         const errorMsg = `[NETWORK/SYSTEM ERROR]: ${e.message}`;
         console.error('[SMS]', errorMsg);
-
-        // Log to file even on network error
-        try {
-            const fs = require('fs');
-            const logEntry = `\n[${new Date().toISOString()}] To: ${phone} | ERROR: ${errorMsg}\n`;
-            fs.appendFileSync('verimor_debug_log.txt', logEntry);
-        } catch (logErr) { }
 
         // Log failure to Database
         await logSmsToDb(cleanPhone, message, 'failed', e.message, recipientName, triggerType);

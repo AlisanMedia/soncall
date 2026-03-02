@@ -449,7 +449,7 @@ export default function ChatInterface() {
 
                         {/* Input Area */}
                         <div className="p-6 border-t border-white/5 bg-[#12121e]/50 backdrop-blur-md z-20">
-                            <form onSubmit={(e) => handleSendMessage(e)} className="flex gap-4 items-center relative">
+                            <div className="flex gap-4 items-center relative">
                                 <div className="flex-1 relative group">
                                     {/* AI Suggestion UI removed per user request for "direct" correction */}
                                     <input
@@ -477,13 +477,14 @@ export default function ChatInterface() {
                                 </div>
 
                                 <button
-                                    type="submit"
+                                    type="button"
+                                    onClick={() => handleSendMessage()}
                                     disabled={sending || !messageText.trim()}
                                     className="w-14 h-14 rounded-2xl flex items-center justify-center text-white shadow-lg transition-all duration-300 hover:scale-105 active:scale-95 disabled:opacity-50 disabled:scale-100 bg-gradient-to-br from-purple-600 to-indigo-600 shadow-purple-600/30 hover:shadow-purple-600/50"
                                 >
                                     {sending ? <Loader2 className="w-6 h-6 animate-spin" /> : <Send className="w-5 h-5 ml-0.5" />}
                                 </button>
-                            </form>
+                            </div>
 
                             <div className="text-center mt-3 text-[10px] text-gray-600">
                                 <span>Enter: Gönder</span> • <span>Shift + Enter: Yeni Satır</span>
