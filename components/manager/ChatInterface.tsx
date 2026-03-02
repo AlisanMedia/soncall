@@ -40,6 +40,7 @@ export default function ChatInterface() {
     // AI Correction State
     const [isCorrecting, setIsCorrecting] = useState(false);
     const [suggestedText, setSuggestedText] = useState<string | null>(null);
+    const [hasBeenChecked, setHasBeenChecked] = useState(false);
     const messagesEndRef = useRef<HTMLDivElement>(null);
     const supabase = createClient();
 
@@ -124,10 +125,10 @@ export default function ChatInterface() {
         }
     };
 
-    const handleSendMessage = async (e?: React.FormEvent) => {
+    const handleSendMessage = async (e?: React.FormEvent, overrideText?: string) => {
         console.log('handleSendMessage triggered');
         if (e) e.preventDefault();
-        const content = messageText.trim();
+        const content = (overrideText || messageText).trim();
         if (!content || !selectedContact) {
             console.log('Missing content or selection', { content, selectedContact });
             return;
@@ -184,6 +185,7 @@ export default function ChatInterface() {
             toast.error('Gönderim hatası: Sistemsel bir sorun oluştu');
         } finally {
             setSending(false);
+            setHasBeenChecked(false);
         }
     };
 
@@ -213,6 +215,7 @@ export default function ChatInterface() {
             toast.error('AI servisine erişilemedi');
         } finally {
             setIsCorrecting(false);
+            setHasBeenChecked(true);
         }
     };
 
@@ -226,6 +229,23 @@ export default function ChatInterface() {
     const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
         if (e.key === 'Enter' && !e.shiftKey) {
             e.preventDefault();
+
+            // Case 1: Suggestion is visible -> Apply and Send
+            if (suggestedText) {
+                const finalContent = suggestedText;
+                setSuggestedText(null);
+                setMessageText(finalContent);
+                handleSendMessage(undefined, finalContent);
+                return;
+            }
+
+            // Case 2: Not checked yet -> AI Correct
+            if (!hasBeenChecked) {
+                handleAICorrect();
+                return;
+            }
+
+            // Case 3: Already checked or ignored -> Send
             handleSendMessage();
         }
     };
@@ -478,6 +498,7 @@ export default function ChatInterface() {
                                         onChange={(e) => {
                                             setMessageText(e.target.value);
                                             if (suggestedText) setSuggestedText(null);
+                                            setHasBeenChecked(false);
                                         }}
                                         onKeyDown={handleKeyDown}
                                         disabled={sending}
