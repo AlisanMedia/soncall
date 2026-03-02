@@ -1,0 +1,18 @@
+path: ../dataset # dataset root dir
+train: train/images  # train images (relative to 'path')
+val: val/images  # val images (relative to 'path')
+
+# Classes
+names:
+  0: Silaj
+  1: Saman
+  2: Yonca
+  3: Arpa_Ezmesi
+  4: Misir
+  5: Bugday
+  6: Soya_Kuspesi
+  7: Pamuk_Tohumu
+  8: Ayciegi_Kuspesi
+  9: Pancar_Kuspesi
+  10: Kepek
+  11: Yulaf

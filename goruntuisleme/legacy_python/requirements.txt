@@ -1,0 +1,10 @@
+opencv-python
+ultralytics
+torch
+torchvision
+albumentations
+numpy
+tqdm
+icrawler
+python-dotenv
+openai
