@@ -407,6 +407,7 @@ function LogsContent() {
                                                         motivation: 'bg-blue-500/10 text-blue-300 border-blue-500/20',
                                                         manual: 'bg-purple-500/10 text-purple-300 border-purple-500/20',
                                                         bulk: 'bg-orange-500/10 text-orange-300 border-orange-500/20',
+                                                        whatsapp_commander: 'bg-green-500/10 text-green-400 border-green-500/20',
                                                         system: 'bg-gray-500/10 text-gray-400 border-gray-500/20',
                                                         '5h_reminder': 'bg-yellow-500/10 text-yellow-300 border-yellow-500/20',
                                                         '1h_reminder': 'bg-red-500/10 text-red-300 border-red-500/20'
