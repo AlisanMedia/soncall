@@ -2,6 +2,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { OpenAI } from 'openai';
 import { createClient } from '@/lib/supabase/server';
+import fs from 'fs';
+import path from 'path';
 
 const openai = new OpenAI({
     apiKey: process.env.OPENAI_API_KEY,
@@ -9,6 +11,14 @@ const openai = new OpenAI({
 
 export async function POST(request: NextRequest) {
     try {
+        // Read custom instructions from file
+        let customInstructions = "";
+        try {
+            const instructionsPath = path.join(process.cwd(), 'lib/ai/instructions.md');
+            customInstructions = fs.readFileSync(instructionsPath, 'utf8');
+        } catch (e) {
+            console.error("Instructions file read error:", e);
+        }
         const supabase = await createClient();
         const { data: { user } } = await supabase.auth.getUser();
 
@@ -31,21 +41,17 @@ export async function POST(request: NextRequest) {
         else if (hour >= 23 || hour < 5) greeting = 'İyi geceler';
 
         const prompt = `
-        ### PASAPORT (KİMLİĞİN):
-        - Kurum: **ArtificAgent** (Yapay Zeka Destekli İletişim ve Satış Altyapısı Sağlayıcısı)
-        - Rolün: ArtificAgent **Marketing & Growth Ekibi Uzmanı**
-        - Hedef: Basit mesaj taslaklarını, kurumsal bir çözüm ortağı vizyonuyla, güven veren ve "ArtificAgent" kalitesini yansıtan profesyonel metinlere dönüştürmek.
+        ### ÖZEL TALİMATLAR VE BİLGİLER (BU BİLGİLERİ ESAŞ AL):
+        ${customInstructions}
 
-        ### İŞİMİZ (CONTEXT):
-        - ArtificAgent; işletmelere AI tabanlı cold calling yönetimi, akıllı lead dağıtımı ve iletişim otomasyonu sağlar.
-        - Müşterilerimiz genellikle işletme sahipleri, satış müdürleri veya C-Level yöneticilerdir.
+        ### ALICI BİLGİLERİ VE ZAMAN:
+        - Alıcı: "${contactName || 'Değerli Müşterimiz'}"
+        - Selam Türü: "${greeting}"
 
         ### KURALLAR:
-        1. **Hitat ve Selam**: Kesinlikle "${contactName ? contactName + ' Bey/Hanım' : 'Değerli Müşterimiz'}" ile başla. "${greeting}" ifadesini şık bir şekilde girişe ekle.
-        2. **Persona**: Mesajı yazan kişinin ArtificAgent Pazarlama ekibinden bir profesyonel olduğunu hissettir. Tonun; çözüm odaklı, elit ve teknoloji vizyonu yüksek olmalı.
-        3. **İçerik Geliştirme**: Eğer taslak çok kısaysa (örn: "nasılsın", "selam"), bunu "ArtificAgent olarak sunduğumuz çözümlerle ilgili görüşmek üzere uygun bir zamanınızı rica edecektim" gibi kurumsal bir girişe çevir.
-        4. **Dil**: Kusursuz İstanbul Türkçesi. SMS formatına uygun (kısa ama etkili).
-        5. **Çıktı**: SADECE düzeltilmiş mesaj metnini ver.
+        1. Yukarıdaki "ÖZEL TALİMATLAR" kısmındaki şirket bilgilerini ve tonlamayı kesinlikle uygula.
+        2. Mesajı "${contactName ? contactName + ' Bey/Hanım' : 'Değerli Müşterimiz'}" ile başlat ve "${greeting}" ekle.
+        3. Çıktı SADECE düzeltilmiş mesaj metni olmalıdır.
 
         ### TASLAK MESAJ:
         "${text}"
