@@ -1,7 +1,8 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import { Toaster } from "sonner";
 import "./globals.css";
+import ErrorToast from "@/components/ui/ErrorToast";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -13,19 +14,20 @@ const geistMono = Geist_Mono({
   subsets: ["latin"],
 });
 
-export const metadata: Metadata = {
-  title: "ArtificAgent - AI-Powered Sales Platform",
-  description: "Intelligent sales management platform for agents and managers",
-  viewport: {
-    width: 'device-width',
-    initialScale: 1,
-    maximumScale: 5,
-    userScalable: true,
-  },
+export const viewport: Viewport = {
+  width: 'device-width',
+  initialScale: 1,
+  maximumScale: 5,
+  userScalable: true,
   themeColor: [
     { media: '(prefers-color-scheme: light)', color: '#0B0E11' },
     { media: '(prefers-color-scheme: dark)', color: '#0B0E11' },
   ],
+};
+
+export const metadata: Metadata = {
+  title: "ArtificAgent - AI-Powered Sales Platform",
+  description: "Intelligent sales management platform for agents and managers",
   appleWebApp: {
     capable: true,
     statusBarStyle: 'black-translucent',
@@ -35,8 +37,6 @@ export const metadata: Metadata = {
     telephone: false,
   },
 };
-
-import ErrorToast from "@/components/ui/ErrorToast";
 
 export default function RootLayout({
   children,

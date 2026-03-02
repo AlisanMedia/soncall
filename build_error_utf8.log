@@ -1,0 +1,176 @@
+﻿
+> soncall@0.1.0 build
+> next build
+
+Ôû▓ Next.js 16.1.3 (Turbopack)
+- Environments: .env.local
+
+  Creating an optimized production build ...
+Ô£ô Compiled successfully in 12.7s
+  Running TypeScript ...
+  Collecting page data using 7 workers ...
+  Generating static pages using 7 workers (0/51) ...
+  Generating static pages using 7 workers (12/51) 
+  Generating static pages using 7 workers (25/51) 
+node.exe : ÔÜá Unsupported metadata viewport is configured 
+in metadata export in /_not-found. Please move it to 
+viewport export instead.
+At line:1 char:1
++ & "C:\Program Files\nodejs/node.exe" "C:\Program 
+Files\nodejs/node_mo ...
++ ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: (ÔÜá Unsupport 
+   ed...export instead.:String) [], RemoteException
+    + FullyQualifiedErrorId : NativeCommandError
+ 
+Read more: https://nextjs.org/docs/app/api-reference/functi
+ons/generate-viewport
+ÔÜá Unsupported metadata themeColor is configured in 
+metadata export in /_not-found. Please move it to viewport 
+export instead.
+Read more: https://nextjs.org/docs/app/api-reference/functi
+ons/generate-viewport
+ÔÜá Unsupported metadata viewport is configured in 
+metadata export in /glowing-demo. Please move it to 
+viewport export instead.
+Read more: https://nextjs.org/docs/app/api-reference/functi
+ons/generate-viewport
+ÔÜá Unsupported metadata themeColor is configured in 
+metadata export in /glowing-demo. Please move it to 
+viewport export instead.
+Read more: https://nextjs.org/docs/app/api-reference/functi
+ons/generate-viewport
+ÔÜá Unsupported metadata viewport is configured in 
+metadata export in /agent. Please move it to viewport 
+export instead.
+Read more: https://nextjs.org/docs/app/api-reference/functi
+ons/generate-viewport
+ÔÜá Unsupported metadata themeColor is configured in 
+metadata export in /agent. Please move it to viewport 
+export instead.
+Read more: https://nextjs.org/docs/app/api-reference/functi
+ons/generate-viewport
+ÔÜá Unsupported metadata viewport is configured in 
+metadata export in /glass-button-demo. Please move it to 
+viewport export instead.
+Read more: https://nextjs.org/docs/app/api-reference/functi
+ons/generate-viewport
+ÔÜá Unsupported metadata themeColor is configured in 
+metadata export in /glass-button-demo. Please move it to 
+viewport export instead.
+Read more: https://nextjs.org/docs/app/api-reference/functi
+ons/generate-viewport
+  Generating static pages using 7 workers (38/51) 
+ÔÜá Unsupported metadata viewport is configured in 
+metadata export in /login. Please move it to viewport 
+export instead.
+Read more: https://nextjs.org/docs/app/api-reference/functi
+ons/generate-viewport
+ÔÜá Unsupported metadata themeColor is configured in 
+metadata export in /login. Please move it to viewport 
+export instead.
+Read more: https://nextjs.org/docs/app/api-reference/functi
+ons/generate-viewport
+ÔÜá Unsupported metadata viewport is configured in 
+metadata export in /manager. Please move it to viewport 
+export instead.
+Read more: https://nextjs.org/docs/app/api-reference/functi
+ons/generate-viewport
+ÔÜá Unsupported metadata themeColor is configured in 
+metadata export in /manager. Please move it to viewport 
+export instead.
+Read more: https://nextjs.org/docs/app/api-reference/functi
+ons/generate-viewport
+ÔÜá Unsupported metadata viewport is configured in 
+metadata export in /. Please move it to viewport export 
+instead.
+Read more: https://nextjs.org/docs/app/api-reference/functi
+ons/generate-viewport
+ÔÜá Unsupported metadata themeColor is configured in 
+metadata export in /. Please move it to viewport export 
+instead.
+Read more: https://nextjs.org/docs/app/api-reference/functi
+ons/generate-viewport
+ÔÜá Unsupported metadata viewport is configured in 
+metadata export in /select-dashboard. Please move it to 
+viewport export instead.
+Read more: https://nextjs.org/docs/app/api-reference/functi
+ons/generate-viewport
+ÔÜá Unsupported metadata themeColor is configured in 
+metadata export in /select-dashboard. Please move it to 
+viewport export instead.
+Read more: https://nextjs.org/docs/app/api-reference/functi
+ons/generate-viewport
+Ô£ô Generating static pages using 7 workers (51/51) in 506.8ms
+  Finalizing page optimization ...
+
+Route (app)
+Ôöî ãÆ /
+Ôö£ Ôùï /_not-found
+Ôö£ ãÆ /agent
+Ôö£ ãÆ /api/admin/approve-email
+Ôö£ ãÆ /api/admin/system
+Ôö£ ãÆ /api/agent/activity
+Ôö£ ãÆ /api/agent/appointments
+Ôö£ ãÆ /api/agent/leads
+Ôö£ ãÆ /api/agent/notifications
+Ôö£ ãÆ /api/ai/enrich
+Ôö£ ãÆ /api/ai/transcribe
+Ôö£ ãÆ /api/cron/daily-digest
+Ôö£ ãÆ /api/cron/motivation
+Ôö£ ãÆ /api/cron/reminders
+Ôö£ ãÆ /api/debug/check-efe
+Ôö£ ãÆ /api/debug/env-check
+Ôö£ ãÆ /api/debug/sms-logs
+Ôö£ ãÆ /api/leads/[id]
+Ôö£ ãÆ /api/leads/assign
+Ôö£ ãÆ /api/leads/manual
+Ôö£ ãÆ /api/leads/reassign-stuck
+Ôö£ ãÆ /api/leads/revoke
+Ôö£ ãÆ /api/leads/transfer
+Ôö£ ãÆ /api/leads/unlock-stale
+Ôö£ ãÆ /api/leads/upload
+Ôö£ ãÆ /api/manager/activity
+Ôö£ ãÆ /api/manager/analytics
+Ôö£ ãÆ /api/manager/analytics/ai-performance
+Ôö£ ãÆ /api/manager/analytics/funnel
+Ôö£ ãÆ /api/manager/appointments
+Ôö£ ãÆ /api/manager/appointments/bulk
+Ôö£ ãÆ /api/manager/batches
+Ôö£ ãÆ /api/manager/batches/[id]
+Ôö£ ãÆ /api/manager/batches/[id]/export
+Ôö£ ãÆ /api/manager/batches/[id]/reset-to-pool
+Ôö£ ãÆ /api/manager/contacts
+Ôö£ ãÆ /api/manager/insights
+Ôö£ ãÆ /api/manager/leads
+Ôö£ ãÆ /api/manager/leads/categories
+Ôö£ ãÆ /api/manager/overview
+Ôö£ ãÆ /api/manager/quality
+Ôö£ ãÆ /api/manager/sms/correct
+Ôö£ ãÆ /api/manager/sms/generate
+Ôö£ ãÆ /api/manager/sms/send
+Ôö£ ãÆ /api/manager/sms/sync
+Ôö£ ãÆ /api/manager/team
+Ôö£ ãÆ /api/manager/team/create
+Ôö£ ãÆ /api/manager/team/delete
+Ôö£ ãÆ /api/manager/team/list-all
+Ôö£ ãÆ /api/manager/team/update
+Ôö£ ãÆ /api/messages
+Ôö£ ãÆ /api/messages/[id]
+Ôö£ ãÆ /api/messages/unread
+Ôö£ ãÆ /api/reports/trigger
+Ôö£ ãÆ /api/stats
+Ôö£ ãÆ /api/webhooks/verimor
+Ôö£ Ôùï /glass-button-demo
+Ôö£ Ôùï /glowing-demo
+Ôö£ Ôùï /login
+Ôö£ ãÆ /manager
+Ôöö ãÆ /select-dashboard
+
+
+ãÆ Proxy (Middleware)
+
+Ôùï  (Static)   prerendered as static content
+ãÆ  (Dynamic)  server-rendered on demand
+
