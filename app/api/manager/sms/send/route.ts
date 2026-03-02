@@ -72,15 +72,16 @@ export async function POST(request: NextRequest) {
         successCount = results.filter(r => r === true).length;
         failCount = results.filter(r => r === false).length;
 
-        console.log(`[Bulk SMS] Complete. Success: ${successCount}, Failed: ${failCount}`);
+        const allFailed = recipients.length > 0 && successCount === 0;
 
         return NextResponse.json({
-            success: true,
+            success: !allFailed,
             stats: {
                 total: recipients.length,
                 sent: successCount,
                 failed: failCount
-            }
+            },
+            message: allFailed ? 'Mesaj gönderilemedi. Lütfen sistem kayıtlarını kontrol edin.' : undefined
         });
 
     } catch (error: any) {

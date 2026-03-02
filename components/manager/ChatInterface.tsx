@@ -2,7 +2,7 @@
 'use client';
 
 import React, { useState, useEffect, useRef } from 'react';
-import { Loader2, Send, Search, MessageSquare, Phone, User, CheckCheck, Clock, Sparkles, RefreshCw } from 'lucide-react';
+import { Loader2, Send, Search, MessageSquare, Phone, User, CheckCheck, Clock, Sparkles, RefreshCw, AlertCircle } from 'lucide-react';
 import { createClient } from '@/lib/supabase/client';
 import { toast } from 'sonner';
 import { standardizePhone } from '@/lib/utils';
@@ -38,9 +38,8 @@ export default function ChatInterface() {
     const [searchTerm, setSearchTerm] = useState('');
 
     // AI Correction State
-    const [isCorrected, setIsCorrected] = useState(false);
     const [isCorrecting, setIsCorrecting] = useState(false);
-
+    const [suggestedText, setSuggestedText] = useState<string | null>(null);
     const messagesEndRef = useRef<HTMLDivElement>(null);
     const supabase = createClient();
 
@@ -60,7 +59,7 @@ export default function ChatInterface() {
 
             // Subscribe to new messages for this contact (Realtime)
             const channel = supabase
-                .channel('sms_chat')
+                .channel(`sms_chat_${normalizedPhone}`)
                 .on('postgres_changes', {
                     event: 'INSERT',
                     schema: 'public',
@@ -68,7 +67,11 @@ export default function ChatInterface() {
                     filter: `sent_to=eq.${normalizedPhone}`
                 }, (payload) => {
                     const newMsg = payload.new as Message;
-                    setMessages(prev => [newMsg, ...prev]);
+                    setMessages(prev => {
+                        // Check for duplicates
+                        if (prev.some(m => m.id === newMsg.id)) return prev;
+                        return [newMsg, ...prev];
+                    });
                 })
                 .subscribe();
 
@@ -122,8 +125,32 @@ export default function ChatInterface() {
     };
 
     const handleSendMessage = async (e?: React.FormEvent) => {
+        console.log('handleSendMessage triggered');
         if (e) e.preventDefault();
-        if (!messageText.trim() || !selectedContact) return;
+        const content = messageText.trim();
+        if (!content || !selectedContact) {
+            console.log('Missing content or selection', { content, selectedContact });
+            return;
+        }
+
+        const normalizedPhone = normalizeForMatching(selectedContact.phone_number);
+        console.log('Sending message to:', normalizedPhone);
+
+        // Optimistic UI: Add the message to the list immediately
+        const tempId = crypto.randomUUID();
+        const tempMessage: Message = {
+            id: tempId,
+            sent_to: normalizedPhone,
+            recipient_name: selectedContact.full_name,
+            message_body: content,
+            direction: 'outbound',
+            status: 'pending',
+            created_at: new Date().toISOString()
+        };
+
+        setMessages(prev => [tempMessage, ...prev]);
+        setMessageText('');
+
 
         setSending(true);
         try {
@@ -131,73 +158,76 @@ export default function ChatInterface() {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
-                    phone: selectedContact.phone_number,
-                    message: messageText
+                    phone: normalizedPhone,
+                    message: content
                 })
             });
 
             const data = await res.json();
 
             if (data.success) {
-                setMessageText('');
-                setIsCorrected(false);
-                setTimeout(() => fetchMessages(normalizeForMatching(selectedContact.phone_number)), 500);
+                // Update the status of the optimistic message
+                setMessages(prev => prev.map(m =>
+                    m.id === tempId ? { ...m, status: 'success', id: data.messageId || m.id } : m
+                ));
             } else {
-                toast.error('Mesaj gönderilemedi: ' + data.error);
+                // Mark as failed
+                setMessages(prev => prev.map(m =>
+                    m.id === tempId ? { ...m, status: 'failed' } : m
+                ));
+                toast.error('Mesaj gönderilemedi: ' + (data.message || data.error || 'Bilinmeyen hata'));
             }
         } catch (error) {
-            toast.error('Gönderim hatası');
+            setMessages(prev => prev.map(m =>
+                m.id === tempId ? { ...m, status: 'failed' } : m
+            ));
+            toast.error('Gönderim hatası: Sistemsel bir sorun oluştu');
         } finally {
             setSending(false);
         }
     };
 
-    const handleKeyDown = async (e: React.KeyboardEvent<HTMLInputElement>) => {
-        if (e.key === 'Enter' && !e.shiftKey) {
-            e.preventDefault();
+    const handleAICorrect = async () => {
+        const text = messageText.trim();
+        if (!text || isCorrecting) return;
 
-            if (!messageText.trim()) return;
-
-            if (!isCorrected) {
-                // 1. Step: Correct Message
-                setIsCorrecting(true);
-                try {
-                    const res = await fetch('/api/manager/sms/correct', {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({
-                            text: messageText,
-                            context: `Message to contact ${selectedContact?.full_name}`
-                        })
-                    });
-                    const data = await res.json();
-
-                    if (data.message) {
-                        setMessageText(data.message);
-                        setIsCorrected(true);
-                        toast.info('Mesaj yapay zeka tarafından düzeltildi. Göndermek için tekrar Enter\'a basın.', {
-                            icon: <Sparkles className="w-4 h-4 text-purple-500" />
-                        });
-                    }
-                } catch (error) {
-                    console.error('Correction failed', error);
-                } finally {
-                    setIsCorrecting(false);
-                }
+        setIsCorrecting(true);
+        setSuggestedText(null);
+        try {
+            const res = await fetch('/api/manager/sms/correct', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    text,
+                    contactName: selectedContact?.full_name
+                })
+            });
+            const data = await res.json();
+            if (data.message) {
+                setSuggestedText(data.message);
+                toast.success('Düzeltme önerisi hazır ✨');
             } else {
-                // 2. Step: Send Message
-                handleSendMessage();
+                toast.error('Düzeltme önerisi alınamadı');
             }
-        } else {
-            if (isCorrected) {
-                setIsCorrected(false);
-            }
+        } catch (error) {
+            toast.error('AI servisine erişilemedi');
+        } finally {
+            setIsCorrecting(false);
         }
     };
 
-    const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-        setMessageText(e.target.value);
-        if (isCorrected) setIsCorrected(false);
+    const applySuggestion = () => {
+        if (suggestedText) {
+            setMessageText(suggestedText);
+            setSuggestedText(null);
+        }
+    };
+
+    const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+        if (e.key === 'Enter' && !e.shiftKey) {
+            e.preventDefault();
+            handleSendMessage();
+        }
     };
 
     const filteredContacts = contacts.filter(c =>
@@ -272,10 +302,11 @@ export default function ChatInterface() {
                 <div className="p-6 border-b border-white/5">
                     <div className="flex items-center justify-between mb-4">
                         <h2 className="text-white font-bold text-lg flex items-center gap-3">
-                            <div className="p-2 rounded-lg bg-purple-500/20 text-purple-400">
-                                <MessageSquare className="w-5 h-5" />
+                            <div className="p-2 rounded-lg bg-purple-500/20 text-purple-400 font-mono text-[8px]">
+                                MSG-V2
                             </div>
                             Mesajlar
+                            <span className="text-[8px] text-gray-500 ml-2">v0.0.9</span>
                         </h2>
                         <button
                             onClick={handleSync}
@@ -386,7 +417,9 @@ export default function ChatInterface() {
                                                     {isOutbound && (
                                                         isSuccess
                                                             ? <CheckCheck className="w-3.5 h-3.5 text-green-400 drop-shadow-[0_0_5px_rgba(74,222,128,0.5)]" />
-                                                            : <Clock className="w-3.5 h-3.5" />
+                                                            : msg.status === 'failed'
+                                                                ? <AlertCircle className="w-3.5 h-3.5 text-red-500" />
+                                                                : <Clock className="w-3.5 h-3.5" />
                                                     )}
                                                 </div>
 
@@ -401,46 +434,76 @@ export default function ChatInterface() {
                         <div className="p-6 border-t border-white/5 bg-[#12121e]/50 backdrop-blur-md z-20">
                             <form onSubmit={(e) => handleSendMessage(e)} className="flex gap-4 items-center relative">
                                 <div className="flex-1 relative group">
-                                    <input
-                                        type="text"
-                                        placeholder={isCorrecting ? "AI Mesajınızı İyileştiriyor..." : "Bir şeyler yazın... (Düzeltmek için Enter)"}
-                                        className={`w-full bg-[#1a1a26] border border-white/10 rounded-2xl px-6 py-4 text-white focus:outline-none focus:border-purple-500 focus:bg-[#1f1f2e] transition-all shadow-inner focus:shadow-[0_0_20px_rgba(168,85,247,0.4)] ${isCorrected ? 'border-green-500/50 shadow-[0_0_20px_rgba(34,197,94,0.1)]' : ''
-                                            }`}
-                                        value={messageText}
-                                        onChange={handleChange}
-                                        onKeyDown={handleKeyDown}
-                                        disabled={isCorrecting || sending}
-                                    />
-                                    {isCorrected && (
-                                        <div className="absolute right-4 top-1/2 -translate-y-1/2">
-                                            <Sparkles className="w-5 h-5 text-green-400 animate-pulse" />
+                                    {suggestedText && (
+                                        <div className="absolute bottom-full left-0 right-0 mb-3 animate-in fade-in slide-in-from-bottom-2 duration-300">
+                                            <div className="bg-purple-900/40 backdrop-blur-md border border-purple-500/30 rounded-2xl p-4 shadow-2xl flex flex-col gap-3">
+                                                <div className="flex items-center justify-between">
+                                                    <span className="text-[10px] uppercase tracking-widest text-purple-300 font-bold flex items-center gap-2">
+                                                        <Sparkles className="w-3 h-3" />
+                                                        AI Düzeltme Önerisi
+                                                    </span>
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => setSuggestedText(null)}
+                                                        className="text-gray-400 hover:text-white transition-colors"
+                                                    >
+                                                        <RefreshCw className="w-3 h-3" />
+                                                    </button>
+                                                </div>
+                                                <p className="text-sm text-gray-200 italic leading-relaxed">"{suggestedText}"</p>
+                                                <div className="flex gap-2">
+                                                    <button
+                                                        type="button"
+                                                        onClick={applySuggestion}
+                                                        className="flex-1 bg-purple-600 hover:bg-purple-500 text-white text-xs font-bold py-2 rounded-xl transition-all"
+                                                    >
+                                                        Uygula
+                                                    </button>
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => setSuggestedText(null)}
+                                                        className="px-4 bg-white/5 hover:bg-white/10 text-gray-400 text-xs py-2 rounded-xl transition-all"
+                                                    >
+                                                        Yoksay
+                                                    </button>
+                                                </div>
+                                            </div>
                                         </div>
                                     )}
+                                    <input
+                                        type="text"
+                                        placeholder="Bir şeyler yazın..."
+                                        className="w-full bg-[#1a1a26] border border-white/10 rounded-2xl px-6 py-4 pr-16 text-white focus:outline-none focus:border-purple-500 focus:bg-[#1f1f2e] transition-all shadow-inner focus:shadow-[0_0_20px_rgba(168,85,247,0.4)]"
+                                        value={messageText}
+                                        onChange={(e) => {
+                                            setMessageText(e.target.value);
+                                            if (suggestedText) setSuggestedText(null);
+                                        }}
+                                        onKeyDown={handleKeyDown}
+                                        disabled={sending}
+                                    />
+                                    <button
+                                        type="button"
+                                        onClick={handleAICorrect}
+                                        disabled={!messageText.trim() || isCorrecting || sending}
+                                        className="absolute right-4 top-1/2 -translate-y-1/2 p-2 rounded-xl bg-purple-500/10 text-purple-400 hover:bg-purple-500/20 disabled:opacity-30 transition-all"
+                                        title="AI ile Düzelt"
+                                    >
+                                        {isCorrecting ? <Loader2 className="w-5 h-5 animate-spin" /> : <Sparkles className="w-5 h-5" />}
+                                    </button>
                                 </div>
 
                                 <button
                                     type="submit"
-                                    disabled={sending || !messageText.trim() || isCorrecting}
-                                    className={`w-14 h-14 rounded-2xl flex items-center justify-center text-white shadow-lg transition-all duration-300 hover:scale-105 active:scale-95 disabled:opacity-50 disabled:scale-100 ${isCorrected
-                                        ? 'bg-gradient-to-br from-green-500 to-emerald-600 shadow-green-500/30'
-                                        : 'bg-gradient-to-br from-purple-600 to-indigo-600 shadow-purple-600/30 hover:shadow-purple-600/50'
-                                        }`}
+                                    disabled={sending || !messageText.trim()}
+                                    className="w-14 h-14 rounded-2xl flex items-center justify-center text-white shadow-lg transition-all duration-300 hover:scale-105 active:scale-95 disabled:opacity-50 disabled:scale-100 bg-gradient-to-br from-purple-600 to-indigo-600 shadow-purple-600/30 hover:shadow-purple-600/50"
                                 >
-                                    {sending ? <Loader2 className="w-6 h-6 animate-spin" /> :
-                                        isCorrecting ? <Sparkles className="w-6 h-6 animate-spin" /> :
-                                            <Send className="w-5 h-5 ml-0.5" />}
+                                    {sending ? <Loader2 className="w-6 h-6 animate-spin" /> : <Send className="w-5 h-5 ml-0.5" />}
                                 </button>
                             </form>
 
-                            {isCorrected && (
-                                <div className="absolute -top-12 left-1/2 -translate-x-1/2 bg-green-500/10 backdrop-blur-xl border border-green-500/20 text-green-400 text-xs px-4 py-2 rounded-full animate-in fade-in slide-in-from-bottom-2 flex items-center gap-2 shadow-[0_0_20px_rgba(34,197,94,0.2)]">
-                                    <Sparkles className="w-3 h-3" />
-                                    <span className="font-semibold">Mükemmel! Göndermek için tekrar Enter'a bas.</span>
-                                </div>
-                            )}
-
                             <div className="text-center mt-3 text-[10px] text-gray-600">
-                                <span>Enter: AI Düzeltme & Gönderim</span> • <span>Shift + Enter: Yeni Satır</span>
+                                <span>Enter: Gönder</span> • <span>Shift + Enter: Yeni Satır</span>
                             </div>
                         </div>
                     </>

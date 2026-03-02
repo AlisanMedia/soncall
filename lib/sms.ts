@@ -37,38 +37,64 @@ export async function sendSMS(phone: string, message: string, recipientName?: st
             body: JSON.stringify(payload)
         });
 
+        const responseText = await response.text();
+
+        // Log to file immediately for debugging
+        const fs = require('fs');
+        const logEntry = `\n[${new Date().toISOString()}] To: ${cleanPhone} | Status: ${response.status} | Msg: ${message} | Response: ${responseText}\n`;
+        fs.appendFileSync('verimor_debug_log.txt', logEntry);
+
         if (!response.ok) {
-            const errorText = await response.text();
-            console.error(`[SMS] Verimor API Error (${response.status}):`, errorText);
+            console.error(`[SMS] Verimor API Error (${response.status}):`, responseText);
+
+            // Log failure to Database
+            await logSmsToDb(cleanPhone, message, 'failed', responseText, recipientName, triggerType);
             return false;
         }
 
-
-        const responseText = await response.text();
         console.log(`[SMS] Sent to ${cleanPhone}. Response:`, responseText);
 
-        // Log to Database (Async, don't block return)
-        logSmsToDb(username, password, cleanPhone, message, 'success', responseText, recipientName, triggerType).catch(err =>
-            console.error('[SMS] Failed to log success to DB:', err)
-        );
+        // Log to Database (AWAIT to ensure it saves before function terminates)
+        await logSmsToDb(cleanPhone, message, 'success', responseText, recipientName, triggerType);
 
         return true;
 
     } catch (e: any) {
-        console.error('[SMS] Network/System Error:', e.message);
+        const errorMsg = `[NETWORK/SYSTEM ERROR]: ${e.message}`;
+        console.error('[SMS]', errorMsg);
+
+        // Log to file even on network error
+        try {
+            const fs = require('fs');
+            const logEntry = `\n[${new Date().toISOString()}] To: ${phone} | ERROR: ${errorMsg}\n`;
+            fs.appendFileSync('verimor_debug_log.txt', logEntry);
+        } catch (logErr) { }
 
         // Log failure to Database
-        logSmsToDb(username, password, cleanPhone, message, 'failed', e.message, recipientName, triggerType).catch(err =>
-            console.error('[SMS] Failed to log failure to DB:', err)
-        );
+        await logSmsToDb(cleanPhone, message, 'failed', e.message, recipientName, triggerType);
 
         return false;
     }
 }
 
-async function logSmsToDb(
-    username: string,
-    pass: string,
+let supabaseAdmin: any = null;
+
+function getAdminClient() {
+    if (supabaseAdmin) return supabaseAdmin;
+
+    const { createClient } = require('@supabase/supabase-js');
+    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+    const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+
+    if (!supabaseUrl || !supabaseKey) {
+        throw new Error('Missing Supabase Admin Environment Variables');
+    }
+
+    supabaseAdmin = createClient(supabaseUrl, supabaseKey);
+    return supabaseAdmin;
+}
+
+export async function logSmsToDb(
     phone: string,
     message: string,
     status: 'success' | 'failed',
@@ -77,20 +103,9 @@ async function logSmsToDb(
     triggerType: string = 'manual'
 ) {
     try {
-        const { createClient } = require('@supabase/supabase-js');
-        const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
-        const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY; // Use Service Role to write logs
+        const supabase = getAdminClient();
 
-        if (!supabaseUrl || !supabaseKey) return;
-
-        const supabase = createClient(supabaseUrl, supabaseKey);
-
-        // Try to find if this phone belongs to a known lead (optional, for linking)
-        // Or if it's an agent. The schema has lead_id which is optional.
-        // For motivation messages, we might not have a lead_id. 
-        // We will just insert what we have.
-
-        await supabase.from('sms_logs').insert({
+        const { error } = await supabase.from('sms_logs').insert({
             sent_to: phone,
             recipient_name: recipientName || null,
             message_body: message,
@@ -99,6 +114,8 @@ async function logSmsToDb(
             provider_response: providerResponse,
             trigger_type: triggerType
         });
+
+        if (error) throw error;
 
     } catch (e) {
         console.error('[SMS] DB Log Error:', e);
