@@ -336,20 +336,8 @@ export default function ChatInterface() {
                 <div className="p-6 border-b border-white/5">
                     <div className="flex items-center justify-between mb-4">
                         <h2 className="text-white font-bold text-lg flex items-center gap-3">
-                            <div className="p-2 rounded-lg bg-purple-500/20 text-purple-400 font-mono text-[8px]">
-                                MSG-V2
-                            </div>
                             Mesajlar
-                            <span className="text-[8px] text-gray-500 ml-2">v0.0.9</span>
                         </h2>
-                        <button
-                            onClick={handleSync}
-                            disabled={isSyncing}
-                            className={`p-2 rounded-lg bg-white/5 text-gray-400 hover:text-white hover:bg-white/10 transition-all ${isSyncing ? 'animate-spin text-purple-500' : ''}`}
-                            title="Mesajları Senkronize Et"
-                        >
-                            <RefreshCw className="w-4 h-4" />
-                        </button>
                     </div>
                     <div className="relative group">
                         <Search className="w-4 h-4 text-gray-500 absolute left-3 top-1/2 -translate-y-1/2 group-focus-within:text-purple-400 transition-colors" />
