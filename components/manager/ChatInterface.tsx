@@ -1,4 +1,3 @@
-
 'use client';
 
 import React, { useState, useEffect, useRef } from 'react';
@@ -13,6 +12,8 @@ interface Contact {
     phone_number: string;
     title?: string;
     avatar_url?: string;
+    last_message_body?: string;
+    last_message_at?: string;
 }
 
 interface Message {
@@ -41,6 +42,7 @@ export default function ChatInterface() {
     const [isCorrecting, setIsCorrecting] = useState(false);
     const [suggestedText, setSuggestedText] = useState<string | null>(null);
     const [hasBeenChecked, setHasBeenChecked] = useState(false);
+    const [showInfoPanel, setShowInfoPanel] = useState(false);
     const messagesEndRef = useRef<HTMLDivElement>(null);
     const supabase = createClient();
 
@@ -224,13 +226,6 @@ export default function ChatInterface() {
         }
     };
 
-    const applySuggestion = () => {
-        if (suggestedText) {
-            setMessageText(suggestedText);
-            setSuggestedText(null);
-        }
-    };
-
     const handleKeyDown = async (e: React.KeyboardEvent<HTMLInputElement>) => {
         if (e.key === 'Enter' && !e.shiftKey) {
             e.preventDefault();
@@ -257,6 +252,25 @@ export default function ChatInterface() {
     const formatTime = (dateStr: string) => {
         return new Date(dateStr).toLocaleTimeString('tr-TR', { hour: '2-digit', minute: '2-digit' });
     };
+
+    const formatDateHeader = (dateStr: string) => {
+        const d = new Date(dateStr);
+        const now = new Date();
+        const diff = now.getTime() - d.getTime();
+        const dayInMs = 24 * 60 * 60 * 1000;
+
+        if (diff < dayInMs && d.getDate() === now.getDate()) return 'Bugün';
+        if (diff < dayInMs * 2 && d.getDate() === now.getDate() - 1) return 'Dün';
+        return d.toLocaleDateString('tr-TR', { day: 'numeric', month: 'long' });
+    };
+
+    // Group messages by date
+    const groupedMessages: { [key: string]: Message[] } = {};
+    [...messages].reverse().forEach(msg => {
+        const dateKey = new Date(msg.created_at).toDateString();
+        if (!groupedMessages[dateKey]) groupedMessages[dateKey] = [];
+        groupedMessages[dateKey].push(msg);
+    });
 
     const [expandedMsgIds, setExpandedMsgIds] = useState<Set<string>>(new Set());
 
@@ -363,8 +377,27 @@ export default function ChatInterface() {
                                     {contact.full_name.charAt(0)}
                                 </div>
                                 <div className="flex-1 min-w-0">
-                                    <div className={`text-sm font-semibold truncate ${selectedContact?.id === contact.id ? 'text-white' : 'text-gray-300'}`}>{contact.full_name}</div>
-                                    <div className="text-xs text-gray-500 truncate mt-0.5">{contact.title || contact.phone_number}</div>
+                                    <div className="flex justify-between items-baseline mb-0.5">
+                                        <div className={`text-sm font-bold truncate ${selectedContact?.id === contact.id ? 'text-white' : 'text-gray-200'}`}>
+                                            {contact.full_name}
+                                        </div>
+                                        {contact.last_message_at && (
+                                            <div className="text-[10px] text-gray-500 font-medium">
+                                                {formatTime(contact.last_message_at)}
+                                            </div>
+                                        )}
+                                    </div>
+                                    <div className="flex items-center justify-between gap-2">
+                                        <div className={`text-xs truncate flex-1 ${selectedContact?.id === contact.id ? 'text-purple-200/70' : 'text-gray-500'}`}>
+                                            {contact.last_message_body || contact.title || contact.phone_number}
+                                        </div>
+                                        {/* Placeholder for unread badge if needed later */}
+                                        {Math.random() > 0.8 && (
+                                            <div className="w-4 h-4 rounded-full bg-purple-500 text-[9px] flex items-center justify-center text-white font-bold shrink-0">
+                                                1
+                                            </div>
+                                        )}
+                                    </div>
                                 </div>
                             </div>
                         ))
@@ -385,68 +418,141 @@ export default function ChatInterface() {
                                 <div>
                                     <div className="font-bold text-white text-lg">{selectedContact.full_name}</div>
                                     <div className="text-xs text-purple-300/80 flex items-center gap-1.5 font-medium tracking-wide">
-                                        <Phone className="w-3 h-3" />
-                                        {selectedContact.phone_number}
+                                        <div className="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse" />
+                                        Çevrimiçi
                                     </div>
                                 </div>
                             </div>
+
+                            <button
+                                onClick={() => setShowInfoPanel(!showInfoPanel)}
+                                className={`p-2 rounded-xl transition-all ${showInfoPanel ? 'bg-purple-500/20 text-purple-400' : 'text-gray-400 hover:bg-white/5'}`}
+                            >
+                                <User className="w-5 h-5" />
+                            </button>
                         </div>
 
-                        {/* Messages List (Scrollable) */}
-                        <div className="flex-1 overflow-y-auto p-8 custom-scrollbar flex flex-col-reverse relative">
-                            <div ref={messagesEndRef} />
-                            {loadingMessages ? (
-                                <div className="flex justify-center py-12"><Loader2 className="w-8 h-8 animate-spin text-purple-500" /></div>
-                            ) : messages.length === 0 ? (
-                                <div className="text-center py-20">
-                                    <div className="w-20 h-20 bg-white/5 rounded-full flex items-center justify-center mx-auto mb-4 text-purple-500/50">
-                                        <MessageSquare className="w-10 h-10" />
-                                    </div>
-                                    <p className="text-gray-400">Henüz mesaj yok. İlk mesajı gönderin! 👋</p>
-                                </div>
-                            ) : (
-                                messages.map((msg, index) => {
-                                    const isOutbound = msg.direction === 'outbound';
-                                    const isSuccess = msg.status === 'success';
-                                    const lines = msg.message_body?.split('\n').filter(Boolean) || [];
-                                    const isExpanded = expandedMsgIds.has(msg.id);
-                                    const hasMultipleLines = lines.length > 1;
+                        <div className="flex-1 flex overflow-hidden">
+                            {/* Messages List (Scrollable) */}
+                            <div className="flex-1 overflow-y-auto p-4 md:p-8 custom-scrollbar relative">
+                                {/* Wallpaper Overlay */}
+                                <div
+                                    className="absolute inset-0 opacity-[0.03] pointer-events-none grayscale invert"
+                                    style={{
+                                        backgroundImage: `url('/chat-bg.png')`,
+                                        backgroundSize: '400px',
+                                        backgroundRepeat: 'repeat'
+                                    }}
+                                />
 
-                                    return (
-                                        <div key={msg.id} className={`flex mb-6 ${isOutbound ? 'justify-end' : 'justify-start'}`}>
-                                            <div className={`max-w-[75%] group relative ${isOutbound ? 'items-end' : 'items-start'} flex flex-col`}>
+                                <div className="relative z-10 flex flex-col gap-2">
+                                    {loadingMessages ? (
+                                        <div className="flex justify-center py-12"><Loader2 className="w-8 h-8 animate-spin text-purple-500" /></div>
+                                    ) : messages.length === 0 ? (
+                                        <div className="text-center py-20">
+                                            <div className="w-20 h-20 bg-white/5 rounded-full flex items-center justify-center mx-auto mb-4 text-purple-500/50">
+                                                <MessageSquare className="w-10 h-10" />
+                                            </div>
+                                            <p className="text-gray-400">Henüz mesaj yok. İlk mesajı gönderin! 👋</p>
+                                        </div>
+                                    ) : (
+                                        Object.entries(groupedMessages).map(([dateKey, groupMsgs]) => (
+                                            <React.Fragment key={dateKey}>
+                                                {/* Date Header */}
+                                                <div className="flex justify-center my-6 sticky top-0 z-10">
+                                                    <div className="bg-black/40 backdrop-blur-md px-4 py-1.5 rounded-full text-[11px] font-semibold text-white/50 border border-white/5 shadow-lg">
+                                                        {formatDateHeader(groupMsgs[0].created_at)}
+                                                    </div>
+                                                </div>
 
-                                                <div
-                                                    onClick={() => hasMultipleLines && toggleExpand(msg.id)}
-                                                    className={`px-6 py-4 rounded-3xl text-[15px] leading-relaxed shadow-lg backdrop-blur-sm border transition-all duration-300 hover:scale-[1.01] ${hasMultipleLines ? 'cursor-pointer' : ''} ${isOutbound
-                                                        ? 'bg-gradient-to-br from-purple-600 to-indigo-600 text-white rounded-br-none border-purple-500/30 shadow-[0_4px_20px_rgba(124,58,237,0.25)] hover:shadow-[0_8px_25px_rgba(124,58,237,0.4)]'
-                                                        : 'bg-[#1e1e2d] text-gray-200 rounded-bl-none border-white/5 shadow-black/20 hover:bg-[#252535]'
-                                                        }`}>
-                                                    {hasMultipleLines && !isExpanded ? (
-                                                        <div className="flex items-center justify-between gap-4">
-                                                            <p className="font-light tracking-wide truncate">{lines[0]}</p>
-                                                            <span className="text-[10px] bg-white/10 px-2 py-0.5 rounded-full shrink-0">Devamı...</span>
+                                                {groupMsgs.map((msg) => {
+                                                    const isOutbound = msg.direction === 'outbound';
+                                                    const isSuccess = msg.status === 'success';
+                                                    const lines = msg.message_body?.split('\n').filter(Boolean) || [];
+                                                    const isExpanded = expandedMsgIds.has(msg.id);
+                                                    const hasMultipleLines = lines.length > 1;
+
+                                                    return (
+                                                        <div key={msg.id} className={`flex mb-1 ${isOutbound ? 'justify-end' : 'justify-start'}`}>
+                                                            <div className={`max-w-[85%] md:max-w-[70%] group relative ${isOutbound ? 'items-end' : 'items-start'} flex flex-col`}>
+
+                                                                <div
+                                                                    onClick={() => hasMultipleLines && toggleExpand(msg.id)}
+                                                                    className={`px-4 py-3 rounded-2xl text-[15px] leading-relaxed shadow-lg backdrop-blur-md border transition-all duration-300 hover:brightness-110 ${hasMultipleLines ? 'cursor-pointer' : ''} ${isOutbound
+                                                                        ? 'bg-purple-600/90 text-white rounded-tr-sm border-purple-500/30'
+                                                                        : 'bg-[#1e1e2d]/95 text-gray-200 rounded-tl-sm border-white/5'
+                                                                        }`}>
+                                                                    {hasMultipleLines && !isExpanded ? (
+                                                                        <div className="flex items-center justify-between gap-4">
+                                                                            <p className="font-light tracking-wide truncate">{lines[0]}</p>
+                                                                            <span className="text-[10px] bg-white/10 px-2 py-0.5 rounded-full shrink-0">Devamı...</span>
+                                                                        </div>
+                                                                    ) : (
+                                                                        <p className="whitespace-pre-wrap font-light tracking-wide">{msg.message_body}</p>
+                                                                    )}
+
+                                                                    {/* Time & Status Overlay inside bubble for Telegram look */}
+                                                                    <div className={`flex items-center justify-end gap-1 mt-1 text-[10px] float-right ml-2 -mb-1 opacity-70 ${isOutbound ? 'text-purple-100' : 'text-gray-400'}`}>
+                                                                        <span>{formatTime(msg.created_at)}</span>
+                                                                        {isOutbound && (
+                                                                            isSuccess
+                                                                                ? <CheckCheck className="w-3.5 h-3.5 text-green-400" />
+                                                                                : msg.status === 'failed'
+                                                                                    ? <AlertCircle className="w-3.5 h-3.5 text-red-500" />
+                                                                                    : <Clock className="w-3.5 h-3.5" />
+                                                                        )}
+                                                                    </div>
+                                                                </div>
+                                                            </div>
                                                         </div>
-                                                    ) : (
-                                                        <p className="whitespace-pre-wrap font-light tracking-wide">{msg.message_body}</p>
-                                                    )}
-                                                </div>
+                                                    );
+                                                })}
+                                            </React.Fragment>
+                                        ))
+                                    )}
+                                    <div ref={messagesEndRef} />
+                                </div>
+                            </div>
 
-                                                <div className={`flex items-center gap-1.5 mt-2 px-1 text-[11px] font-medium opacity-60 ${isOutbound ? 'text-purple-200' : 'text-gray-500'}`}>
-                                                    <span>{formatTime(msg.created_at)}</span>
-                                                    {isOutbound && (
-                                                        isSuccess
-                                                            ? <CheckCheck className="w-3.5 h-3.5 text-green-400 drop-shadow-[0_0_5px_rgba(74,222,128,0.5)]" />
-                                                            : msg.status === 'failed'
-                                                                ? <AlertCircle className="w-3.5 h-3.5 text-red-500" />
-                                                                : <Clock className="w-3.5 h-3.5" />
-                                                    )}
-                                                </div>
+                            {/* RIGHT SIDEBAR: INFO PANEL (Telegram Style) */}
+                            {showInfoPanel && (
+                                <div className="w-72 border-l border-white/5 bg-black/20 backdrop-blur-md flex flex-col z-20 animate-in slide-in-from-right duration-300">
+                                    <div className="p-6 flex flex-col items-center border-b border-white/5">
+                                        <div className="w-20 h-20 rounded-full bg-gradient-to-br from-purple-500 to-indigo-600 flex items-center justify-center text-white text-3xl font-bold shadow-xl mb-4">
+                                            {selectedContact.full_name.charAt(0)}
+                                        </div>
+                                        <div className="text-white font-bold text-lg text-center">{selectedContact.full_name}</div>
+                                        <div className="text-gray-500 text-sm">{selectedContact.title || 'Müşteri'}</div>
+                                    </div>
 
+                                    <div className="p-6 space-y-6 flex-1 overflow-y-auto custom-scrollbar">
+                                        <div className="space-y-4">
+                                            <h4 className="text-[10px] font-bold text-purple-400 uppercase tracking-widest">İletişim Bilgileri</h4>
+                                            <div className="flex items-center gap-3 text-gray-300">
+                                                <div className="p-2 rounded-lg bg-white/5 text-gray-400"><Phone className="w-4 h-4" /></div>
+                                                <div className="text-sm font-medium">{selectedContact.phone_number}</div>
                                             </div>
                                         </div>
-                                    );
-                                })
+
+                                        <div className="space-y-4">
+                                            <h4 className="text-[10px] font-bold text-purple-400 uppercase tracking-widest">Durum</h4>
+                                            <div className="p-3 rounded-xl bg-purple-500/5 border border-purple-500/20">
+                                                <div className="text-xs text-gray-400 mb-1">Lead Aşaması</div>
+                                                <div className="text-sm text-purple-200 font-semibold">Yeni Başvuru</div>
+                                            </div>
+                                        </div>
+
+                                        <div className="space-y-4">
+                                            <h4 className="text-[10px] font-bold text-purple-400 uppercase tracking-widest">Aksiyonlar</h4>
+                                            <button className="w-full py-2.5 rounded-xl bg-white/5 hover:bg-white/10 text-white text-sm font-medium transition-all text-left px-4">
+                                                Randevu Oluştur
+                                            </button>
+                                            <button className="w-full py-2.5 rounded-xl bg-red-500/10 hover:bg-red-500/20 text-red-400 text-sm font-medium transition-all text-left px-4">
+                                                Lead'i Arşivle
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
                             )}
                         </div>
 
@@ -454,7 +560,6 @@ export default function ChatInterface() {
                         <div className="p-6 border-t border-white/5 bg-[#12121e]/50 backdrop-blur-md z-20">
                             <div className="flex gap-4 items-center relative">
                                 <div className="flex-1 relative group">
-                                    {/* AI Suggestion UI removed per user request for "direct" correction */}
                                     <input
                                         type="text"
                                         placeholder="Bir şeyler yazın..."

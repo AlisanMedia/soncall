@@ -14,7 +14,7 @@ export async function GET(request: NextRequest) {
         const { data, error } = await supabase
             .from('contacts')
             .select('*')
-            .order('full_name', { ascending: true });
+            .order('last_message_at', { ascending: false, nullsFirst: false });
 
         if (error) throw error;
 
