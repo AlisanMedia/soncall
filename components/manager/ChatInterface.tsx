@@ -249,8 +249,13 @@ export default function ChatInterface() {
         c.full_name.toLowerCase().includes(searchTerm.toLowerCase())
     );
 
-    const formatTime = (dateStr: string) => {
-        return new Date(dateStr).toLocaleTimeString('tr-TR', { hour: '2-digit', minute: '2-digit' });
+    const formatTime = (dateStr?: string) => {
+        if (!dateStr) return '';
+        try {
+            return new Date(dateStr).toLocaleTimeString('tr-TR', { hour: '2-digit', minute: '2-digit' });
+        } catch (e) {
+            return '';
+        }
     };
 
     const formatDateHeader = (dateStr: string) => {
