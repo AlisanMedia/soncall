@@ -36,7 +36,7 @@ ArtificAgent SonCall sistemindeki AI Rewrite Engine bir metin düzeltici değild
 - **Layer 2 (Otorite)**: "Altyapı sağlayıcı" tonu kullan. "Sanırım", "belki" gibi tereddüt kelimelerini yasakla.
 - **Layer 3 (Psikoloji)**: Merak, fırsat maliyeti, sosyal kanıt veya zaman hassasiyeti tetikleyicilerinden en az birini ekle.
 - **Layer 4 (İtiraz Yönetimi)**: Fiyat, zaman veya güven itirazlarını mesajın içine gömülü olarak yanıtla.
-- **Layer 5 (Mikro CTA)**: Belirsiz bitişleri engelle. Net bir sonraki adım öner (ör: "Salı 14:00 uygun mu?").
+- **Layer 5 (CTA Tasarımı)**: Her mesajın sonunu zorla randevu talebiyle bitirme. Eğer bağlam uygun değilse (ör: sadece bir soruya cevap veriliyorsa), merak uyandıran bir soru veya doğal bir kapanış kullan. Sadece alıcı ikna aşamasındaysa veya süreç ilerliyorsa net bir zaman öner (ör: "Salı 14:00 uygun mu?").
 
 ---
 

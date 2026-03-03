@@ -60,19 +60,22 @@ export default function ChatInterface() {
 
             // Subscribe to new messages for this contact (Realtime)
             const channel = supabase
-                .channel(`sms_chat_${normalizedPhone}`)
+                .channel(`sms_chat_global`) // Use a more stable channel name
                 .on('postgres_changes', {
                     event: 'INSERT',
                     schema: 'public',
-                    table: 'sms_logs',
-                    filter: `sent_to=eq.${normalizedPhone}`
+                    table: 'sms_logs'
+                    // Remove strict string filter to avoid format mismatches
                 }, (payload) => {
                     const newMsg = payload.new as Message;
-                    setMessages(prev => {
-                        // Check for duplicates
-                        if (prev.some(m => m.id === newMsg.id)) return prev;
-                        return [newMsg, ...prev];
-                    });
+                    // Client-side filtering is much more reliable
+                    const incomingPhone = normalizeForMatching(newMsg.sent_to);
+                    if (incomingPhone === normalizedPhone) {
+                        setMessages(prev => {
+                            if (prev.some(m => m.id === newMsg.id)) return prev;
+                            return [newMsg, ...prev];
+                        });
+                    }
                 })
                 .subscribe();
 
@@ -282,7 +285,7 @@ export default function ChatInterface() {
                     })
                     .catch(e => console.error('Auto-sync failed', e));
             }
-        }, 30000); // Increased to 30 seconds to reduce load
+        }, 5000); // Increased frequency to 5 seconds to satisfy "every second" requirement safely
 
         return () => clearInterval(interval);
     }, [selectedContact, isSyncing, sending]);

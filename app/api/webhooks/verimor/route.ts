@@ -1,18 +1,5 @@
-
 import { NextRequest, NextResponse } from 'next/server';
-import { createClient } from '@/lib/supabase/server';
-import { normalizePhone } from '@/lib/utils';
-
-// Helper to normalize securely for the DB
-// We use the same logic as the utils one but ensure we handle the inputs Verimor might send
-// Verimor usually sends raw numbers like "905321234567"
-const normalizeForDb = (phone: string) => {
-    let clean = phone.replace(/[^0-9]/g, '');
-    // Ensure it starts with 90 for TR numbers if length is 10
-    if (clean.length === 10) clean = '90' + clean;
-    if (clean.length === 11 && clean.startsWith('0')) clean = '90' + clean.substring(1);
-    return clean;
-};
+import { normalizePhone, standardizePhone } from '@/lib/utils';
 
 export async function POST(request: NextRequest) {
     try {
@@ -60,7 +47,7 @@ export async function POST(request: NextRequest) {
         const supabase = createSupabaseClient(supabaseUrl, supabaseServiceKey);
 
         // Normalize Sender Phone
-        const normalizedSender = normalizeForDb(sender);
+        const normalizedSender = standardizePhone(sender);
 
         // 1. Try to find the Contact
         let contactId = null;
