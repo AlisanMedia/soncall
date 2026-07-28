@@ -97,3 +97,12 @@ export function generatePhoneVariants(phone: string): string[] {
 
     return Array.from(variants);
 }
+
+export function getPotentialColor(level: string | undefined | null): string {
+    switch (level) {
+        case 'high': return 'text-emerald-400 border-emerald-500/30 bg-emerald-500/10';
+        case 'medium': return 'text-yellow-400 border-yellow-500/30 bg-yellow-500/10';
+        case 'low': return 'text-red-400 border-red-500/30 bg-red-500/10';
+        default: return 'text-gray-400 border-gray-500/30 bg-gray-500/10';
+    }
+}

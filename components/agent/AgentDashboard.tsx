@@ -59,7 +59,6 @@ export default function AgentDashboard({ profile: initialProfile }: AgentDashboa
     const [refreshKey, setRefreshKey] = useState(0);
     const [notifications, setNotifications] = useState<Notification[]>([]);
     const [chatOpen, setChatOpen] = useState(false);
-    const [managerId, setManagerId] = useState<string | null>(null);
 
     const [stats, setStats] = useState({ level: 1, rank: 'Çaylak' });
     const [manualLeadOpen, setManualLeadOpen] = useState(false);
@@ -121,26 +120,6 @@ export default function AgentDashboard({ profile: initialProfile }: AgentDashboa
     }, [initialProfile.id]);
 
     useEffect(() => {
-        // Fetch manager ID for direct messaging
-        const fetchManager = async () => {
-            try {
-                const { data } = await supabase
-                    .from('profiles')
-                    .select('id')
-                    .eq('role', 'manager')
-                    .limit(1)
-                    .single();
-
-                if (data) {
-                    setManagerId(data.id);
-                }
-            } catch (err) {
-                console.error('Failed to fetch manager:', err);
-            }
-        };
-
-        fetchManager();
-
         // Poll for notifications
         const checkNotifications = async () => {
             try {

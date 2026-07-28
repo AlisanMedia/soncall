@@ -193,7 +193,8 @@ export async function POST(request: NextRequest) {
                 "decision_maker": true/false,
                 "pain_points": ["Tespit edilen sorun noktaları - örn: Gece aramaları kaçırıyor, Yüksek personel maliyeti"],
                 "next_call_timing": "Önerilen sonraki arama zamanı",
-                "interested_service": "AI Voice Agent | AI Receptionist | Otomasyon | Belirsiz" 
+                "interested_service": "AI Voice Agent | AI Receptionist | Otomasyon | Belirsiz",
+                "industry": "Müşterinin faaliyet gösterdiği sektör (örn: Sağlık, E-ticaret, Turizm, Belirsiz)"
             }
             
             ## ANALİZ KURALLARI:
@@ -294,6 +295,7 @@ export async function POST(request: NextRequest) {
         if (analysis.potential_level !== 'not_assessed') {
             const updateData: any = {
                 potential_level: analysis.potential_level,
+                category: analysis.industry || analysis.interested_service || undefined
             };
 
             // If AI extracted an appointment date, save it to the lead

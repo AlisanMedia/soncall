@@ -1,15 +1,14 @@
-import { createClient } from '@/lib/supabase/server';
 import { NextResponse } from 'next/server';
+import { requireManagerAccess } from '@/lib/api/auth';
 
 export const dynamic = 'force-dynamic';
 
 export async function GET() {
     try {
-        const supabase = await createClient();
+        const auth = await requireManagerAccess();
+        if (!auth.ok) return auth.response;
 
-        // Check auth
-        const { data: { user } } = await supabase.auth.getUser();
-        if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+        const supabase = auth.supabase;
 
         // Fetch categories
         // Optimization: We fetch just the category column. 

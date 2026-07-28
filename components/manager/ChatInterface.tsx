@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect, useRef } from 'react';
-import { Loader2, Send, Search, MessageSquare, Phone, User, CheckCheck, Clock, Sparkles, RefreshCw, AlertCircle } from 'lucide-react';
+import { Loader2, Send, Search, MessageSquare, Phone, User, CheckCheck, Clock, Sparkles, RefreshCw, AlertCircle, Trash2, MoreVertical, SearchX, ArrowLeft, Info, X } from 'lucide-react';
 import { createClient } from '@/lib/supabase/client';
 import { toast } from 'sonner';
 import { standardizePhone } from '@/lib/utils';
@@ -14,6 +14,8 @@ interface Contact {
     avatar_url?: string;
     last_message_body?: string;
     last_message_at?: string;
+    unread_count?: number;
+    created_at?: string;
 }
 
 interface Message {
@@ -43,6 +45,10 @@ export default function ChatInterface() {
     const [suggestedText, setSuggestedText] = useState<string | null>(null);
     const [hasBeenChecked, setHasBeenChecked] = useState(false);
     const [showInfoPanel, setShowInfoPanel] = useState(false);
+    const [showSidebar, setShowSidebar] = useState(true);
+    const [chatSearchTerm, setChatSearchTerm] = useState('');
+    const [isChatSearching, setIsChatSearching] = useState(false);
+
     const messagesEndRef = useRef<HTMLDivElement>(null);
     const supabase = createClient();
 
@@ -59,6 +65,12 @@ export default function ChatInterface() {
         if (selectedContact) {
             const normalizedPhone = normalizeForMatching(selectedContact.phone_number);
             fetchMessages(normalizedPhone);
+            markAsRead(normalizedPhone);
+
+            // Hide sidebar on mobile when contact is selected
+            if (window.innerWidth < 768) {
+                setShowSidebar(false);
+            }
 
             // Subscribe to new messages for this contact (Realtime)
             const channel = supabase
@@ -104,6 +116,24 @@ export default function ChatInterface() {
             console.error('Contacts error:', error);
         } finally {
             setLoadingContacts(false);
+        }
+    };
+
+    const markAsRead = async (phone: string) => {
+        try {
+            await fetch('/api/manager/sms/read', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ phone })
+            });
+            // Update local state to clear unread count
+            setContacts(prev => prev.map(c =>
+                normalizeForMatching(c.phone_number) === normalizeForMatching(phone)
+                    ? { ...c, unread_count: 0 }
+                    : c
+            ));
+        } catch (e) {
+            console.error('Failed to mark as read', e);
         }
     };
 
@@ -296,15 +326,21 @@ export default function ChatInterface() {
                 fetch('/api/manager/sms/sync', { method: 'POST' })
                     .then(res => res.json())
                     .then(data => {
-                        if (data.success && data.count > 0 && selectedContact) {
-                            // Only refresh messages if we found new ones and have a contact open
-                            fetchMessages(normalizeForMatching(selectedContact.phone_number));
+                        if (data.success && data.count > 0) {
+                            // If user is looking at the chat where new message arrived, refresh messages
+                            if (selectedContact) {
+                                // Important: We should check if the new messages are actually for the selected contact
+                                // For now, simple re-fetch of contacts for unread counts and current chat for messages
+                                fetchMessages(normalizeForMatching(selectedContact.phone_number));
+                                markAsRead(normalizeForMatching(selectedContact.phone_number));
+                            }
+                            fetchContacts();
                             toast.success(`${data.count} yeni mesaj geldi!`);
                         }
                     })
                     .catch(e => console.error('Auto-sync failed', e));
             }
-        }, 5000); // Increased frequency to 5 seconds to satisfy "every second" requirement safely
+        }, 3000); // 3 seconds for balance between 'real-time' feel and server load
 
         return () => clearInterval(interval);
     }, [selectedContact, isSyncing, sending]);
@@ -330,6 +366,17 @@ export default function ChatInterface() {
         }
     };
 
+    const filteredMessages = messages.filter(m =>
+        m.message_body?.toLowerCase().includes(chatSearchTerm.toLowerCase())
+    );
+
+    const groupedFilteredMessages: { [key: string]: Message[] } = {};
+    [...filteredMessages].reverse().forEach(msg => {
+        const dateKey = new Date(msg.created_at).toDateString();
+        if (!groupedFilteredMessages[dateKey]) groupedFilteredMessages[dateKey] = [];
+        groupedFilteredMessages[dateKey].push(msg);
+    });
+
     return (
         <div className="flex bg-[#0f0f1a]/90 backdrop-blur-xl border border-purple-500/30 rounded-3xl shadow-[0_0_30px_rgba(147,51,234,0.3)] h-[700px] overflow-hidden relative transition-all duration-300 hover:shadow-[0_0_50px_rgba(147,51,234,0.4)] hover:border-purple-500/50">
             {/* Ambient Background Glow */}
@@ -337,7 +384,7 @@ export default function ChatInterface() {
             <div className="absolute bottom-0 left-0 w-64 h-64 bg-blue-600/10 rounded-full blur-[100px] pointer-events-none" />
 
             {/* LEFT SIDEBAR: CONTACT LIST */}
-            <div className="w-80 border-r border-white/5 flex flex-col bg-black/20 backdrop-blur-sm z-10">
+            <div className={`w-full md:w-80 border-r border-white/5 flex flex-col bg-black/20 backdrop-blur-sm z-10 transition-all duration-300 ${!showSidebar ? 'hidden md:flex' : 'flex'}`}>
                 <div className="p-6 border-b border-white/5">
                     <div className="flex items-center justify-between mb-4">
                         <h2 className="text-white font-bold text-lg flex items-center gap-3">
@@ -359,6 +406,10 @@ export default function ChatInterface() {
                 <div className="flex-1 overflow-y-auto custom-scrollbar p-3 space-y-1">
                     {loadingContacts ? (
                         <div className="flex justify-center py-8"><Loader2 className="w-6 h-6 animate-spin text-gray-500" /></div>
+                    ) : filteredContacts.length === 0 ? (
+                        <div className="text-center py-8 text-gray-500 text-sm italic px-4">
+                            Kişi bulunamadı. <br /> Kişiler sekmesinden ekleme yapabilirsiniz.
+                        </div>
                     ) : (
                         filteredContacts.map(contact => (
                             <div
@@ -384,10 +435,9 @@ export default function ChatInterface() {
                                         <div className={`text-xs truncate flex-1 ${selectedContact?.id === contact.id ? 'text-purple-200/70' : 'text-gray-500'}`}>
                                             {contact.last_message_body || contact.title || contact.phone_number}
                                         </div>
-                                        {/* Placeholder for unread badge if needed later */}
-                                        {Math.random() > 0.8 && (
-                                            <div className="w-4 h-4 rounded-full bg-purple-500 text-[9px] flex items-center justify-center text-white font-bold shrink-0">
-                                                1
+                                        {contact.unread_count && contact.unread_count > 0 && (
+                                            <div className="min-w-[18px] h-[18px] rounded-full bg-purple-500 text-[10px] flex items-center justify-center text-white font-bold px-1 animate-in zoom-in duration-300">
+                                                {contact.unread_count}
                                             </div>
                                         )}
                                     </div>
@@ -399,34 +449,64 @@ export default function ChatInterface() {
             </div>
 
             {/* RIGHT SIDE: CHAT AREA */}
-            <div className="flex-1 flex flex-col relative z-0">
+            <div className={`flex-1 flex flex-col relative z-0 transition-all duration-300 ${showSidebar ? 'hidden md:flex' : 'flex'}`}>
                 {selectedContact ? (
                     <>
                         {/* Chat Header */}
-                        <div className="h-20 px-6 border-b border-white/5 flex items-center justify-between bg-white/[0.02] backdrop-blur-sm sticky top-0 z-20">
-                            <div className="flex items-center gap-4">
-                                <div className="w-10 h-10 rounded-full bg-gradient-to-br from-purple-500 to-indigo-600 flex items-center justify-center text-white font-bold shadow-[0_0_15px_rgba(168,85,247,0.3)]">
+                        <div className="h-20 px-4 md:px-6 border-b border-white/5 flex items-center justify-between bg-white/[0.02] backdrop-blur-sm sticky top-0 z-20">
+                            <div className="flex items-center gap-3 md:gap-4 flex-1 truncate">
+                                <button
+                                    onClick={() => setShowSidebar(true)}
+                                    className="p-2 -ml-2 rounded-lg text-gray-400 hover:bg-white/5 md:hidden"
+                                >
+                                    <ArrowLeft className="w-5 h-5" />
+                                </button>
+                                <div className="w-10 h-10 rounded-full bg-gradient-to-br from-purple-500 to-indigo-600 flex items-center justify-center text-white font-bold shadow-[0_0_15px_rgba(168,85,247,0.3)] shrink-0">
                                     {selectedContact.full_name.charAt(0)}
                                 </div>
-                                <div>
-                                    <div className="font-bold text-white text-lg">{selectedContact.full_name}</div>
-                                    <div className="text-xs text-purple-300/80 flex items-center gap-1.5 font-medium tracking-wide">
+                                <div className="truncate">
+                                    <div className="font-bold text-white text-base md:text-lg truncate">{selectedContact.full_name}</div>
+                                    <div className="text-[10px] md:text-xs text-purple-300/80 flex items-center gap-1.5 font-medium tracking-wide">
                                         <div className="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse" />
                                         Çevrimiçi
                                     </div>
                                 </div>
                             </div>
 
-                            <button
-                                onClick={() => setShowInfoPanel(!showInfoPanel)}
-                                className={`p-2 rounded-xl transition-all ${showInfoPanel ? 'bg-purple-500/20 text-purple-400' : 'text-gray-400 hover:bg-white/5'}`}
-                            >
-                                <User className="w-5 h-5" />
-                            </button>
+                            <div className="flex items-center gap-1 md:gap-2">
+                                {isChatSearching ? (
+                                    <div className="flex items-center bg-white/5 rounded-xl border border-white/10 px-3 py-1.5 animate-in slide-in-from-right-4 duration-300">
+                                        <input
+                                            autoFocus
+                                            type="text"
+                                            placeholder="Mesaj ara..."
+                                            value={chatSearchTerm}
+                                            onChange={(e) => setChatSearchTerm(e.target.value)}
+                                            className="bg-transparent border-none text-xs text-white focus:ring-0 w-24 md:w-40 placeholder:text-gray-600"
+                                        />
+                                        <button onClick={() => { setIsChatSearching(false); setChatSearchTerm(''); }}>
+                                            <X className="w-4 h-4 text-gray-500 hover:text-white" />
+                                        </button>
+                                    </div>
+                                ) : (
+                                    <button
+                                        onClick={() => setIsChatSearching(true)}
+                                        className="p-2 rounded-xl text-gray-400 hover:bg-white/5 transition-all"
+                                    >
+                                        <Search className="w-5 h-5" />
+                                    </button>
+                                )}
+
+                                <button
+                                    onClick={() => setShowInfoPanel(!showInfoPanel)}
+                                    className={`p-2 rounded-xl transition-all ${showInfoPanel ? 'bg-purple-500/20 text-purple-400' : 'text-gray-400 hover:bg-white/5'}`}
+                                >
+                                    <Info className="w-5 h-5" />
+                                </button>
+                            </div>
                         </div>
 
                         <div className="flex-1 flex overflow-hidden">
-                            {/* Messages List (Scrollable) */}
                             <div className="flex-1 overflow-y-auto p-4 md:p-8 custom-scrollbar relative">
                                 {/* Wallpaper Overlay */}
                                 <div
@@ -449,7 +529,7 @@ export default function ChatInterface() {
                                             <p className="text-gray-400">Henüz mesaj yok. İlk mesajı gönderin! 👋</p>
                                         </div>
                                     ) : (
-                                        Object.entries(groupedMessages).map(([dateKey, groupMsgs]) => (
+                                        Object.entries(groupedFilteredMessages).map(([dateKey, groupMsgs]) => (
                                             <React.Fragment key={dateKey}>
                                                 {/* Date Header */}
                                                 <div className="flex justify-center my-6 sticky top-0 z-10">
@@ -461,28 +541,30 @@ export default function ChatInterface() {
                                                 {groupMsgs.map((msg) => {
                                                     const isOutbound = msg.direction === 'outbound';
                                                     const isSuccess = msg.status === 'success';
-                                                    const lines = msg.message_body?.split('\n').filter(Boolean) || [];
-                                                    const isExpanded = expandedMsgIds.has(msg.id);
-                                                    const hasMultipleLines = lines.length > 1;
+                                                    const content = msg.message_body || '';
+
+                                                    // Highlight search term
+                                                    const parts = chatSearchTerm
+                                                        ? content.split(new RegExp(`(${chatSearchTerm})`, 'gi'))
+                                                        : [content];
 
                                                     return (
                                                         <div key={msg.id} className={`flex mb-1 ${isOutbound ? 'justify-end' : 'justify-start'}`}>
-                                                            <div className={`max-w-[85%] md:max-w-[70%] group relative ${isOutbound ? 'items-end' : 'items-start'} flex flex-col`}>
+                                                            <div className={`max-w-[85%] md:max-w-[70%] group relative ${isOutbound ? 'items-end' : 'items-start'} flex flex-col animate-in slide-in-from-bottom-2 duration-300`}>
 
                                                                 <div
-                                                                    onClick={() => hasMultipleLines && toggleExpand(msg.id)}
-                                                                    className={`px-4 py-3 rounded-2xl text-[15px] leading-relaxed shadow-lg backdrop-blur-md border transition-all duration-300 hover:brightness-110 ${hasMultipleLines ? 'cursor-pointer' : ''} ${isOutbound
+                                                                    className={`px-4 py-3 rounded-2xl text-[15px] leading-relaxed shadow-lg backdrop-blur-md border transition-all duration-300 hover:brightness-110 ${isOutbound
                                                                         ? 'bg-purple-600/90 text-white rounded-tr-sm border-purple-500/30'
                                                                         : 'bg-[#1e1e2d]/95 text-gray-200 rounded-tl-sm border-white/5'
                                                                         }`}>
-                                                                    {hasMultipleLines && !isExpanded ? (
-                                                                        <div className="flex items-center justify-between gap-4">
-                                                                            <p className="font-light tracking-wide truncate">{lines[0]}</p>
-                                                                            <span className="text-[10px] bg-white/10 px-2 py-0.5 rounded-full shrink-0">Devamı...</span>
-                                                                        </div>
-                                                                    ) : (
-                                                                        <p className="whitespace-pre-wrap font-light tracking-wide">{msg.message_body}</p>
-                                                                    )}
+
+                                                                    <p className="whitespace-pre-wrap font-light tracking-wide">
+                                                                        {parts.map((part, i) =>
+                                                                            part.toLowerCase() === chatSearchTerm.toLowerCase()
+                                                                                ? <span key={i} className="bg-yellow-500/30 text-white font-bold px-0.5 rounded">{part}</span>
+                                                                                : part
+                                                                        )}
+                                                                    </p>
 
                                                                     {/* Time & Status Overlay inside bubble for Telegram look */}
                                                                     <div className={`flex items-center justify-end gap-1 mt-1 text-[10px] float-right ml-2 -mb-1 opacity-70 ${isOutbound ? 'text-purple-100' : 'text-gray-400'}`}>

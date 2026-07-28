@@ -102,8 +102,8 @@ export default function TeamMonitoring() {
             loadInitialData();
         }, 300); // Debounce search
 
-        // Auto-refresh every 5 seconds for "Live" feel
-        const interval = setInterval(() => loadLatestActivities(), 5000);
+        // Keep the live feed fresh without hammering the dashboard APIs.
+        const interval = setInterval(() => loadLatestActivities(), 15000);
 
         return () => {
             clearInterval(interval);
@@ -166,7 +166,6 @@ export default function TeamMonitoring() {
 
             if (activitiesRes.ok) {
                 const data = await activitiesRes.json();
-                console.log('[TeamMonitoring] Initial Data Success:', data);
                 setActivities(data.activities || []);
                 setHasMore(true);
             } else {
@@ -198,7 +197,7 @@ export default function TeamMonitoring() {
 
     const loadLatestActivities = async () => {
         // Prevent multiple simultaneous polls
-        if (isPolling.current || searchTerm) return;
+        if (isPolling.current || searchTerm || document.hidden) return;
 
         try {
             isPolling.current = true;
@@ -206,7 +205,6 @@ export default function TeamMonitoring() {
             const res = await fetch('/api/manager/activity?limit=20&offset=0');
             if (res.ok) {
                 const data = await res.json();
-                console.log('[TeamMonitoring] Polling Latest:', data.activities?.length || 0);
                 const fetchedActivities = data.activities || [];
 
                 if (fetchedActivities.length === 0) {
@@ -217,8 +215,6 @@ export default function TeamMonitoring() {
                 setActivities(prev => {
                     const currentIds = new Set(prev.map(a => a.id));
                     const newItems = fetchedActivities.filter((a: ActivityItem) => !currentIds.has(a.id));
-
-                    console.log(`[TeamMonitoring Update] Logic -> Prev: ${prev.length}, Incoming: ${fetchedActivities.length}, New: ${newItems.length}`);
 
                     if (newItems.length > 0) {
                         playActivityNotification();

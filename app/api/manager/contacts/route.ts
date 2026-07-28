@@ -1,24 +1,60 @@
 
 import { NextRequest, NextResponse } from 'next/server';
-import { createClient } from '@/lib/supabase/server';
-import { normalizePhone } from '@/lib/utils';
+import { requireManagerAccess } from '@/lib/api/auth';
 
-export async function GET(request: NextRequest) {
+export async function GET() {
     try {
-        const supabase = await createClient();
-        const { data: { user } } = await supabase.auth.getUser();
+        const auth = await requireManagerAccess();
+        if (!auth.ok) return auth.response;
+        const supabase = auth.supabase;
 
-        if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-
-        // Retrieve contacts ordered by name
-        const { data, error } = await supabase
+        // 1. Fetch all contacts
+        const { data: contacts, error: contactsError } = await supabase
             .from('contacts')
             .select('*')
             .order('full_name', { ascending: true });
 
-        if (error) throw error;
+        if (contactsError) throw contactsError;
 
-        return NextResponse.json({ contacts: data });
+        // 2. Fetch latest messages and unread counts
+        const { data: logs, error: logsError } = await supabase
+            .from('sms_logs')
+            .select('sent_to, message_body, created_at, is_read, direction')
+            .order('created_at', { ascending: false })
+            .limit(500);
+
+        if (logsError) throw logsError;
+
+        // Map logs to contacts
+        const lastMessages: Record<string, { body: string, at: string }> = {};
+        const unreadCounts: Record<string, number> = {};
+
+        logs?.forEach(log => {
+            // Last message tracking
+            if (!lastMessages[log.sent_to]) {
+                lastMessages[log.sent_to] = { body: log.message_body, at: log.created_at };
+            }
+            // Unread count tracking (only inbound messages that are not read)
+            if (log.direction === 'inbound' && !log.is_read) {
+                unreadCounts[log.sent_to] = (unreadCounts[log.sent_to] || 0) + 1;
+            }
+        });
+
+        const contactsWithMessages = contacts.map(c => ({
+            ...c,
+            last_message_body: lastMessages[c.phone_number]?.body,
+            last_message_at: lastMessages[c.phone_number]?.at,
+            unread_count: unreadCounts[c.phone_number] || 0
+        }));
+
+        // 3. Sort by activity (last_message_at or created_at)
+        contactsWithMessages.sort((a, b) => {
+            const aTime = new Date(a.last_message_at || a.created_at).getTime();
+            const bTime = new Date(b.last_message_at || b.created_at).getTime();
+            return bTime - aTime;
+        });
+
+        return NextResponse.json({ contacts: contactsWithMessages });
     } catch (error: any) {
         return NextResponse.json({ error: error.message }, { status: 500 });
     }
@@ -26,10 +62,9 @@ export async function GET(request: NextRequest) {
 
 export async function POST(request: NextRequest) {
     try {
-        const supabase = await createClient();
-        const { data: { user } } = await supabase.auth.getUser();
-
-        if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+        const auth = await requireManagerAccess();
+        if (!auth.ok) return auth.response;
+        const supabase = auth.supabase;
 
         const body = await request.json();
         const { full_name, phone_number, title, company, notes } = body;
@@ -65,7 +100,7 @@ export async function POST(request: NextRequest) {
                 title,
                 company,
                 notes,
-                created_by: user.id
+                created_by: auth.user.id
             })
             .select()
             .single();
@@ -80,10 +115,9 @@ export async function POST(request: NextRequest) {
 
 export async function PUT(request: NextRequest) {
     try {
-        const supabase = await createClient();
-        const { data: { user } } = await supabase.auth.getUser();
-
-        if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+        const auth = await requireManagerAccess();
+        if (!auth.ok) return auth.response;
+        const supabase = auth.supabase;
 
         const body = await request.json();
         const { id, full_name, phone_number, title, company, notes } = body;
@@ -124,10 +158,9 @@ export async function PUT(request: NextRequest) {
 
 export async function DELETE(request: NextRequest) {
     try {
-        const supabase = await createClient();
-        const { data: { user } } = await supabase.auth.getUser();
-
-        if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+        const auth = await requireManagerAccess();
+        if (!auth.ok) return auth.response;
+        const supabase = auth.supabase;
 
         const { searchParams } = new URL(request.url);
         const id = searchParams.get('id');

@@ -1,9 +1,12 @@
-import { createClient } from '@/lib/supabase/server';
 import { NextResponse } from 'next/server';
+import { requireManagerAccess } from '@/lib/api/auth';
 
 export async function GET(request: Request) {
     try {
-        const supabase = await createClient();
+        const auth = await requireManagerAccess();
+        if (!auth.ok) return auth.response;
+
+        const supabase = auth.supabase;
         const { searchParams } = new URL(request.url);
         const agentFilter = searchParams.get('agent');
 
@@ -13,11 +16,6 @@ export async function GET(request: Request) {
         const dateStart = searchParams.get('start');
         const dateEnd = searchParams.get('end');
 
-        // Verify manager authentication
-        const { data: { user } } = await supabase.auth.getUser();
-        if (!user) {
-            return NextResponse.json({ message: 'Unauthorized' }, { status: 401 });
-        }
         let query = supabase
             .from('leads')
             .select(`

@@ -37,7 +37,7 @@ function normalizeLead(row: CSVRow): Lead {
             row['Phone'] || row['Phone Number'] || row['phone'] || row['phone_number']
         ),
         address: row['Address'] || row['address'] || '',
-        category: row['Category'] || row['Type'] || row['category'] || row['type'] || '',
+        category: row['Category'] || row['Type'] || row['Sector'] || row['Industry'] || row['Kategori'] || row['Sektör'] || row['category'] || row['type'] || row['sector'] || row['industry'] || '',
         website: row['Website'] || row['URL'] || row['website'] || row['url'] || null,
         rating: parseFloat(row['Rating'] || row['rating'] || '0') || null,
         raw_data: row, // Keep original for reference

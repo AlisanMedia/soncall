@@ -2,34 +2,26 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { Search, Filter, ShieldAlert, ArrowRightLeft, CheckSquare, Square, Trash2 } from 'lucide-react';
+import { ShieldAlert, ArrowRightLeft, CheckSquare, Square } from 'lucide-react';
 import { toast } from 'sonner';
-
 
 import TransferModal from './TransferModal';
 import { GlassButton } from '@/components/ui/glass-button';
 import StuckLeadsPanel from './StuckLeadsPanel';
 import { createClient } from '@/lib/supabase/client';
 import { SectionInfo } from '@/components/ui/section-info';
+import LeadKanbanBoard, { KanbanLead } from './LeadKanbanBoard';
+import LeadProfileModal from '../crm/LeadProfileModal';
 import type { Profile } from '@/types';
-
-// Simplified type for this view
-interface ManagedLead {
-    id: string;
-    business_name: string;
-    phone_number: string;
-    status: string;
-    assigned_to: string | null;
-    created_at: string;
-    category: string; // Added field
-    batch_id: string; // Added field for context
-    profiles?: { full_name: string }; // Agent
-}
+import * as XLSX from 'xlsx';
 
 export default function LeadManagementView() {
-    const [leads, setLeads] = useState<ManagedLead[]>([]);
+    const [viewMode, setViewMode] = useState<'table' | 'kanban'>('kanban');
+    const [leads, setLeads] = useState<KanbanLead[]>([]);
     const [loading, setLoading] = useState(true);
     const [selectedLeads, setSelectedLeads] = useState<string[]>([]);
+    const [activeLeadId, setActiveLeadId] = useState<string | null>(null);
+
     const [agentFilter, setAgentFilter] = useState('all');
     const [statusFilter, setStatusFilter] = useState('all');
     const [categoryFilter, setCategoryFilter] = useState('all');
@@ -43,36 +35,44 @@ export default function LeadManagementView() {
     const supabase = createClient();
 
     useEffect(() => {
+        loadMetadata();
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, []);
+
+    useEffect(() => {
         loadData();
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [agentFilter, statusFilter, categoryFilter, dateFilter]);
+
+    const loadMetadata = async () => {
+        try {
+            const [agentsRes, categoriesRes] = await Promise.all([
+                fetch('/api/manager/team/list-all'),
+                fetch('/api/manager/leads/categories'),
+            ]);
+
+            if (agentsRes.ok) {
+                const agentsData = await agentsRes.json();
+                if (agentsData.agents) setAgents(agentsData.agents);
+            }
+
+            if (categoriesRes.ok) {
+                const categoriesData = await categoriesRes.json();
+                const nextCategories = categoriesData.categories || categoriesData.data?.categories || [];
+                setCategories(nextCategories);
+            }
+        } catch (e) {
+            console.error('Failed to load lead metadata', e);
+        }
+    };
 
     const loadData = async () => {
         setLoading(true);
-        // Load Agents (and Admins who might take calls)
-        // Load Agents (and Admins who might take calls) - Use Backend API to bypass RLS
-        try {
-            const { agents } = await fetch('/api/manager/team/list-all').then(res => res.json());
-            if (agents) setAgents(agents);
-        } catch (e) {
-            console.error('Failed to load agents', e);
-        }
-
-        // Load Unique Categories
-        // Fetch from dedicated endpoint to get ALL categories, not just from the 500 loaded leads
-        try {
-            const { data: catData } = await fetch('/api/manager/leads/categories').then(res => res.json());
-            if (catData?.categories) {
-                setCategories(catData.categories);
-            }
-        } catch (e) {
-            console.error('Failed to load categories', e);
-        }
-
         // Load Leads
         let query = supabase
             .from('leads')
             .select(`
-                id, business_name, phone_number, status, assigned_to, created_at, category, batch_id,
+                id, business_name, phone_number, status, assigned_to, created_at, category, batch_id, potential_level, ai_summary,
                 profiles:assigned_to (full_name)
             `);
 
@@ -118,8 +118,15 @@ export default function LeadManagementView() {
 
         const { data: leadsData, error } = await query.order('created_at', { ascending: false }).limit(500);
 
-        if (leadsData) {
-            setLeads(leadsData as any);
+        if (error) {
+            setLeads([]);
+            setLoading(false);
+            toast.error("Veri çekilirken hata oluştu!");
+            return;
+        }
+
+        if (!error) {
+            setLeads((leadsData || []) as unknown as KanbanLead[]);
         }
         setLoading(false);
     };
@@ -136,6 +143,41 @@ export default function LeadManagementView() {
         } else {
             setSelectedLeads(leads.map(l => l.id));
         }
+    };
+
+    const handleLeadMove = async (leadId: string, newLevel: string) => {
+        try {
+            const { error } = await supabase
+                .from('leads')
+                .update({ potential_level: newLevel })
+                .eq('id', leadId);
+
+            if (error) throw error;
+            toast.success('Müşteri durumu güncellendi');
+        } catch (error: any) {
+            console.error('Update error:', error);
+            toast.error('Güncelleme başarısız: ' + error.message);
+            loadData(); // Revert optimistic update
+        }
+    };
+
+    const exportToExcel = () => {
+        const dataToExport = leads
+            .filter(l => selectedLeads.length === 0 || selectedLeads.includes(l.id))
+            .map(l => ({
+                'İşletme Adı': l.business_name,
+                'Telefon': l.phone_number,
+                'Durum': l.status === 'pending' ? 'Beklemede' : l.status === 'appointment' ? 'Randevu' : 'Arandı',
+                'Potansiyel': l.potential_level === 'high' ? 'Sıcak' : l.potential_level === 'medium' ? 'Ilık' : l.potential_level === 'low' ? 'Soğuk' : 'Belirsiz',
+                'Sektör': l.category || 'Belirtilmemiş',
+                'Temsilci': l.profiles?.full_name || 'Havuzda',
+                'Kayıt Tarihi': new Date(l.created_at).toLocaleDateString('tr-TR')
+            }));
+
+        const ws = XLSX.utils.json_to_sheet(dataToExport);
+        const wb = XLSX.utils.book_new();
+        XLSX.utils.book_append_sheet(wb, ws, "Musteriler");
+        XLSX.writeFile(wb, `Soncall_CRM_Export_${new Date().toISOString().split('T')[0]}.xlsx`);
     };
 
     const handleEmergencyRevoke = async (agentId: string) => {
@@ -177,7 +219,38 @@ export default function LeadManagementView() {
     };
 
     return (
-        <div className="space-y-6 animate-in fade-in duration-500">
+        <div className="space-y-6 animate-in fade-in duration-500 relative">
+
+            {/* View Toggle & Export */}
+            <div className="flex justify-between items-center bg-black/20 p-2 rounded-xl border border-white/5">
+                <div className="flex gap-2">
+                    <button
+                        onClick={() => setViewMode('kanban')}
+                        className={`px-4 py-2 rounded-lg text-sm font-bold transition-all ${
+                            viewMode === 'kanban' ? 'bg-purple-500 text-white shadow-lg' : 'text-gray-400 hover:text-white hover:bg-white/5'
+                        }`}
+                    >
+                        Kanban Pano (Satış Hunisi)
+                    </button>
+                    <button
+                        onClick={() => setViewMode('table')}
+                        className={`px-4 py-2 rounded-lg text-sm font-bold transition-all ${
+                            viewMode === 'table' ? 'bg-purple-500 text-white shadow-lg' : 'text-gray-400 hover:text-white hover:bg-white/5'
+                        }`}
+                    >
+                        Veri Tablosu (Liste)
+                    </button>
+                </div>
+
+                <GlassButton
+                    onClick={exportToExcel}
+                    className="[&>.glass-button]:!bg-emerald-600 hover:[&>.glass-button]:!bg-emerald-500"
+                    contentClassName="!px-4 !py-2 text-white text-sm font-bold"
+                >
+                    {selectedLeads.length > 0 ? 'Seçilenleri Export Et' : 'Excel Export'}
+                </GlassButton>
+            </div>
+
             {/* Top Stats / Tools */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <StuckLeadsPanel onActionComplete={loadData} />
@@ -220,7 +293,7 @@ export default function LeadManagementView() {
                                 value={categoryFilter}
                                 onChange={e => { setCategoryFilter(e.target.value); setSelectedLeads([]); }}
                             >
-                                <option value="all">Tüm Sektörler</option>
+                                <option value="all">Tüm Sektörler (Kategoriler)</option>
                                 {categories.map(c => (
                                     <option key={c} value={c}>{c}</option>
                                 ))}
@@ -265,7 +338,15 @@ export default function LeadManagementView() {
                 </div>
             )}
 
-            {/* Data Table */}
+            {/* CRM Views */}
+            {viewMode === 'kanban' ? (
+                <LeadKanbanBoard
+                    leads={leads}
+                    isLoading={loading}
+                    onLeadMove={handleLeadMove}
+                    onLeadClick={(lead) => setActiveLeadId(lead.id)}
+                />
+            ) : (
             <div className="bg-white/5 border border-white/10 rounded-xl overflow-hidden">
                 {/* Batch Actions Bar */}
                 {selectedLeads.length > 0 && (
@@ -340,7 +421,17 @@ export default function LeadManagementView() {
                                 <tr><td colSpan={6} className="p-8 text-center text-gray-400">Gösterilecek lead bulunamadı.</td></tr>
                             ) : (
                                 leads.map(lead => (
-                                    <tr key={lead.id} className={`hover:bg-white/5 transition-colors text-xs sm:text-sm ${selectedLeads.includes(lead.id) ? 'bg-purple-500/10' : ''}`}>
+                                    <tr
+                                        key={lead.id}
+                                        className={`hover:bg-white/10 transition-colors text-xs sm:text-sm cursor-pointer ${selectedLeads.includes(lead.id) ? 'bg-purple-500/10' : ''}`}
+                                        onClick={(e) => {
+                                            // Only open modal if not clicking checkbox
+                                            const target = e.target as HTMLElement;
+                                            if (!target.closest('button')) {
+                                                setActiveLeadId(lead.id);
+                                            }
+                                        }}
+                                    >
                                         <td className="p-2 sm:p-4">
                                             <button onClick={() => toggleSelect(lead.id)} className="touch-target p-1">
                                                 {selectedLeads.includes(lead.id)
@@ -353,7 +444,7 @@ export default function LeadManagementView() {
                                             <div className="text-xs text-purple-300 sm:hidden truncate">{lead.category || 'Belirsiz'}</div>
                                         </td>
                                         <td className="p-2 sm:p-4 text-gray-300 hidden sm:table-cell">
-                                            <span className="bg-white/10 px-2 py-1 rounded text-xs">{lead.category || 'Belirsiz'}</span>
+                                            <span className="bg-white/10 px-2 py-1 rounded text-xs">{lead.category || 'Belirsiz Sektör'}</span>
                                         </td>
                                         <td className="p-2 sm:p-4 text-gray-300 text-xs sm:text-sm">
                                             {lead.profiles?.full_name || <span className="text-gray-500 italic">Havuzda</span>}
@@ -371,6 +462,13 @@ export default function LeadManagementView() {
                     </table>
                 </div>
             </div>
+            )}
+
+            <LeadProfileModal
+                isOpen={!!activeLeadId}
+                leadId={activeLeadId}
+                onClose={() => setActiveLeadId(null)}
+            />
 
             <TransferModal
                 isOpen={isTransferModalOpen}

@@ -1,8 +1,118 @@
 import { createClient } from '@/lib/supabase/server';
-import { createClient as createAdminClient } from '@supabase/supabase-js';
+import { createAdminClient } from '@/lib/supabase/admin';
 import { NextRequest, NextResponse } from 'next/server';
 
 export const dynamic = 'force-dynamic';
+
+const ID_PAGE_SIZE = 1000;
+const ID_CHUNK_SIZE = 200;
+const MAX_RELEVANT_IDS = 5000;
+
+const LEAD_HISTORY_SELECT = `
+    id,
+    business_name,
+    phone_number,
+    address,
+    category,
+    status,
+    potential_level,
+    processed_at,
+    created_at,
+    lead_notes (
+        note,
+        action_taken,
+        created_at
+    )
+`;
+
+type LeadHistoryFilters = {
+    status: string | null;
+    potentialLevel: string | null;
+    dateFrom: string | null;
+    dateTo: string | null;
+    search: string | null;
+};
+
+function chunkArray<T>(items: T[], size: number) {
+    const chunks: T[][] = [];
+    for (let index = 0; index < items.length; index += size) {
+        chunks.push(items.slice(index, index + size));
+    }
+    return chunks;
+}
+
+function sanitizeSearch(value: string | null) {
+    return value?.replace(/[(),]/g, ' ').trim().slice(0, 80) || null;
+}
+
+function applyLeadFilters(query: any, filters: LeadHistoryFilters) {
+    if (filters.status && filters.status !== 'all') {
+        query = query.eq('status', filters.status);
+    }
+
+    if (filters.potentialLevel && filters.potentialLevel !== 'all') {
+        query = query.eq('potential_level', filters.potentialLevel);
+    }
+
+    if (filters.dateFrom) {
+        query = query.gte('processed_at', filters.dateFrom);
+    }
+
+    if (filters.dateTo) {
+        const endDate = new Date(filters.dateTo);
+        endDate.setDate(endDate.getDate() + 1);
+        query = query.lt('processed_at', endDate.toISOString());
+    }
+
+    const search = sanitizeSearch(filters.search);
+    if (search) {
+        query = query.or(`business_name.ilike.%${search}%,phone_number.ilike.%${search}%`);
+    }
+
+    return query;
+}
+
+async function fetchAllIds(
+    supabase: ReturnType<typeof createAdminClient>,
+    table: 'leads' | 'lead_activity_log',
+    idColumn: 'id' | 'lead_id',
+    filterColumn: 'assigned_to' | 'agent_id',
+    userId: string
+) {
+    const ids: string[] = [];
+    let from = 0;
+
+    while (ids.length < MAX_RELEVANT_IDS) {
+        const { data, error } = await supabase
+            .from(table)
+            .select(idColumn)
+            .eq(filterColumn, userId)
+            .range(from, from + ID_PAGE_SIZE - 1);
+
+        if (error) throw error;
+        if (!data || data.length === 0) break;
+
+        data.forEach((row: any) => {
+            const id = row[idColumn];
+            if (typeof id === 'string' && id) ids.push(id);
+        });
+
+        if (data.length < ID_PAGE_SIZE) break;
+        from += ID_PAGE_SIZE;
+    }
+
+    return ids;
+}
+
+function sortLeadsByRecentActivity(a: any, b: any) {
+    const aProcessed = a.processed_at ? new Date(a.processed_at).getTime() : 0;
+    const bProcessed = b.processed_at ? new Date(b.processed_at).getTime() : 0;
+    if (aProcessed !== bProcessed) return bProcessed - aProcessed;
+
+    const aCreated = a.created_at ? new Date(a.created_at).getTime() : 0;
+    const bCreated = b.created_at ? new Date(b.created_at).getTime() : 0;
+    return bCreated - aCreated;
+}
 
 export async function GET(request: NextRequest) {
     try {
@@ -15,18 +125,17 @@ export async function GET(request: NextRequest) {
         }
 
         // Use Admin Client for data fetching to bypass RLS policies that might be restricted to 'agent' role
-        const adminSupabase = createAdminClient(
-            process.env.NEXT_PUBLIC_SUPABASE_URL!,
-            process.env.SUPABASE_SERVICE_ROLE_KEY!
-        );
+        const adminSupabase = createAdminClient();
 
-        const { data: profile } = await adminSupabase
+        const { data: profile, error: profileError } = await adminSupabase
             .from('profiles')
             .select('role')
             .eq('id', user.id)
-            .single();
+            .maybeSingle();
 
-        if (!['agent', 'manager', 'admin', 'founder'].includes(profile?.role)) {
+        if (profileError) throw profileError;
+
+        if (!profile || !['agent', 'manager', 'admin', 'founder'].includes(profile.role || '')) {
             return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
         }
 
@@ -36,32 +145,16 @@ export async function GET(request: NextRequest) {
         const potentialLevel = searchParams.get('potential_level');
         const dateFrom = searchParams.get('date_from');
         const dateTo = searchParams.get('date_to');
-        const search = searchParams.get('search');
-
-        console.log(`[LeadHistory] Fetching for User: ${user.id}, Role: ${profile?.role}`);
+        const search = sanitizeSearch(searchParams.get('search'));
 
         // 3. Get Relevant Lead IDs
-        // A. Leads currently assigned to the agent
-        const { data: assignedLeads } = await adminSupabase
-            .from('leads')
-            .select('id')
-            .eq('assigned_to', user.id);
-
-        const assignedIds = assignedLeads?.map(l => l.id) || [];
-        console.log(`[LeadHistory] Assigned Leads: ${assignedIds.length}`);
-
-        // B. Leads worked on by the agent (from history)
-        const { data: workedLeads } = await adminSupabase
-            .from('lead_activity_log')
-            .select('lead_id')
-            .eq('agent_id', user.id);
-
-        const workedIds = workedLeads?.map(l => l.lead_id) || [];
-        console.log(`[LeadHistory] Worked Leads: ${workedIds.length}`);
+        const [assignedIds, workedIds] = await Promise.all([
+            fetchAllIds(adminSupabase, 'leads', 'id', 'assigned_to', user.id),
+            fetchAllIds(adminSupabase, 'lead_activity_log', 'lead_id', 'agent_id', user.id),
+        ]);
 
         // Combine and deduplicate
-        const allRelevantIds = Array.from(new Set([...assignedIds, ...workedIds]));
-        console.log(`[LeadHistory] Total Unique IDs: ${allRelevantIds.length}`);
+        const allRelevantIds = Array.from(new Set([...assignedIds, ...workedIds])).slice(0, MAX_RELEVANT_IDS);
 
         if (allRelevantIds.length === 0) {
             return NextResponse.json({
@@ -70,84 +163,39 @@ export async function GET(request: NextRequest) {
             });
         }
 
-        // 4. Build Main Query
-        let query = adminSupabase
-            .from('leads')
-            .select(`
-                id,
-                business_name,
-                phone_number,
-                address,
-                category,
-                status,
-                potential_level,
-                processed_at,
-                created_at,
-                lead_notes (
-                    note,
-                    action_taken,
-                    created_at
-                )
-            `)
-            .in('id', allRelevantIds)
-            .order('processed_at', { ascending: false, nullsFirst: false })
-            .order('created_at', { ascending: false });
+        const filters: LeadHistoryFilters = {
+            status,
+            potentialLevel,
+            dateFrom,
+            dateTo,
+            search,
+        };
 
-        // Apply Filters
-        if (status && status !== 'all') {
-            query = query.eq('status', status);
-        }
+        const chunkedResults = await Promise.all(
+            chunkArray(allRelevantIds, ID_CHUNK_SIZE).map(ids => {
+                const query = adminSupabase
+                    .from('leads')
+                    .select(LEAD_HISTORY_SELECT)
+                    .in('id', ids);
 
-        if (potentialLevel && potentialLevel !== 'all') {
-            query = query.eq('potential_level', potentialLevel);
-        }
+                return applyLeadFilters(query, filters);
+            })
+        );
 
-        if (dateFrom) {
-            query = query.gte('processed_at', dateFrom);
-        }
+        const failedResult = chunkedResults.find(result => result.error);
+        if (failedResult?.error) throw failedResult.error;
 
-        if (dateTo) {
-            // Add one day to include the entire end date
-            const endDate = new Date(dateTo);
-            endDate.setDate(endDate.getDate() + 1);
-            query = query.lt('processed_at', endDate.toISOString());
-        }
-
-        if (search) {
-            query = query.or(`business_name.ilike.%${search}%,phone_number.ilike.%${search}%`);
-        }
-
-        const { data: leads, error } = await query;
-
-        if (error) throw error;
-
-        // 5. Count Total
-        // We can't use simple count query easily with 'in' if the list is huge, 
-        // but for <1000 items it's fine. Or we just return lead.length for now since client doesn't use pagination count yet?
-        // Let's do a simple count on the same query logic (minus select fields)
-        const { count } = await supabase
-            .from('leads')
-            .select('id', { count: 'exact', head: true })
-            .in('id', allRelevantIds);
-        // Note: Applying filters to count query would be ideal but skipped for brevity unless critical
-        // Given the UI doesn't seem to rely heavily on 'total' for pagination, simple count or leads.length might suffice.
-        // But let's try to be consistent with filtered count if possible.
-
-        // Accurate count with filters:
-        let countQuery = adminSupabase
-            .from('leads')
-            .select('id', { count: 'exact', head: true })
-            .in('id', allRelevantIds);
-
-        if (status && status !== 'all') countQuery = countQuery.eq('status', status);
-        if (potentialLevel && potentialLevel !== 'all') countQuery = countQuery.eq('potential_level', potentialLevel);
-        if (search) countQuery = countQuery.or(`business_name.ilike.%${search}%,phone_number.ilike.%${search}%`);
-
-        const { count: filteredCount } = await countQuery;
+        const leads = chunkedResults
+            .flatMap(result => result.data || [])
+            .sort(sortLeadsByRecentActivity);
 
         return NextResponse.json({
-            leads: leads || [],
-            total: filteredCount || 0
+            leads,
+            total: leads.length,
+            meta: {
+                relevant_leads: allRelevantIds.length,
+                chunk_size: ID_CHUNK_SIZE,
+            },
         }, {
             headers: {
                 'Cache-Control': 'no-store, max-age=0'
