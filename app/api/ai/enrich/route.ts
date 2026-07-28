@@ -1,6 +1,7 @@
 
 import { NextRequest, NextResponse } from 'next/server';
 import OpenAI from 'openai';
+import { requireManagerAccess } from '@/lib/api/auth';
 
 // Initialize OpenAI
 const openai = new OpenAI({
@@ -36,6 +37,9 @@ const extractSocials = (html: string, businessName: string) => {
 
 export async function POST(request: NextRequest) {
     try {
+        const auth = await requireManagerAccess();
+        if (!auth.ok) return auth.response;
+
         const { businessName, location } = await request.json();
 
         if (!businessName) {

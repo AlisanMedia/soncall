@@ -7,6 +7,8 @@ export const dynamic = 'force-dynamic';
 const ID_PAGE_SIZE = 1000;
 const ID_CHUNK_SIZE = 200;
 const MAX_RELEVANT_IDS = 5000;
+const DEFAULT_LIMIT = 50;
+const MAX_LIMIT = 100;
 
 const LEAD_HISTORY_SELECT = `
     id,
@@ -43,6 +45,12 @@ function chunkArray<T>(items: T[], size: number) {
 
 function sanitizeSearch(value: string | null) {
     return value?.replace(/[(),]/g, ' ').trim().slice(0, 80) || null;
+}
+
+function parsePositiveInteger(value: string | null, fallback: number, max?: number) {
+    const parsed = Number.parseInt(value || '', 10);
+    if (!Number.isFinite(parsed) || parsed < 0) return fallback;
+    return typeof max === 'number' ? Math.min(parsed, max) : parsed;
 }
 
 function applyLeadFilters(query: any, filters: LeadHistoryFilters) {
@@ -146,6 +154,8 @@ export async function GET(request: NextRequest) {
         const dateFrom = searchParams.get('date_from');
         const dateTo = searchParams.get('date_to');
         const search = sanitizeSearch(searchParams.get('search'));
+        const limit = parsePositiveInteger(searchParams.get('limit'), DEFAULT_LIMIT, MAX_LIMIT);
+        const offset = parsePositiveInteger(searchParams.get('offset'), 0);
 
         // 3. Get Relevant Lead IDs
         const [assignedIds, workedIds] = await Promise.all([
@@ -159,7 +169,15 @@ export async function GET(request: NextRequest) {
         if (allRelevantIds.length === 0) {
             return NextResponse.json({
                 leads: [],
-                total: 0
+                total: 0,
+                meta: {
+                    relevant_leads: 0,
+                    chunk_size: ID_CHUNK_SIZE,
+                    limit,
+                    offset,
+                    returned: 0,
+                    has_more: false,
+                },
             });
         }
 
@@ -189,12 +207,18 @@ export async function GET(request: NextRequest) {
             .flatMap(result => result.data || [])
             .sort(sortLeadsByRecentActivity);
 
+        const paginatedLeads = leads.slice(offset, offset + limit);
+
         return NextResponse.json({
-            leads,
+            leads: paginatedLeads,
             total: leads.length,
             meta: {
                 relevant_leads: allRelevantIds.length,
                 chunk_size: ID_CHUNK_SIZE,
+                limit,
+                offset,
+                returned: paginatedLeads.length,
+                has_more: offset + paginatedLeads.length < leads.length,
             },
         }, {
             headers: {

@@ -190,8 +190,8 @@ export default function AgentSchedule({ agentId }: AgentScheduleProps) {
             ) : (
                 <div className="rounded-2xl border border-white/10 bg-white/5 p-8 text-center">
                     <Shield className="w-16 h-16 text-emerald-500/50 mx-auto mb-4" />
-                    <h3 className="text-2xl font-bold text-white">Tüm Görevler Tamamlandı</h3>
-                    <p className="text-purple-300 mt-2">Bölge temiz. Yeni emirler bekleniyor.</p>
+                    <h3 className="text-2xl font-bold text-white">Bugün randevu yok</h3>
+                    <p className="text-purple-300 mt-2">Takip etmen gereken yeni bir randevu görünmüyor.</p>
                 </div>
             )}
 
@@ -199,7 +199,7 @@ export default function AgentSchedule({ agentId }: AgentScheduleProps) {
             <div className="grid gap-4 mt-8">
                 <h3 className="text-xl font-bold text-white flex items-center gap-2">
                     <Calendar className="w-5 h-5 text-purple-400" />
-                    Görev Günlüğü
+                    Randevu Günlüğü
                 </h3>
 
                 <div className="space-y-3">

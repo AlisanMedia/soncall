@@ -5,6 +5,11 @@ export async function POST() {
     try {
         const supabase = await createClient();
 
+        const { data: { user } } = await supabase.auth.getUser();
+        if (!user) {
+            return NextResponse.json({ success: false, message: 'Unauthorized' }, { status: 401 });
+        }
+
         // Unlock leads that have been locked for more than 10 minutes
         const tenMinutesAgo = new Date(Date.now() - 10 * 60 * 1000).toISOString();
 

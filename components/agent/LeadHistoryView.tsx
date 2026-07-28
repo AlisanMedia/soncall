@@ -23,11 +23,16 @@ interface Lead {
     }>;
 }
 
+const PAGE_SIZE = 50;
+
 export default function LeadHistoryView() {
     const [leads, setLeads] = useState<Lead[]>([]);
     const [loading, setLoading] = useState(true);
+    const [loadingMore, setLoadingMore] = useState(false);
+    const [totalLeads, setTotalLeads] = useState(0);
     const [selectedLead, setSelectedLead] = useState<Lead | null>(null);
     const [searchTerm, setSearchTerm] = useState('');
+    const [debouncedSearchTerm, setDebouncedSearchTerm] = useState('');
     const [statusFilter, setStatusFilter] = useState('all');
     const [potentialFilter, setPotentialFilter] = useState('all');
     const [dateFilter, setDateFilter] = useState('all');
@@ -46,16 +51,35 @@ export default function LeadHistoryView() {
     const supabase = createClient();
 
     useEffect(() => {
-        loadLeads();
-    }, [statusFilter, potentialFilter, dateFilter]);
+        const timeout = window.setTimeout(() => {
+            setDebouncedSearchTerm(searchTerm.trim());
+        }, 350);
 
-    const loadLeads = async () => {
+        return () => window.clearTimeout(timeout);
+    }, [searchTerm]);
+
+    useEffect(() => {
+        loadLeads(true);
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [statusFilter, potentialFilter, dateFilter, debouncedSearchTerm]);
+
+    const loadLeads = async (reset = true) => {
         try {
-            setLoading(true);
+            if (reset) {
+                setLoading(true);
+            } else {
+                setLoadingMore(true);
+            }
+
             const params = new URLSearchParams();
+            const offset = reset ? 0 : leads.length;
+
+            params.append('limit', String(PAGE_SIZE));
+            params.append('offset', String(offset));
 
             if (statusFilter !== 'all') params.append('status', statusFilter);
             if (potentialFilter !== 'all') params.append('potential_level', potentialFilter);
+            if (debouncedSearchTerm) params.append('search', debouncedSearchTerm);
 
             // Date filters
             if (dateFilter !== 'all') {
@@ -81,13 +105,18 @@ export default function LeadHistoryView() {
             const data = await response.json();
 
             if (response.ok) {
-                setLeads(data.leads || []);
+                const nextLeads = data.leads || [];
+                setLeads(prev => reset ? nextLeads : [...prev, ...nextLeads]);
+                setTotalLeads(data.total || nextLeads.length);
+            } else {
+                throw new Error(data.error || 'Leadler yüklenemedi');
             }
         } catch (error) {
             console.error('Error loading leads:', error);
             toast.error('Leadler yüklenirken hata oluştu');
         } finally {
             setLoading(false);
+            setLoadingMore(false);
         }
     };
 
@@ -245,10 +274,7 @@ export default function LeadHistoryView() {
         }, 250);
     };
 
-    const filteredLeads = leads.filter(lead =>
-        lead.business_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        lead.phone_number.includes(searchTerm)
-    );
+    const hasMoreLeads = leads.length < totalLeads;
 
     const getStatusColor = (status: string) => {
         switch (status) {
@@ -294,6 +320,13 @@ export default function LeadHistoryView() {
             {/* Filters */}
             <div className="bg-white/5 border border-white/10 rounded-xl p-6">
                 <h2 className="text-2xl font-bold text-white mb-4">Lead Geçmişi</h2>
+                {!loading && (
+                    <p className="text-sm text-purple-200/70 mb-4">
+                        {totalLeads > 0
+                            ? `${totalLeads} kayıttan ${leads.length} tanesi gösteriliyor`
+                            : 'Filtrelere uygun kayıt bulunamadı'}
+                    </p>
+                )}
 
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
                     {/* Search */}
@@ -354,7 +387,7 @@ export default function LeadHistoryView() {
                     <div className="flex items-center justify-center py-12">
                         <img src="/loading-logo.png" alt="Loading" className="w-16 h-8 animate-pulse object-contain" />
                     </div>
-                ) : filteredLeads.length === 0 ? (
+                ) : leads.length === 0 ? (
                     <div className="text-center py-12 text-purple-300">
                         <Building2 className="w-12 h-12 mx-auto mb-4 opacity-50" />
                         <p>Kayıt bulunamadı.</p>
@@ -373,7 +406,7 @@ export default function LeadHistoryView() {
                                 </tr>
                             </thead>
                             <tbody className="divide-y divide-white/5">
-                                {filteredLeads.map(lead => (
+                                {leads.map(lead => (
                                     <tr key={lead.id} className="hover:bg-white/5 transition-colors">
                                         <td className="p-4 text-white font-medium">{lead.business_name}</td>
                                         <td className="p-4 text-purple-200">{lead.phone_number}</td>
@@ -411,6 +444,18 @@ export default function LeadHistoryView() {
                                 ))}
                             </tbody>
                         </table>
+                        {hasMoreLeads && (
+                            <div className="flex items-center justify-center border-t border-white/10 bg-black/10 p-4">
+                                <button
+                                    onClick={() => loadLeads(false)}
+                                    disabled={loadingMore}
+                                    className="inline-flex items-center gap-2 rounded-lg border border-purple-500/30 bg-purple-500/10 px-4 py-2 text-sm font-semibold text-purple-100 transition-colors hover:bg-purple-500/20 disabled:cursor-not-allowed disabled:opacity-60"
+                                >
+                                    {loadingMore && <Loader2 className="w-4 h-4 animate-spin" />}
+                                    {loadingMore ? 'Yükleniyor...' : 'Daha fazla yükle'}
+                                </button>
+                            </div>
+                        )}
                     </div>
                 )}
             </div>

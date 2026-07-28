@@ -1,9 +1,12 @@
 
-import { createClient } from '@/lib/supabase/server';
 import { NextResponse } from 'next/server';
+import { requireManagerAccess } from '@/lib/api/auth';
 
 export async function POST(request: Request) {
-    const supabase = await createClient();
+    const auth = await requireManagerAccess();
+    if (!auth.ok) return auth.response;
+
+    const supabase = auth.supabase;
     const { action, appointmentIds, payload } = await request.json();
 
     if (!appointmentIds || !Array.isArray(appointmentIds) || appointmentIds.length === 0) {
@@ -20,7 +23,7 @@ export async function POST(request: Request) {
                 }
                 const { error: reassignError } = await supabase
                     .from('leads')
-                    .update({ agent_id: payload.agentId })
+                    .update({ assigned_to: payload.agentId })
                     .in('id', appointmentIds);
 
                 if (reassignError) throw reassignError;

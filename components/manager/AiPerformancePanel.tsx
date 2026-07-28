@@ -45,38 +45,61 @@ interface AiPerformanceData {
 export default function AiPerformancePanel() {
     const [data, setData] = useState<AiPerformanceData | null>(null);
     const [loading, setLoading] = useState(true);
+    const [error, setError] = useState<string | null>(null);
 
     useEffect(() => {
         const fetchData = async () => {
+            const controller = new AbortController();
+            const timeoutId = window.setTimeout(() => controller.abort(), 10000);
+
             try {
-                const res = await fetch('/api/manager/analytics/ai-performance');
+                setError(null);
+                const res = await fetch('/api/manager/analytics/ai-performance', {
+                    signal: controller.signal,
+                });
                 const json = await res.json();
-                if (json.success) {
+                if (res.ok && json.success) {
                     setData(json.data);
+                } else {
+                    setError(json.message || json.error || 'AI performans verisi alınamadı');
                 }
             } catch (error) {
                 console.error('Failed to fetch AI performance data', error);
+                setError('AI performans verisi zamanında yüklenemedi');
             } finally {
+                window.clearTimeout(timeoutId);
                 setLoading(false);
             }
         };
 
         fetchData();
         // Refresh every 60 seconds
-        const interval = setInterval(fetchData, 60000);
+        const interval = setInterval(() => {
+            if (!document.hidden) fetchData();
+        }, 60000);
         return () => clearInterval(interval);
     }, []);
 
     if (loading) return (
-        <div className="bg-gradient-to-br from-slate-900 via-purple-900/20 to-slate-900 rounded-2xl p-6 border border-cyan-500/30 h-[600px] flex items-center justify-center">
+        <div className="bg-gradient-to-br from-slate-900 via-purple-900/20 to-slate-900 rounded-2xl p-6 border border-cyan-500/30 min-h-[220px] flex items-center justify-center">
             <div className="text-center">
                 <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-cyan-400 mx-auto mb-4" />
-                <p className="text-cyan-300 text-sm animate-pulse">Initializing Cortex...</p>
+                <p className="text-cyan-300 text-sm animate-pulse">AI performans verisi yükleniyor...</p>
             </div>
         </div>
     );
 
-    if (!data) return null;
+    if (!data) return (
+        <div className="bg-white/5 rounded-2xl p-6 border border-white/10">
+            <div className="flex items-center gap-3">
+                <ShieldCheck className="w-5 h-5 text-cyan-300" />
+                <div>
+                    <h3 className="text-base font-bold text-white">AI Performans</h3>
+                    <p className="text-sm text-purple-200/70">{error || 'Gösterilecek AI performans verisi yok.'}</p>
+                </div>
+            </div>
+        </div>
+    );
 
     // Prepare confusion matrix data
     const confusionData = [
@@ -241,7 +264,7 @@ export default function AiPerformancePanel() {
                     initial={{ opacity: 0, y: 20 }}
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ delay: 0.2 }}
-                    className="bg-white/5 backdrop-blur-lg rounded-2xl p-6 border border-cyan-500/30"
+                    className="bg-white/5 backdrop-blur-lg rounded-2xl p-6 border border-cyan-500/30 w-full min-w-0"
                 >
                     <div className="flex items-center gap-3 mb-4">
                         <div className="p-2 bg-cyan-500/20 rounded-lg">
@@ -254,37 +277,39 @@ export default function AiPerformancePanel() {
                         <SectionInfo text="Cortex'in tahmin başarısının haftalık değişimi." />
                     </div>
 
-                    <ResponsiveContainer width="100%" height={200} minHeight={100}>
-                        <LineChart data={data.learningCurve}>
-                            <CartesianGrid strokeDasharray="3 3" stroke="#ffffff10" />
-                            <XAxis
-                                dataKey="week"
-                                stroke="#06b6d4"
-                                tick={{ fontSize: 11, fill: '#67e8f9' }}
-                            />
-                            <YAxis
-                                stroke="#06b6d4"
-                                tick={{ fontSize: 11, fill: '#67e8f9' }}
-                                domain={[0, 100]}
-                            />
-                            <Tooltip
-                                contentStyle={{
-                                    backgroundColor: '#0f172a',
-                                    border: '1px solid #06b6d4',
-                                    borderRadius: '8px',
-                                    color: '#fff'
-                                }}
-                            />
-                            <Line
-                                type="monotone"
-                                dataKey="accuracy"
-                                stroke="#06b6d4"
-                                strokeWidth={3}
-                                dot={{ fill: '#06b6d4', r: 5 }}
-                                activeDot={{ r: 7, fill: '#22d3ee' }}
-                            />
-                        </LineChart>
-                    </ResponsiveContainer>
+                    <div className="h-[200px] min-h-[200px] w-full min-w-0">
+                        <ResponsiveContainer width="100%" height="100%" minWidth={1} minHeight={100}>
+                            <LineChart data={data.learningCurve}>
+                                <CartesianGrid strokeDasharray="3 3" stroke="#ffffff10" />
+                                <XAxis
+                                    dataKey="week"
+                                    stroke="#06b6d4"
+                                    tick={{ fontSize: 11, fill: '#67e8f9' }}
+                                />
+                                <YAxis
+                                    stroke="#06b6d4"
+                                    tick={{ fontSize: 11, fill: '#67e8f9' }}
+                                    domain={[0, 100]}
+                                />
+                                <Tooltip
+                                    contentStyle={{
+                                        backgroundColor: '#0f172a',
+                                        border: '1px solid #06b6d4',
+                                        borderRadius: '8px',
+                                        color: '#fff'
+                                    }}
+                                />
+                                <Line
+                                    type="monotone"
+                                    dataKey="accuracy"
+                                    stroke="#06b6d4"
+                                    strokeWidth={3}
+                                    dot={{ fill: '#06b6d4', r: 5 }}
+                                    activeDot={{ r: 7, fill: '#22d3ee' }}
+                                />
+                            </LineChart>
+                        </ResponsiveContainer>
+                    </div>
 
                     <p className="text-xs text-cyan-200 text-center mt-2">
                         Durum: {data.learningCurve.length > 0 && data.learningCurve[data.learningCurve.length - 1]?.accuracy >= 50 ? '✅ Stabil' : '⚠️ Kalibrasyon Gerekli'}
@@ -397,7 +422,7 @@ export default function AiPerformancePanel() {
                     initial={{ opacity: 0, y: 20 }}
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ delay: 0.5 }}
-                    className="bg-white/5 backdrop-blur-lg rounded-2xl p-6 border border-pink-500/30"
+                    className="bg-white/5 backdrop-blur-lg rounded-2xl p-6 border border-pink-500/30 w-full min-w-0"
                 >
                     <div className="flex items-center gap-3 mb-4">
                         <div className="p-2 bg-pink-500/20 rounded-lg">
@@ -410,31 +435,33 @@ export default function AiPerformancePanel() {
                         <SectionInfo text="Cortex'in pozitif ve negatif tahminlerinin gerçek sonuçlarla dağılımı." />
                     </div>
 
-                    <ResponsiveContainer width="100%" height={180} minHeight={100}>
-                        <PieChart>
-                            <Pie
-                                data={confusionData}
-                                cx="50%"
-                                cy="50%"
-                                innerRadius={50}
-                                outerRadius={70}
-                                paddingAngle={5}
-                                dataKey="value"
-                            >
-                                {confusionData.map((entry, index) => (
-                                    <Cell key={`cell-${index}`} fill={entry.fill} />
-                                ))}
-                            </Pie>
-                            <Tooltip
-                                contentStyle={{
-                                    backgroundColor: '#0f172a',
-                                    border: '1px solid #ec4899',
-                                    borderRadius: '8px',
-                                    color: '#fff'
-                                }}
-                            />
-                        </PieChart>
-                    </ResponsiveContainer>
+                    <div className="h-[180px] min-h-[180px] w-full min-w-0">
+                        <ResponsiveContainer width="100%" height="100%" minWidth={1} minHeight={100}>
+                            <PieChart>
+                                <Pie
+                                    data={confusionData}
+                                    cx="50%"
+                                    cy="50%"
+                                    innerRadius={50}
+                                    outerRadius={70}
+                                    paddingAngle={5}
+                                    dataKey="value"
+                                >
+                                    {confusionData.map((entry, index) => (
+                                        <Cell key={`cell-${index}`} fill={entry.fill} />
+                                    ))}
+                                </Pie>
+                                <Tooltip
+                                    contentStyle={{
+                                        backgroundColor: '#0f172a',
+                                        border: '1px solid #ec4899',
+                                        borderRadius: '8px',
+                                        color: '#fff'
+                                    }}
+                                />
+                            </PieChart>
+                        </ResponsiveContainer>
+                    </div>
                 </motion.div>
             </div >
         </div >

@@ -50,7 +50,7 @@ export default function ConversionFunnel() {
     const totalConversionRate = totalLeads ? ((finalSales / totalLeads) * 100).toFixed(1) : '0';
 
     return (
-        <div className="bg-white/10 backdrop-blur-lg rounded-2xl shadow-2xl p-4 sm:p-6 border border-white/20">
+        <div className="bg-white/10 backdrop-blur-lg rounded-2xl shadow-2xl p-4 sm:p-6 border border-white/20 min-w-0">
             <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between mb-4 sm:mb-6 gap-3">
                 <div>
                     <h3 className="text-base sm:text-lg font-semibold text-white flex items-center gap-2">
@@ -70,8 +70,8 @@ export default function ConversionFunnel() {
 
             <div className="flex flex-col lg:flex-row gap-4 lg:gap-6">
                 {/* Chart */}
-                <div className="flex-1 h-[250px] sm:h-[300px] lg:h-[350px]">
-                    <ResponsiveContainer width="100%" height="100%" minHeight={100}>
+                <div className="flex-1 w-full min-w-0 h-[250px] min-h-[250px] sm:h-[300px] sm:min-h-[300px] lg:h-[350px] lg:min-h-[350px]">
+                    <ResponsiveContainer width="100%" height="100%" minWidth={1} minHeight={100}>
                         <BarChart
                             data={data}
                             layout="vertical"

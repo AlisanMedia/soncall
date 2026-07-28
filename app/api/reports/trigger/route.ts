@@ -2,10 +2,14 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createServiceRoleClient } from '@/lib/supabase/service-role';
 import { processReport } from '@/lib/reports/processor';
+import { requireManagerAccess } from '@/lib/api/auth';
 
 // Manual trigger for testing a specific report
 export async function POST(request: NextRequest) {
     try {
+        const auth = await requireManagerAccess();
+        if (!auth.ok) return auth.response;
+
         const body = await request.json();
         const { reportId } = body;
 

@@ -53,6 +53,22 @@ interface Notification {
     timestamp: string;
 }
 
+const parseJsonResponse = async (response: Response, label: string) => {
+    const contentType = response.headers.get('content-type') || '';
+
+    if (!contentType.includes('application/json')) {
+        throw new Error(`${label} returned a non-JSON response`);
+    }
+
+    const data = await response.json();
+
+    if (!response.ok) {
+        throw new Error(data?.error || `${label} request failed`);
+    }
+
+    return data;
+};
+
 export default function AgentDashboard({ profile: initialProfile }: AgentDashboardProps) {
     const [profile, setProfile] = useState<Profile>(initialProfile);
     const [activeTab, setActiveTab] = useState<'work' | 'history' | 'sales' | 'appointments' | 'settings'>('work');
@@ -122,11 +138,13 @@ export default function AgentDashboard({ profile: initialProfile }: AgentDashboa
     useEffect(() => {
         // Poll for notifications
         const checkNotifications = async () => {
+            if (document.hidden) return;
+
             try {
                 const response = await fetch('/api/agent/notifications');
-                const data = await response.json();
+                const data = await parseJsonResponse(response, 'Notifications API');
 
-                if (response.ok && data.notifications) {
+                if (data.notifications) {
                     processNewNotifications(data.notifications);
                 }
             } catch (err) {
@@ -134,11 +152,9 @@ export default function AgentDashboard({ profile: initialProfile }: AgentDashboa
             }
         };
 
-        const interval = setInterval(checkNotifications, 15000); // Check every 15s
+        const interval = setInterval(checkNotifications, 30000); // Check every 30s
 
         // Initial check on mount
-        checkNotifications();
-
         checkNotifications();
 
         // Celebration Listener
@@ -196,7 +212,7 @@ export default function AgentDashboard({ profile: initialProfile }: AgentDashboa
 
         // Also check for notifications immediately after action
         fetch('/api/agent/notifications')
-            .then(res => res.json())
+            .then(res => parseJsonResponse(res, 'Notifications API'))
             .then(data => {
                 if (data.notifications) {
                     processNewNotifications(data.notifications);
@@ -286,6 +302,7 @@ export default function AgentDashboard({ profile: initialProfile }: AgentDashboa
                         {/* Manual Lead Button */}
                         <button
                             onClick={() => setManualLeadOpen(true)}
+                            aria-label="Yeni müşteri ekle"
                             className="hidden sm:flex items-center gap-2 px-4 py-2 btn-primary-gradient rounded-xl text-white text-sm font-semibold hover:scale-105 active:scale-95 transition-smooth"
                             title="Yeni Müşteri Ekle"
                         >
@@ -296,36 +313,48 @@ export default function AgentDashboard({ profile: initialProfile }: AgentDashboa
                         <nav className="flex sm:hidden items-center gap-1 bg-black/20 p-1 rounded-lg border border-white/5">
                             <button
                                 onClick={() => setActiveTab('work')}
+                                aria-label="Çağrı"
+                                title="Çağrı"
                                 className={`p-2 rounded-md transition-all ${activeTab === 'work' ? 'bg-purple-600 text-white' : 'text-gray-300'}`}
                             >
                                 <Phone className="w-5 h-5" />
                             </button>
                             <button
                                 onClick={() => setActiveTab('appointments')}
+                                aria-label="Randevular"
+                                title="Randevular"
                                 className={`p-2 rounded-md transition-all ${activeTab === 'appointments' ? 'bg-purple-600 text-white' : 'text-gray-300'}`}
                             >
                                 <Calendar className="w-5 h-5" />
                             </button>
                             <button
                                 onClick={() => setManualLeadOpen(true)}
+                                aria-label="Yeni müşteri ekle"
+                                title="Yeni müşteri ekle"
                                 className="p-2 rounded-md text-purple-400 hover:bg-white/5 transition-all active:scale-95"
                             >
                                 <UserPlus className="w-5 h-5" />
                             </button>
                             <button
                                 onClick={() => setActiveTab('history')}
+                                aria-label="Geçmiş"
+                                title="Geçmiş"
                                 className={`p-2 rounded-md transition-all ${activeTab === 'history' ? 'bg-purple-600 text-white' : 'text-gray-300'}`}
                             >
                                 <List className="w-5 h-5" />
                             </button>
                             <button
                                 onClick={() => setActiveTab('sales')}
+                                aria-label="Satışlarım"
+                                title="Satışlarım"
                                 className={`p-2 rounded-md transition-all ${activeTab === 'sales' ? 'bg-purple-600 text-white' : 'text-gray-300'}`}
                             >
                                 <DollarSign className="w-5 h-5" />
                             </button>
                             <button
                                 onClick={() => setActiveTab('settings')}
+                                aria-label="Ayarlar"
+                                title="Ayarlar"
                                 className={`p-2 rounded-md transition-all ${activeTab === 'settings' ? 'bg-purple-600 text-white' : 'text-gray-300'}`}
                             >
                                 <Settings className="w-5 h-5" />

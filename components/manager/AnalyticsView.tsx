@@ -203,67 +203,71 @@ export default function AnalyticsView() {
             {/* Charts Row 1 */}
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                 {/* Hourly Activity Chart */}
-                <div className="bg-white/10 backdrop-blur-lg rounded-2xl shadow-2xl p-6 border border-white/20">
+                <div className="bg-white/10 backdrop-blur-lg rounded-2xl shadow-2xl p-6 border border-white/20 w-full min-w-0">
                     <h3 className="text-base sm:text-xl font-bold text-white mb-4 flex items-center gap-2">
                         <Clock className="w-4 h-4 sm:w-5 sm:h-5 text-purple-400" />
                         <span className="truncate">Saatlik Aktivite</span>
                         <span className="hidden sm:inline text-sm font-normal">(Son 24 Saat)</span>
                         <span className="hidden sm:inline"><SectionInfo text="Son 24 saat içindeki tüm aktivitelerin saat dilimlerine göre dağılımı." /></span>
                     </h3>
-                    <ResponsiveContainer width="100%" height={250} minHeight={100}>
-                        <BarChart data={data.hourly}>
-                            <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.1)" />
-                            <XAxis
-                                dataKey="label"
-                                stroke="#c4b5fd"
-                                tick={{ fontSize: 12 }}
-                                interval={2}
-                            />
-                            <YAxis stroke="#c4b5fd" />
-                            <Tooltip
-                                contentStyle={{
-                                    backgroundColor: 'rgba(30, 27, 75, 0.9)',
-                                    border: '1px solid rgba(255,255,255,0.2)',
-                                    borderRadius: '8px',
-                                    color: '#fff'
-                                }}
-                            />
-                            <Bar dataKey="count" fill="#8b5cf6" radius={[8, 8, 0, 0]} />
-                        </BarChart>
-                    </ResponsiveContainer>
+                    <div className="h-[250px] min-h-[250px] w-full min-w-0">
+                        <ResponsiveContainer width="100%" height="100%" minWidth={1} minHeight={100}>
+                            <BarChart data={data.hourly}>
+                                <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.1)" />
+                                <XAxis
+                                    dataKey="label"
+                                    stroke="#c4b5fd"
+                                    tick={{ fontSize: 12 }}
+                                    interval={2}
+                                />
+                                <YAxis stroke="#c4b5fd" />
+                                <Tooltip
+                                    contentStyle={{
+                                        backgroundColor: 'rgba(30, 27, 75, 0.9)',
+                                        border: '1px solid rgba(255,255,255,0.2)',
+                                        borderRadius: '8px',
+                                        color: '#fff'
+                                    }}
+                                />
+                                <Bar dataKey="count" fill="#8b5cf6" radius={[8, 8, 0, 0]} />
+                            </BarChart>
+                        </ResponsiveContainer>
+                    </div>
                 </div>
 
                 {/* Daily Trend Chart */}
-                <div className="bg-white/10 backdrop-blur-lg rounded-2xl shadow-2xl p-6 border border-white/20">
+                <div className="bg-white/10 backdrop-blur-lg rounded-2xl shadow-2xl p-6 border border-white/20 w-full min-w-0">
                     <h3 className="text-base sm:text-xl font-bold text-white mb-4 flex items-center gap-2">
                         <TrendingUp className="w-4 h-4 sm:w-5 sm:h-5 text-green-400" />
                         <span className="truncate">Günlük Trend</span>
                         <span className="hidden sm:inline text-sm font-normal">(Son 7 Gün)</span>
                         <span className="hidden sm:inline"><SectionInfo text="Son 7 gündeki toplam işlem hacminin günlük bazda değişimi." /></span>
                     </h3>
-                    <ResponsiveContainer width="100%" height={250} minHeight={100}>
-                        <LineChart data={data.daily}>
-                            <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.1)" />
-                            <XAxis dataKey="label" stroke="#c4b5fd" tick={{ fontSize: 12 }} />
-                            <YAxis stroke="#c4b5fd" />
-                            <Tooltip
-                                contentStyle={{
-                                    backgroundColor: 'rgba(30, 27, 75, 0.9)',
-                                    border: '1px solid rgba(255,255,255,0.2)',
-                                    borderRadius: '8px',
-                                    color: '#fff'
-                                }}
-                            />
-                            <Line
-                                type="monotone"
-                                dataKey="count"
-                                stroke="#10b981"
-                                strokeWidth={3}
-                                dot={{ fill: '#10b981', r: 5 }}
-                                activeDot={{ r: 7 }}
-                            />
-                        </LineChart>
-                    </ResponsiveContainer>
+                    <div className="h-[250px] min-h-[250px] w-full min-w-0">
+                        <ResponsiveContainer width="100%" height="100%" minWidth={1} minHeight={100}>
+                            <LineChart data={data.daily}>
+                                <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.1)" />
+                                <XAxis dataKey="label" stroke="#c4b5fd" tick={{ fontSize: 12 }} />
+                                <YAxis stroke="#c4b5fd" />
+                                <Tooltip
+                                    contentStyle={{
+                                        backgroundColor: 'rgba(30, 27, 75, 0.9)',
+                                        border: '1px solid rgba(255,255,255,0.2)',
+                                        borderRadius: '8px',
+                                        color: '#fff'
+                                    }}
+                                />
+                                <Line
+                                    type="monotone"
+                                    dataKey="count"
+                                    stroke="#10b981"
+                                    strokeWidth={3}
+                                    dot={{ fill: '#10b981', r: 5 }}
+                                    activeDot={{ r: 7 }}
+                                />
+                            </LineChart>
+                        </ResponsiveContainer>
+                    </div>
                 </div>
             </div>
 
@@ -275,37 +279,39 @@ export default function AnalyticsView() {
                 </div>
 
                 {/* Category Breakdown */}
-                <div className="bg-white/10 backdrop-blur-lg rounded-2xl shadow-2xl p-6 border border-white/20">
+                <div className="bg-white/10 backdrop-blur-lg rounded-2xl shadow-2xl p-6 border border-white/20 w-full min-w-0">
                     <div className="flex items-center gap-2 mb-4">
                         <h3 className="text-xl font-bold text-white">Top Kategoriler</h3>
                         <SectionInfo text="İşlenen leadlerin sektörel veya kategorik dağılımı." />
                     </div>
-                    <ResponsiveContainer width="100%" height={300} minHeight={100}>
-                        <PieChart>
-                            <Pie
-                                data={data.categories.slice(0, 6)}
-                                cx="50%"
-                                cy="50%"
-                                labelLine={false}
-                                label={({ payload }: { payload?: { category: string; percentage: number } }) => payload ? `${payload.category} (${payload.percentage}%)` : ''}
-                                outerRadius={100}
-                                fill="#8884d8"
-                                dataKey="count"
-                            >
-                                {data.categories.slice(0, 6).map((entry, index) => (
-                                    <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
-                                ))}
-                            </Pie>
-                            <Tooltip
-                                contentStyle={{
-                                    backgroundColor: 'rgba(30, 27, 75, 0.9)',
-                                    border: '1px solid rgba(255,255,255,0.2)',
-                                    borderRadius: '8px',
-                                    color: '#fff'
-                                }}
-                            />
-                        </PieChart>
-                    </ResponsiveContainer>
+                    <div className="h-[300px] min-h-[300px] w-full min-w-0">
+                        <ResponsiveContainer width="100%" height="100%" minWidth={1} minHeight={100}>
+                            <PieChart>
+                                <Pie
+                                    data={data.categories.slice(0, 6)}
+                                    cx="50%"
+                                    cy="50%"
+                                    labelLine={false}
+                                    label={({ payload }: { payload?: { category: string; percentage: number } }) => payload ? `${payload.category} (${payload.percentage}%)` : ''}
+                                    outerRadius={100}
+                                    fill="#8884d8"
+                                    dataKey="count"
+                                >
+                                    {data.categories.slice(0, 6).map((entry, index) => (
+                                        <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                                    ))}
+                                </Pie>
+                                <Tooltip
+                                    contentStyle={{
+                                        backgroundColor: 'rgba(30, 27, 75, 0.9)',
+                                        border: '1px solid rgba(255,255,255,0.2)',
+                                        borderRadius: '8px',
+                                        color: '#fff'
+                                    }}
+                                />
+                            </PieChart>
+                        </ResponsiveContainer>
+                    </div>
                 </div>
             </div>
         </div>

@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { BarChart3, TrendingUp, Loader2, Zap, Flame, Target } from 'lucide-react';
 import type { LeaderboardEntry } from '@/types';
 
@@ -33,25 +33,27 @@ export default function Leaderboard({ agentId, refreshKey }: LeaderboardProps) {
     const [loading, setLoading] = useState(true);
     const [activityPulse, setActivityPulse] = useState<Record<string, boolean>>({});
 
-    useEffect(() => {
-        loadLeaderboard();
-
-        // Silent auto-refresh every 5 seconds
-        const interval = setInterval(loadLeaderboard, 5000);
-        return () => clearInterval(interval);
-    }, [refreshKey]);
-
-    const loadLeaderboard = async () => {
+    const loadLeaderboard = useCallback(async () => {
         try {
             const response = await fetch(`/api/stats?agentId=${agentId}`);
+            const contentType = response.headers.get('content-type') || '';
+
+            if (!contentType.includes('application/json')) {
+                throw new Error('Stats API returned a non-JSON response');
+            }
+
             const data = await response.json();
 
-            if (response.ok) {
-                const newLeaderboard = data.leaderboard || [];
+            if (!response.ok) {
+                throw new Error(data?.error || 'Stats API request failed');
+            }
 
+            const newLeaderboard = data.leaderboard || [];
+
+            setLeaderboard((previousLeaderboard) => {
                 // Check for activity changes
                 newLeaderboard.forEach((entry: ExtendedLeaderboardEntry) => {
-                    const oldEntry = leaderboard.find(e => e.agent_id === entry.agent_id);
+                    const oldEntry = previousLeaderboard.find(e => e.agent_id === entry.agent_id);
                     if (oldEntry && oldEntry.processed_count < entry.processed_count) {
                         // New lead processed! Trigger pulse
                         setActivityPulse(prev => ({ ...prev, [entry.agent_id]: true }));
@@ -61,21 +63,34 @@ export default function Leaderboard({ agentId, refreshKey }: LeaderboardProps) {
                     }
                 });
 
-                setLeaderboard(newLeaderboard);
-                setUserStats(data.currentUserStats || {
-                    processed_today: 0,
-                    total_assigned: 0,
-                    remaining: 0,
-                    streak: 0,
-                    speed_last_5min: 0
-                });
-            }
+                return newLeaderboard;
+            });
+
+            setUserStats(data.currentUserStats || {
+                processed_today: 0,
+                total_assigned: 0,
+                remaining: 0,
+                streak: 0,
+                speed_last_5min: 0
+            });
         } catch (err) {
             console.error('Leaderboard load error:', err);
         } finally {
             setLoading(false);
         }
-    };
+    }, [agentId]);
+
+    useEffect(() => {
+        loadLeaderboard();
+
+        // Silent auto-refresh without spending requests while the tab is hidden.
+        const interval = setInterval(() => {
+            if (document.hidden) return;
+            loadLeaderboard();
+        }, 15000);
+
+        return () => clearInterval(interval);
+    }, [loadLeaderboard, refreshKey]);
 
     if (loading) {
         return (
