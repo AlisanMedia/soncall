@@ -20,19 +20,43 @@ export interface AgentNotification {
     timestamp: string;
 }
 
+interface AgentInsightData {
+    agent_id: string;
+    agent_name: string;
+    yesterday_count?: number;
+    today_count?: number;
+    current_streak?: number;
+    metric_label?: string;
+}
+
+interface HourlyInsightData {
+    hour: number;
+    count: number;
+}
+
+interface PotentialConversionData {
+    high_potential_rate?: number;
+}
+
+interface AnalyticsInsightData {
+    agentPerformance?: AgentInsightData[];
+    hourly?: HourlyInsightData[];
+}
+
 // Manager Insights
 
-export function detectSlowPerformers(agentData: any[]): Insight[] {
+export function detectSlowPerformers(agentData: AgentInsightData[]): Insight[] {
     const insights: Insight[] = [];
 
     agentData.forEach(agent => {
-        if (agent.yesterday_count === 0) return; // Skip if no history
+        if (!agent.yesterday_count) return; // Skip if no history
 
         const avgLast3Days = (agent.yesterday_count + agent.yesterday_count + agent.yesterday_count) / 3;
         const threshold = avgLast3Days * 0.6; // 60% of average
 
-        if (agent.today_count < threshold && agent.today_count > 0) {
-            const percentage = Math.round((agent.today_count / avgLast3Days) * 100);
+        const todayCount = agent.today_count || 0;
+        if (todayCount < threshold && todayCount > 0) {
+            const percentage = Math.round((todayCount / avgLast3Days) * 100);
             insights.push({
                 id: `slow-${agent.agent_id}`,
                 type: 'warning',
@@ -49,7 +73,7 @@ export function detectSlowPerformers(agentData: any[]): Insight[] {
     return insights;
 }
 
-export function findPeakHours(hourlyData: any[]): Insight[] {
+export function findPeakHours(hourlyData: HourlyInsightData[]): Insight[] {
     const insights: Insight[] = [];
 
     if (!hourlyData || hourlyData.length === 0) return insights;
@@ -63,7 +87,7 @@ export function findPeakHours(hourlyData: any[]): Insight[] {
             id: 'peak-hour',
             type: 'opportunity',
             severity: 'medium',
-            message: `${peakHour.hour}:00-${peakHour.hour + 1}:00 arası en verimli saat dilimi (${peakHour.count} lead)`,
+            message: `${peakHour.hour}:00-${peakHour.hour + 1}:00 arası en verimli saat dilimi (${peakHour.count} operasyon)`,
             icon: '⏰',
             timestamp: new Date().toISOString(),
         });
@@ -72,17 +96,19 @@ export function findPeakHours(hourlyData: any[]): Insight[] {
     return insights;
 }
 
-export function analyzeConversionByPotential(conversionData: any): Insight[] {
+export function analyzeConversionByPotential(conversionData: PotentialConversionData): Insight[] {
     const insights: Insight[] = [];
 
     // This would need actual potential-based conversion data
     // For now, using a placeholder that can be extended
-    if (conversionData && conversionData.high_potential_rate > 75) {
+    const highPotentialRate = conversionData.high_potential_rate || 0;
+
+    if (highPotentialRate > 75) {
         insights.push({
             id: 'high-conversion',
             type: 'success',
             severity: 'low',
-            message: `Yüksek potansiyelli lead'lerde %${conversionData.high_potential_rate} conversion var! 🎯`,
+            message: `Yüksek potansiyelli lead'lerde %${highPotentialRate} conversion var! 🎯`,
             icon: '🎯',
             timestamp: new Date().toISOString(),
         });
@@ -91,7 +117,7 @@ export function analyzeConversionByPotential(conversionData: any): Insight[] {
     return insights;
 }
 
-export function detectStreaks(agentData: any[]): Insight[] {
+export function detectStreaks(agentData: AgentInsightData[]): Insight[] {
     const insights: Insight[] = [];
 
     agentData.forEach(agent => {
@@ -101,7 +127,7 @@ export function detectStreaks(agentData: any[]): Insight[] {
                 id: `streak-${agent.agent_id}`,
                 type: 'success',
                 severity: 'low',
-                message: `${agent.agent_name} ${agent.current_streak} lead'lik streak rekorunda! 🔥`,
+                message: `${agent.agent_name} ${agent.current_streak} operasyonluk seri rekorunda! 🔥`,
                 agent_id: agent.agent_id,
                 agent_name: agent.agent_name,
                 icon: '🔥',
@@ -113,19 +139,21 @@ export function detectStreaks(agentData: any[]): Insight[] {
     return insights;
 }
 
-export function detectTopPerformer(agentData: any[]): Insight[] {
+export function detectTopPerformer(agentData: AgentInsightData[]): Insight[] {
     const insights: Insight[] = [];
 
     if (agentData.length === 0) return insights;
 
     const topAgent = agentData[0]; // Already sorted by today_count
 
-    if (topAgent && topAgent.today_count >= 10) {
+    const topAgentTodayCount = topAgent?.today_count || 0;
+
+    if (topAgent && topAgentTodayCount >= 10) {
         insights.push({
             id: 'top-performer',
             type: 'success',
             severity: 'low',
-            message: `${topAgent.agent_name} bugün ekibi domine ediyor! ${topAgent.today_count} lead işledi 🏆`,
+            message: `${topAgent.agent_name} bugün ekibi domine ediyor! ${topAgentTodayCount} ${topAgent.metric_label || 'hedef'} tamamladı 🏆`,
             agent_id: topAgent.agent_id,
             agent_name: topAgent.agent_name,
             icon: '🏆',
@@ -146,7 +174,7 @@ export function checkMilestones(todayCount: number, previousCount: number): Agen
             return {
                 id: `milestone-${milestone}`,
                 type: 'milestone',
-                message: `🎉 Tebrikler! ${milestone}. lead'i tamamladın!`,
+                message: `🎉 Tebrikler! ${milestone}. operasyon hedefini tamamladın!`,
                 icon: '🎉',
                 timestamp: new Date().toISOString(),
             };
@@ -164,7 +192,7 @@ export function checkStreak(streak: number): AgentNotification | null {
             return {
                 id: `streak-${threshold}`,
                 type: 'streak',
-                message: `🔥 Harikasın! ${streak} lead üst üste işledin!`,
+                message: `🔥 Harikasın! ${streak} operasyonu üst üste tamamladın!`,
                 icon: '🔥',
                 timestamp: new Date().toISOString(),
             };
@@ -204,7 +232,7 @@ export function checkSpeedRecord(speedLast5Min: number, personalBest: number): A
         return {
             id: `record-${Date.now()}`,
             type: 'achievement',
-            message: `⚡ Yeni hız rekoru! Son 5 dakikada ${speedLast5Min} lead işledin!`,
+            message: `⚡ Yeni hız rekoru! Son 5 dakikada ${speedLast5Min} operasyon tamamladın!`,
             icon: '⚡',
             timestamp: new Date().toISOString(),
         };
@@ -214,7 +242,7 @@ export function checkSpeedRecord(speedLast5Min: number, personalBest: number): A
 }
 
 // Aggregate all manager insights
-export function generateManagerInsights(analyticsData: any): Insight[] {
+export function generateManagerInsights(analyticsData: AnalyticsInsightData): Insight[] {
     const insights: Insight[] = [];
 
     if (analyticsData.agentPerformance) {

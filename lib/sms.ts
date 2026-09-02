@@ -1,6 +1,18 @@
-import { normalizePhone, standardizePhone } from './utils';
+import { createClient as createSupabaseClient } from '@supabase/supabase-js';
+import { standardizePhone } from './utils';
 
-export async function sendSMS(phone: string, message: string, recipientName?: string, triggerType: string = 'manual') {
+type SmsInsertClient = {
+    from: (table: string) => {
+        insert: (values: Record<string, unknown>) => Promise<{ error: unknown }>;
+        select: (columns: string) => {
+            eq: (column: string, value: string) => {
+                maybeSingle: () => Promise<{ data: { market_id?: string | null } | null; error: unknown }>;
+            };
+        };
+    };
+};
+
+export async function sendSMS(phone: string, message: string, recipientName?: string, triggerType: string = 'manual', leadId?: string | null) {
     const username = process.env.VERIMOR_USERNAME;
     const password = process.env.VERIMOR_PASSWORD;
     const header = process.env.VERIMOR_HEADER;
@@ -43,34 +55,34 @@ export async function sendSMS(phone: string, message: string, recipientName?: st
             console.error(`[SMS] Verimor API Error (${response.status}):`, responseText);
 
             // Log failure to Database
-            await logSmsToDb(cleanPhone, message, 'failed', responseText, recipientName, triggerType);
+            await logSmsToDb(cleanPhone, message, 'failed', responseText, recipientName, triggerType, leadId);
             return false;
         }
 
         console.log(`[SMS] Sent to ${cleanPhone}. Response:`, responseText);
 
         // Log to Database (AWAIT to ensure it saves before function terminates)
-        await logSmsToDb(cleanPhone, message, 'success', responseText, recipientName, triggerType);
+        await logSmsToDb(cleanPhone, message, 'success', responseText, recipientName, triggerType, leadId);
 
         return true;
 
-    } catch (e: any) {
-        const errorMsg = `[NETWORK/SYSTEM ERROR]: ${e.message}`;
+    } catch (e: unknown) {
+        const errorMessage = e instanceof Error ? e.message : 'Unknown SMS error';
+        const errorMsg = `[NETWORK/SYSTEM ERROR]: ${errorMessage}`;
         console.error('[SMS]', errorMsg);
 
         // Log failure to Database
-        await logSmsToDb(cleanPhone, message, 'failed', e.message, recipientName, triggerType);
+        await logSmsToDb(cleanPhone, message, 'failed', errorMessage, recipientName, triggerType, leadId);
 
         return false;
     }
 }
 
-let supabaseAdmin: any = null;
+let supabaseAdmin: SmsInsertClient | null = null;
 
 function getAdminClient() {
     if (supabaseAdmin) return supabaseAdmin;
 
-    const { createClient } = require('@supabase/supabase-js');
     const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
     const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
 
@@ -78,7 +90,7 @@ function getAdminClient() {
         throw new Error('Missing Supabase Admin Environment Variables');
     }
 
-    supabaseAdmin = createClient(supabaseUrl, supabaseKey);
+    supabaseAdmin = createSupabaseClient(supabaseUrl, supabaseKey) as unknown as SmsInsertClient;
     return supabaseAdmin;
 }
 
@@ -88,12 +100,25 @@ export async function logSmsToDb(
     status: 'success' | 'failed',
     providerResponse: string,
     recipientName?: string,
-    triggerType: string = 'manual'
+    triggerType: string = 'manual',
+    leadId?: string | null
 ) {
     try {
         const supabase = getAdminClient();
+        let marketId: string | null = null;
+
+        if (leadId) {
+            const { data } = await supabase
+                .from('leads')
+                .select('market_id')
+                .eq('id', leadId)
+                .maybeSingle();
+            marketId = data?.market_id || null;
+        }
 
         const { error } = await supabase.from('sms_logs').insert({
+            lead_id: leadId || null,
+            market_id: marketId,
             sent_to: phone,
             recipient_name: recipientName || null,
             message_body: message,

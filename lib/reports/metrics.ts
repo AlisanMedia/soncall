@@ -37,7 +37,7 @@ export async function getReportMetrics(managerId: string, range: DateRange = 'to
     // Currently system has global roles, so we fetch all 'agent' profiles.
     const { data: agents } = await supabase
         .from('profiles')
-        .select('id, full_name, email')
+        .select('id, full_name, email, sales_role')
         .eq('role', 'agent');
 
     if (!agents) return null;
@@ -52,7 +52,8 @@ export async function getReportMetrics(managerId: string, range: DateRange = 'to
             action,
             agent_id,
             created_at,
-            lead_id
+            lead_id,
+            metadata
         `)
         .in('agent_id', agentIds)
         .gte('created_at', start.toISOString())
@@ -63,8 +64,7 @@ export async function getReportMetrics(managerId: string, range: DateRange = 'to
     // Ideally we look at 'processed_at' if available, or rely on activity log
     const { data: processedLeads } = await supabase
         .from('leads')
-        .select('id, status, assigned_to, processed_at, potential_level')
-        .in('assigned_to', agentIds)
+        .select('id, status, assigned_to, sdr_id, closer_id, processed_at, potential_level')
         .gte('processed_at', start.toISOString())
         .lte('processed_at', end.toISOString());
 
@@ -73,32 +73,45 @@ export async function getReportMetrics(managerId: string, range: DateRange = 'to
     // Summary Metrics
     const totalLeadsProcessed = processedLeads?.length || 0;
 
-    const statusBreakdown = processedLeads?.reduce((acc: any, lead) => {
+    const statusBreakdown = processedLeads?.reduce((acc: Record<string, number>, lead) => {
         acc[lead.status] = (acc[lead.status] || 0) + 1;
         return acc;
     }, {}) || {};
 
-    const appointmentCount = statusBreakdown['appointment'] || 0;
+    const appointmentCount = activities?.filter(activity => {
+        const metadata = activity.metadata as { action_taken?: string } | null;
+        return metadata?.action_taken === 'appointment_scheduled';
+    }).length || 0;
     const contractedCount = statusBreakdown['contacted'] || 0;
-    const conversionRate = totalLeadsProcessed > 0
-        ? Math.round(((appointmentCount + contractedCount) / totalLeadsProcessed) * 100)
+    const conversionBase = activities?.filter(activity => activity.action === 'completed').length || totalLeadsProcessed;
+    const conversionRate = conversionBase > 0
+        ? Math.round(((appointmentCount + contractedCount) / conversionBase) * 100)
         : 0;
 
     // Agent Performance
     const agentPerformance = agents.map(agent => {
-        const agentLeads = processedLeads?.filter(l => l.assigned_to === agent.id) || [];
+        const isCloser = agent.sales_role === 'closer';
+        const agentLeads = processedLeads?.filter(l => l.assigned_to === agent.id || l.sdr_id === agent.id || l.closer_id === agent.id) || [];
         const agentActivities = activities?.filter(a => a.agent_id === agent.id) || [];
-        const completedCount = agentLeads.length;
+        const roleActions = agentActivities.filter(activity => {
+            const metadata = activity.metadata as { action_taken?: string; meeting_outcome?: string | null } | null;
+            return isCloser ? Boolean(metadata?.meeting_outcome) : metadata?.action_taken === 'appointment_scheduled';
+        });
+        const completedCount = roleActions.length;
 
-        const appointments = agentLeads.filter(l => l.status === 'appointment').length;
+        const appointments = isCloser
+            ? agentLeads.filter(l => l.closer_id === agent.id).length
+            : agentLeads.filter(l => l.status === 'appointment' && (l.assigned_to === agent.id || l.sdr_id === agent.id)).length;
 
         return {
             id: agent.id,
             name: agent.full_name,
+            salesRole: agent.sales_role || 'sdr',
+            metricLabel: isCloser ? 'toplantı sonucu' : 'toplantı organizasyonu',
             totalProcessed: completedCount,
             totalActivities: agentActivities.length,
             appointments: appointments,
-            score: (completedCount * 1) + (appointments * 5) // Simple scoring logic
+            score: isCloser ? (completedCount * 3) : (completedCount * 5)
         };
     }).sort((a, b) => b.score - a.score);
 
@@ -113,11 +126,11 @@ export async function getReportMetrics(managerId: string, range: DateRange = 'to
             topStatus: Object.keys(statusBreakdown).sort((a, b) => statusBreakdown[b] - statusBreakdown[a])[0] || 'N/A'
         },
         agentPerformance,
-        mvp: mvp ? { name: mvp.name, score: mvp.score, processed: mvp.totalProcessed } : null,
+        mvp: mvp ? { name: mvp.name, score: mvp.score, processed: mvp.totalProcessed, metricLabel: mvp.metricLabel } : null,
         highlights: [
-            appointmentCount > 0 ? `${appointmentCount} yeni randevu ayarlandı!` : null,
-            conversionRate > 20 ? `Harika! Dönüşüm oranı %${conversionRate} seviyesinde.` : null,
-            mvp ? `🏆 Günün Yıldızı: ${mvp.name} (${mvp.totalProcessed} lead)` : null
+            appointmentCount > 0 ? `${appointmentCount} yeni toplantı organize edildi!` : null,
+            conversionRate > 20 ? `Harika! Randevu dönüşüm oranı %${conversionRate} seviyesinde.` : null,
+            mvp ? `🏆 Günün Yıldızı: ${mvp.name} (${mvp.totalProcessed} ${mvp.metricLabel})` : null
         ].filter(Boolean)
     };
 }

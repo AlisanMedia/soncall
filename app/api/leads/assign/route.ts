@@ -38,6 +38,39 @@ export async function POST(request: NextRequest) {
             return NextResponse.json({ message: 'Invalid request data' }, { status: 400 });
         }
 
+        const normalizedAssignments = assignments
+            .map(assignment => ({
+                ...assignment,
+                count: Number(assignment.count),
+            }))
+            .filter(assignment => assignment.count > 0);
+
+        if (
+            normalizedAssignments.length === 0 ||
+            normalizedAssignments.some(assignment => !Number.isInteger(assignment.count))
+        ) {
+            return NextResponse.json({ message: 'Invalid assignment counts' }, { status: 400 });
+        }
+
+        const requestedTotal = normalizedAssignments.reduce((sum, assignment) => sum + assignment.count, 0);
+        const targetAgentIds = Array.from(new Set(normalizedAssignments.map(assignment => assignment.agentId)));
+
+        const { data: validAgents, error: validAgentsError } = await supabase
+            .from('profiles')
+            .select('id, full_name')
+            .in('id', targetAgentIds)
+            .eq('role', 'agent')
+            .eq('sales_role', 'sdr');
+
+        if (validAgentsError) throw validAgentsError;
+
+        const validAgentIds = new Set((validAgents || []).map(agent => agent.id));
+        const invalidTargets = targetAgentIds.filter(agentId => !validAgentIds.has(agentId));
+
+        if (invalidTargets.length > 0) {
+            return NextResponse.json({ message: 'Cold lead assignments can only target SDR users' }, { status: 400 });
+        }
+
         // Get unassigned leads from this batch
         const { data: batchLeads, error: fetchError } = await supabase
             .from('leads')
@@ -52,11 +85,17 @@ export async function POST(request: NextRequest) {
             return NextResponse.json({ message: 'No unassigned leads found' }, { status: 400 });
         }
 
+        if (requestedTotal > batchLeads.length) {
+            return NextResponse.json({
+                message: `Requested ${requestedTotal} leads, but only ${batchLeads.length} unassigned leads are available`,
+            }, { status: 409 });
+        }
+
         // Distribute leads according to assignments
         let leadIndex = 0;
         const assignmentDetails = [];
 
-        for (const assignment of assignments) {
+        for (const assignment of normalizedAssignments) {
             if (assignment.count <= 0) continue;
 
             const leadsToAssign = batchLeads.slice(leadIndex, leadIndex + assignment.count);
@@ -99,10 +138,11 @@ export async function POST(request: NextRequest) {
             message: `Leads successfully assigned to ${assignmentDetails.length} agents`,
         });
 
-    } catch (error: any) {
+    } catch (error: unknown) {
+        const message = error instanceof Error ? error.message : 'Assignment failed';
         console.error('Assignment error:', error);
         return NextResponse.json(
-            { success: false, message: error.message || 'Assignment failed' },
+            { success: false, message },
             { status: 500 }
         );
     }

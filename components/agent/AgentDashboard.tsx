@@ -20,6 +20,10 @@ import AgentSettings from './AgentSettings';
 import ChatNotificationBadge from '../chat/ChatNotificationBadge';
 import ChatPanel from '../chat/ChatPanel';
 import AgentTasks from './AgentTasks';
+import SoncallAssistant from './SoncallAssistant';
+import AgentOnboarding from './AgentOnboarding';
+import type { MissionAppointment } from './MissionDetailModal';
+import { getTranslator, normalizeLocale } from '@/lib/i18n';
 
 const getRankColor = (rank?: string) => {
     switch (rank) {
@@ -81,6 +85,8 @@ export default function AgentDashboard({ profile: initialProfile }: AgentDashboa
 
     const supabase = createClient();
     const router = useRouter();
+    const isCloser = profile.sales_role === 'closer';
+    const t = getTranslator(normalizeLocale(profile.preferred_language));
 
     // Helper to process notifications with localStorage logic
     const processNewNotifications = (incomingNotifications: Notification[]) => {
@@ -158,8 +164,8 @@ export default function AgentDashboard({ profile: initialProfile }: AgentDashboa
         checkNotifications();
 
         // Celebration Listener
-        const handleCelebration = (e: any) => {
-            const { type } = e.detail;
+        const handleCelebration = (event: Event) => {
+            const { type } = (event as CustomEvent<{ type?: string }>).detail || {};
             import('canvas-confetti').then(confetti => {
                 if (type === 'level_up') {
                     // Epic Level Up Confetti
@@ -169,7 +175,7 @@ export default function AgentDashboard({ profile: initialProfile }: AgentDashboa
 
                     const randomInRange = (min: number, max: number) => Math.random() * (max - min) + min;
 
-                    const interval: any = setInterval(function () {
+                    const interval: ReturnType<typeof setInterval> = setInterval(function () {
                         const timeLeft = animationEnd - Date.now();
 
                         if (timeLeft <= 0) {
@@ -227,6 +233,21 @@ export default function AgentDashboard({ profile: initialProfile }: AgentDashboa
         setNotifications(prev => prev.filter(n => n.id !== id));
     };
 
+    const handleStartMission = (appointment: MissionAppointment) => {
+        const leadId = appointment.lead_id || appointment.id;
+
+        if (!leadId) {
+            console.error('Mission start failed: lead id is missing', appointment);
+            return;
+        }
+
+        localStorage.setItem(`agent_${profile.id}_current_lead`, leadId);
+        localStorage.setItem(`agent_${profile.id}_current_lead_source`, appointment.task_type === 'callback' ? 'callback' : 'appointment');
+        setActiveTab('work');
+        setChatOpen(false);
+        setRefreshKey(prev => prev + 1);
+    };
+
     const handleManualLeadSuccess = (leadId: string) => {
         // Switch to work tab if not already on it
         if (activeTab !== 'work') {
@@ -235,6 +256,7 @@ export default function AgentDashboard({ profile: initialProfile }: AgentDashboa
 
         // Save to localStorage so LeadCard loads this specific lead
         localStorage.setItem(`agent_${profile.id}_current_lead`, leadId);
+        localStorage.removeItem(`agent_${profile.id}_current_lead_source`);
 
         // Force refresh LeadCard
         setRefreshKey(prev => prev + 1);
@@ -267,24 +289,24 @@ export default function AgentDashboard({ profile: initialProfile }: AgentDashboa
                                 />
                                 <div className="hidden sm:block">
                                     <h1 className="text-xl font-bold text-white tracking-tight">ArtificAgent</h1>
-                                    <p className="text-xs text-purple-200">Agent Panel</p>
+                                    <p className="text-xs text-purple-200">{isCloser ? t('agent.panel.closer') : t('agent.panel.sdr')}</p>
                                 </div>
                             </div>
                         </div>
 
                         {/* Global Mission HUD - Always visible if critical */}
-                        <GlobalMissionTimer />
+                        <GlobalMissionTimer onStartMission={handleStartMission} />
 
                         {/* Navigation Tabs - Integrated into header for easy access */}
                         <div className="hidden sm:block">
                             <ExpandableTabs
                                 tabs={[
-                                    { title: "Çağrı", icon: Phone },
-                                    { title: "Randevular", icon: Calendar },
-                                    { title: "Geçmiş", icon: List },
-                                    { title: "Satışlarım", icon: DollarSign },
+                                    { title: isCloser ? t('agent.nav.meeting') : t('agent.nav.call'), icon: Phone },
+                                    { title: t('agent.nav.appointments'), icon: Calendar },
+                                    { title: t('agent.nav.leadSearch'), icon: List },
+                                    { title: t('agent.nav.mySales'), icon: DollarSign },
                                     { type: "separator" },
-                                    { title: "Ayarlar", icon: Settings },
+                                    { title: t('agent.nav.settings'), icon: Settings },
                                 ]}
                                 className="bg-black/20 border-white/5"
                                 activeColor="text-purple-400 bg-purple-500/10"
@@ -300,61 +322,65 @@ export default function AgentDashboard({ profile: initialProfile }: AgentDashboa
                         </div>
 
                         {/* Manual Lead Button */}
-                        <button
-                            onClick={() => setManualLeadOpen(true)}
-                            aria-label="Yeni müşteri ekle"
-                            className="hidden sm:flex items-center gap-2 px-4 py-2 btn-primary-gradient rounded-xl text-white text-sm font-semibold hover:scale-105 active:scale-95 transition-smooth"
-                            title="Yeni Müşteri Ekle"
-                        >
-                            <UserPlus className="w-4 h-4" />
-                            <span className="hidden lg:inline">Manuel Ekle</span>
-                        </button>
+                        {!isCloser && (
+                            <button
+                                onClick={() => setManualLeadOpen(true)}
+                                aria-label={t('agent.manual.add')}
+                                className="hidden sm:flex items-center gap-2 px-4 py-2 btn-primary-gradient rounded-xl text-white text-sm font-semibold hover:scale-105 active:scale-95 transition-smooth"
+                                title={t('agent.manual.add')}
+                            >
+                                <UserPlus className="w-4 h-4" />
+                                <span className="hidden lg:inline">{t('agent.manual.add')}</span>
+                            </button>
+                        )}
                         {/* Mobile Fallback - Simplified */}
                         <nav className="flex sm:hidden items-center gap-1 bg-black/20 p-1 rounded-lg border border-white/5">
                             <button
                                 onClick={() => setActiveTab('work')}
-                                aria-label="Çağrı"
-                                title="Çağrı"
+                                aria-label={isCloser ? t('agent.nav.meeting') : t('agent.nav.call')}
+                                title={isCloser ? t('agent.nav.meeting') : t('agent.nav.call')}
                                 className={`p-2 rounded-md transition-all ${activeTab === 'work' ? 'bg-purple-600 text-white' : 'text-gray-300'}`}
                             >
                                 <Phone className="w-5 h-5" />
                             </button>
                             <button
                                 onClick={() => setActiveTab('appointments')}
-                                aria-label="Randevular"
-                                title="Randevular"
+                                aria-label={t('agent.nav.appointments')}
+                                title={t('agent.nav.appointments')}
                                 className={`p-2 rounded-md transition-all ${activeTab === 'appointments' ? 'bg-purple-600 text-white' : 'text-gray-300'}`}
                             >
                                 <Calendar className="w-5 h-5" />
                             </button>
-                            <button
-                                onClick={() => setManualLeadOpen(true)}
-                                aria-label="Yeni müşteri ekle"
-                                title="Yeni müşteri ekle"
-                                className="p-2 rounded-md text-purple-400 hover:bg-white/5 transition-all active:scale-95"
-                            >
-                                <UserPlus className="w-5 h-5" />
-                            </button>
+                            {!isCloser && (
+                                <button
+                                    onClick={() => setManualLeadOpen(true)}
+                                    aria-label={t('agent.manual.add')}
+                                    title={t('agent.manual.add')}
+                                    className="p-2 rounded-md text-purple-400 hover:bg-white/5 transition-all active:scale-95"
+                                >
+                                    <UserPlus className="w-5 h-5" />
+                                </button>
+                            )}
                             <button
                                 onClick={() => setActiveTab('history')}
-                                aria-label="Geçmiş"
-                                title="Geçmiş"
+                                aria-label={t('agent.nav.leadSearch')}
+                                title={t('agent.nav.leadSearch')}
                                 className={`p-2 rounded-md transition-all ${activeTab === 'history' ? 'bg-purple-600 text-white' : 'text-gray-300'}`}
                             >
                                 <List className="w-5 h-5" />
                             </button>
                             <button
                                 onClick={() => setActiveTab('sales')}
-                                aria-label="Satışlarım"
-                                title="Satışlarım"
+                                aria-label={t('agent.nav.mySales')}
+                                title={t('agent.nav.mySales')}
                                 className={`p-2 rounded-md transition-all ${activeTab === 'sales' ? 'bg-purple-600 text-white' : 'text-gray-300'}`}
                             >
                                 <DollarSign className="w-5 h-5" />
                             </button>
                             <button
                                 onClick={() => setActiveTab('settings')}
-                                aria-label="Ayarlar"
-                                title="Ayarlar"
+                                aria-label={t('agent.nav.settings')}
+                                title={t('agent.nav.settings')}
                                 className={`p-2 rounded-md transition-all ${activeTab === 'settings' ? 'bg-purple-600 text-white' : 'text-gray-300'}`}
                             >
                                 <Settings className="w-5 h-5" />
@@ -365,7 +391,7 @@ export default function AgentDashboard({ profile: initialProfile }: AgentDashboa
                         <div className="flex items-center gap-3 flex-shrink-0">
                             <div className="flex items-center gap-3 text-right">
                                 <div className="hidden md:block">
-                                    <p className="text-xs text-purple-200">Hoş geldiniz,</p>
+                                    <p className="text-xs text-purple-200">{t('agent.profile.welcome')}</p>
                                     <p className="font-semibold text-white text-sm truncate max-w-[150px]">{profile.nickname || profile.full_name}</p>
                                     <div className={`mt-1 text-[10px] uppercase font-bold px-1.5 py-0.5 rounded border inline-block ${getRankColor(stats.rank)}`}>
                                         {stats.rank}
@@ -380,14 +406,14 @@ export default function AgentDashboard({ profile: initialProfile }: AgentDashboa
                                         />
                                     </div>
                                     <div className="absolute -bottom-1 -right-1 bg-black/80 text-white text-[10px] px-1.5 py-0.5 rounded-full border border-white/20 font-mono z-10 whitespace-nowrap">
-                                        Lvl {stats.level}
+                                        {t('agent.profile.level')} {stats.level}
                                     </div>
                                 </div>
                             </div>
                             <button
                                 onClick={handleLogout}
                                 className="p-2 rounded-lg bg-white/10 hover:bg-white/20 text-white transition-colors"
-                                title="Çıkış Yap"
+                                title={t('common.logout')}
                             >
                                 <LogOut className="w-5 h-5" />
                             </button>
@@ -397,7 +423,7 @@ export default function AgentDashboard({ profile: initialProfile }: AgentDashboa
             </header>
             {/* Notifications */}
             {
-                notifications.slice(0, 3).map((notification, index) => (
+                notifications.slice(0, 3).map((notification) => (
                     <NotificationToast
                         key={notification.id}
                         notification={notification}
@@ -420,19 +446,20 @@ export default function AgentDashboard({ profile: initialProfile }: AgentDashboa
                         <div className="lg:col-span-3 order-1 lg:order-2 space-y-6">
                             <LeadCard
                                 agentId={profile.id}
+                                profile={profile}
                                 onLeadProcessed={handleLeadProcessed}
                                 refreshKey={refreshKey}
                             />
 
 
                             {/* Tasks Section */}
-                            <div className="glass-card glass-card-hover p-6 relative">
-                                <GlowingEffect spread={40} glow={true} disabled={false} proximity={64} borderWidth={3} />
-                                <h3 className="text-lg font-bold text-white mb-4 flex items-center gap-2">
-                                    <Target className="w-5 h-5 text-purple-400" />
+                            <div className="glass-card glass-card-hover p-3 sm:p-4 relative">
+                                <GlowingEffect spread={28} glow={true} disabled={false} proximity={48} borderWidth={2} />
+                                <h3 className="text-sm font-bold text-white mb-2 flex items-center gap-2">
+                                    <Target className="w-4 h-4 text-purple-400" />
                                     Görevler
                                 </h3>
-                                <AgentTasks agentId={profile.id} />
+                                <AgentTasks agentId={profile.id} salesRole={profile.sales_role} />
                             </div>
                         </div>
 
@@ -446,7 +473,11 @@ export default function AgentDashboard({ profile: initialProfile }: AgentDashboa
                 {/* Appointments Tab [NEW] */}
                 {activeTab === 'appointments' && (
                     <div className="animate-fade-in-up">
-                        <AgentSchedule agentId={profile.id} />
+                        <AgentSchedule
+                            agentId={profile.id}
+                            salesRole={profile.sales_role}
+                            onStartMission={handleStartMission}
+                        />
                     </div>
                 )}
 
@@ -457,7 +488,12 @@ export default function AgentDashboard({ profile: initialProfile }: AgentDashboa
                 {activeTab === 'sales' && <MySales />}
 
                 {/* Settings Tab */}
-                {activeTab === 'settings' && <AgentSettings userProfile={profile} />}
+                {activeTab === 'settings' && (
+                    <AgentSettings
+                        userProfile={profile}
+                        onProfileUpdated={(nextProfile) => setProfile(prev => ({ ...prev, ...nextProfile }))}
+                    />
+                )}
             </main>
 
             {/* Floating Chat Button (Only show in Work tab) - Optimized for Mobile */}
@@ -483,6 +519,9 @@ export default function AgentDashboard({ profile: initialProfile }: AgentDashboa
                 onClose={() => setChatOpen(false)}
                 title="Team Chat"
             />
+
+            <SoncallAssistant profile={profile} />
+            <AgentOnboarding profile={profile} />
 
             <ManualLeadDialog
                 isOpen={manualLeadOpen}

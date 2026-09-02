@@ -1,6 +1,5 @@
 
 import { useState, useEffect } from 'react';
-import { createClient } from '@/lib/supabase/client';
 import { X, ArrowRight, CheckCircle, Loader2, Users } from 'lucide-react';
 import type { Profile } from '@/types';
 
@@ -18,8 +17,6 @@ export default function TransferModal({ isOpen, onClose, selectedLeadsCount, lea
     const [loading, setLoading] = useState(false);
     const [fetchingAgents, setFetchingAgents] = useState(true);
 
-    const supabase = createClient();
-
     useEffect(() => {
         if (isOpen) {
             loadAgents();
@@ -30,7 +27,7 @@ export default function TransferModal({ isOpen, onClose, selectedLeadsCount, lea
         try {
             const res = await fetch('/api/manager/team/list-all');
             const data = await res.json();
-            setAgents(data.agents || []);
+            setAgents((data.agents || []).filter((agent: Profile) => agent.role === 'agent' && agent.sales_role !== 'closer'));
         } catch (e) {
             console.error(e);
         } finally {
@@ -56,7 +53,7 @@ export default function TransferModal({ isOpen, onClose, selectedLeadsCount, lea
             } else {
                 alert('Transfer başarısız: ' + data.error);
             }
-        } catch (error) {
+        } catch {
             alert('Hata oluştu');
         } finally {
             setLoading(false);
@@ -71,7 +68,7 @@ export default function TransferModal({ isOpen, onClose, selectedLeadsCount, lea
                 <div className="sticky top-0 z-10 p-4 sm:p-6 border-b border-white/10 flex justify-between items-center bg-white/5 backdrop-blur-sm">
                     <h3 className="text-lg sm:text-xl font-bold text-white flex items-center gap-2">
                         <ArrowRight className="w-5 h-5 text-purple-400" />
-                        Lead Transferi
+                        Cold Lead Transferi
                     </h3>
                     <button onClick={onClose} className="text-gray-400 hover:text-white p-2 rounded-full hover:bg-white/10 touch-target"><X className="w-6 h-6 sm:w-5 sm:h-5" /></button>
                 </div>
@@ -85,7 +82,7 @@ export default function TransferModal({ isOpen, onClose, selectedLeadsCount, lea
                     <div>
                         <label className="block text-gray-400 text-sm mb-2 flex items-center gap-2">
                             <Users className="w-4 h-4" />
-                            Hedef Agent Seçin
+                            Hedef SDR Seçin
                         </label>
                         {fetchingAgents ? (
                             <div className="h-12 sm:h-10 bg-white/5 animate-pulse rounded-lg"></div>
@@ -95,7 +92,7 @@ export default function TransferModal({ isOpen, onClose, selectedLeadsCount, lea
                                 value={targetAgentId}
                                 onChange={(e) => setTargetAgentId(e.target.value)}
                             >
-                                <option value="">Agent Seçiniz...</option>
+                                <option value="">SDR Seçiniz...</option>
                                 <option value="pool">⚠️ Havuz (Atamayı Kaldır)</option>
                                 {agents.map(agent => (
                                     <option key={agent.id} value={agent.id}>{agent.full_name}</option>
@@ -113,7 +110,7 @@ export default function TransferModal({ isOpen, onClose, selectedLeadsCount, lea
                         Transferi Onayla
                     </button>
 
-                    <p className="text-xs text-gray-500 text-center pb-4">Transfer işleminden sonra lead'ler hedef agent'ın ekranında anında görünecektir.</p>
+                    <p className="text-xs text-gray-500 text-center pb-4">Transfer işleminden sonra cold lead&apos;ler hedef SDR&apos;ın ekranında anında görünecektir.</p>
                 </div>
             </div>
         </div>

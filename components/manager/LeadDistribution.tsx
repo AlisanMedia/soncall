@@ -33,21 +33,28 @@ export default function LeadDistribution({ batchId, totalLeads, onComplete }: Le
             const { data, error: fetchError } = await supabase
                 .from('profiles')
                 .select('*')
-                .in('role', ['agent', 'manager', 'admin', 'founder'])
+                .eq('role', 'agent')
+                .eq('sales_role', 'sdr')
                 .order('full_name');
 
             if (fetchError) throw fetchError;
 
-            setAgents(data || []);
-            setAssignments((data || []).map(agent => ({ agent, count: 0 })));
-        } catch (err: any) {
-            setError(err.message);
+            const callableAgents = (data || []).filter(agent => agent.role === 'agent' && agent.sales_role !== 'closer');
+            setAgents(callableAgents);
+            setAssignments(callableAgents.map(agent => ({ agent, count: 0 })));
+        } catch (err: unknown) {
+            setError(err instanceof Error ? err.message : 'SDR listesi yüklenemedi.');
         } finally {
             setLoading(false);
         }
     };
 
     const handleAutoDistribute = () => {
+        if (agents.length === 0) {
+            setError('Cold lead dağıtmak için aktif SDR bulunamadı.');
+            return;
+        }
+
         const perAgent = Math.floor(totalLeads / agents.length);
         const remainder = totalLeads % agents.length;
 
@@ -107,10 +114,10 @@ export default function LeadDistribution({ batchId, totalLeads, onComplete }: Le
             }
 
             // Success - show success message and reset
-            alert(`✅ ${totalLeads} lead başarıyla ${assignments.filter(a => a.count > 0).length} agent'a dağıtıldı!`);
+            alert(`✅ ${totalLeads} lead başarıyla ${assignments.filter(a => a.count > 0).length} SDR'a dağıtıldı!`);
             onComplete();
-        } catch (err: any) {
-            setError(err.message || 'Dağıtım sırasında bir hata oluştu');
+        } catch (err: unknown) {
+            setError(err instanceof Error ? err.message : 'Dağıtım sırasında bir hata oluştu');
         } finally {
             setDistributing(false);
         }
@@ -128,9 +135,9 @@ export default function LeadDistribution({ batchId, totalLeads, onComplete }: Le
         return (
             <div className="text-center py-12">
                 <AlertCircle className="w-12 h-12 text-yellow-400 mx-auto mb-4" />
-                <h3 className="text-xl font-semibold text-white mb-2">Henüz Agent Yok</h3>
+                <h3 className="text-xl font-semibold text-white mb-2">Henüz SDR Yok</h3>
                 <p className="text-purple-200">
-                    Lead dağıtmak için önce sisteme agent eklemeniz gerekiyor.
+                    Cold lead dağıtmak için önce sisteme SDR eklemeniz gerekiyor.
                 </p>
             </div>
         );
@@ -143,9 +150,9 @@ export default function LeadDistribution({ batchId, totalLeads, onComplete }: Le
         <div className="space-y-6">
             <div className="flex items-center justify-between">
                 <div>
-                    <h2 className="text-2xl font-semibold text-white">Lead Dağıtımı</h2>
+                    <h2 className="text-2xl font-semibold text-white">Cold Lead Dağıtımı</h2>
                     <p className="text-purple-200 mt-1">
-                        {totalLeads} lead'i {agents.length} agent arasında dağıtın
+                        {totalLeads} lead&apos;i {agents.length} SDR arasında dağıtın
                     </p>
                 </div>
                 <button
@@ -188,7 +195,7 @@ export default function LeadDistribution({ batchId, totalLeads, onComplete }: Le
             <div className="space-y-3">
                 <h3 className="text-lg font-semibold text-white flex items-center gap-2">
                     <Users className="w-5 h-5" />
-                    Agent Listesi
+                    SDR Listesi
                 </h3>
 
                 <div className="space-y-2">

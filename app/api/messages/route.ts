@@ -1,5 +1,6 @@
 import { createClient } from '@/lib/supabase/server';
 import { NextRequest, NextResponse } from 'next/server';
+import { canAccessMarket, isGlobalRole } from '@/lib/market-access';
 
 export async function GET(request: NextRequest) {
     try {
@@ -10,6 +11,12 @@ export async function GET(request: NextRequest) {
         if (!user) {
             return NextResponse.json({ message: 'Unauthorized' }, { status: 401 });
         }
+
+        const { data: profile } = await supabase
+            .from('profiles')
+            .select('id, role, market_id')
+            .eq('id', user.id)
+            .maybeSingle();
 
         // Get query parameters
         const { searchParams } = new URL(request.url);
@@ -26,6 +33,9 @@ export async function GET(request: NextRequest) {
       `)
             .order('created_at', { ascending: false })
             .limit(limit);
+        if (!isGlobalRole(profile?.role) && profile?.market_id) {
+            query = query.eq('market_id', profile.market_id);
+        }
 
         // Filter by lead if specified
         if (leadId) {
@@ -46,10 +56,11 @@ export async function GET(request: NextRequest) {
 
         return NextResponse.json({ messages: messages || [] });
 
-    } catch (error: any) {
+    } catch (error: unknown) {
+        const message = error instanceof Error ? error.message : 'Failed to fetch messages';
         console.error('Messages fetch error:', error);
         return NextResponse.json(
-            { message: error.message || 'Failed to fetch messages' },
+            { message },
             { status: 500 }
         );
     }
@@ -67,6 +78,12 @@ export async function POST(request: NextRequest) {
 
         const body = await request.json();
         const { message, receiverId, leadId, messageType, mentions } = body;
+
+        const { data: profile } = await supabase
+            .from('profiles')
+            .select('id, role, market_id')
+            .eq('id', user.id)
+            .maybeSingle();
 
         if (!message || !messageType) {
             return NextResponse.json(
@@ -99,6 +116,34 @@ export async function POST(request: NextRequest) {
             );
         }
 
+        let targetMarketId = profile?.market_id || null;
+
+        if (leadId) {
+            const { data: lead } = await supabase
+                .from('leads')
+                .select('market_id')
+                .eq('id', leadId)
+                .maybeSingle();
+
+            if (!canAccessMarket(profile, lead?.market_id)) {
+                return NextResponse.json({ message: 'Bu lead farklı markete ait' }, { status: 403 });
+            }
+
+            targetMarketId = lead?.market_id || targetMarketId;
+        }
+
+        if (messageType === 'direct' && receiverId) {
+            const { data: receiver } = await supabase
+                .from('profiles')
+                .select('market_id')
+                .eq('id', receiverId)
+                .maybeSingle();
+
+            if (!canAccessMarket(profile, receiver?.market_id)) {
+                return NextResponse.json({ message: 'Farklı marketteki kullanıcıya mesaj gönderilemez' }, { status: 403 });
+            }
+        }
+
         // Insert message
         const { data: newMessage, error } = await supabase
             .from('messages')
@@ -108,7 +153,8 @@ export async function POST(request: NextRequest) {
                 lead_id: leadId || null,
                 message,
                 message_type: messageType,
-                mentions: mentions || []
+                mentions: mentions || [],
+                market_id: targetMarketId
             })
             .select(`
         *,
@@ -135,10 +181,11 @@ export async function POST(request: NextRequest) {
             message: newMessage
         });
 
-    } catch (error: any) {
+    } catch (error: unknown) {
+        const errorMessage = error instanceof Error ? error.message : 'Failed to send message';
         console.error('Message send error:', error);
         return NextResponse.json(
-            { message: error.message || 'Failed to send message' },
+            { message: errorMessage },
             { status: 500 }
         );
     }
@@ -186,10 +233,11 @@ export async function PATCH(request: NextRequest) {
             { status: 400 }
         );
 
-    } catch (error: any) {
+    } catch (error: unknown) {
+        const message = error instanceof Error ? error.message : 'Failed to update messages';
         console.error('Bulk message update error:', error);
         return NextResponse.json(
-            { message: error.message || 'Failed to update messages' },
+            { message },
             { status: 500 }
         );
     }
@@ -208,7 +256,7 @@ export async function DELETE(request: NextRequest) {
         // Check if user is manager, admin or founder
         const { data: profile } = await supabase
             .from('profiles')
-            .select('role')
+            .select('id, role, market_id')
             .eq('id', user.id)
             .single();
 
@@ -225,6 +273,9 @@ export async function DELETE(request: NextRequest) {
         const messageType = searchParams.get('type'); // 'direct', 'broadcast', 'lead_comment'
 
         let query = supabase.from('messages').delete();
+        if (!isGlobalRole(profile?.role) && profile?.market_id) {
+            query = query.eq('market_id', profile.market_id);
+        }
 
         if (messageType === 'broadcast') {
             // Delete all broadcasts sent by this user (or all if we want total clear?)
@@ -248,10 +299,11 @@ export async function DELETE(request: NextRequest) {
 
         return NextResponse.json({ success: true });
 
-    } catch (error: any) {
+    } catch (error: unknown) {
+        const message = error instanceof Error ? error.message : 'Failed to delete messages';
         console.error('Delete messages error:', error);
         return NextResponse.json(
-            { message: error.message || 'Failed to delete messages' },
+            { message },
             { status: 500 }
         );
     }

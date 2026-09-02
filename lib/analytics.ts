@@ -1,7 +1,7 @@
 import { SupabaseClient } from '@supabase/supabase-js';
 import { getRankInfo } from './gamification';
 
-export async function fetchManagerAnalytics(supabase: SupabaseClient) {
+export async function fetchManagerAnalytics(supabase: SupabaseClient, marketId?: string | null) {
     // Get timezone-aware timestamps
     const now = new Date();
     const last24Hours = new Date(now.getTime() - 24 * 60 * 60 * 1000);
@@ -9,11 +9,21 @@ export async function fetchManagerAnalytics(supabase: SupabaseClient) {
     const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate());
 
     // 1. HOURLY DATA (last 24 hours)
-    const { data: hourlyActivity, error: hourlyError } = await supabase
+    let hourlyQuery = supabase
         .from('lead_activity_log')
         .select('created_at, action')
         .eq('action', 'completed')
         .gte('created_at', last24Hours.toISOString());
+    if (marketId) {
+        const { data: marketLeads } = await supabase.from('leads').select('id').eq('market_id', marketId).limit(50000);
+        const marketLeadIds = (marketLeads || []).map((lead) => lead.id);
+        if (marketLeadIds.length === 0) {
+            hourlyQuery = hourlyQuery.in('lead_id', ['00000000-0000-0000-0000-000000000000']);
+        } else {
+            hourlyQuery = hourlyQuery.in('lead_id', marketLeadIds);
+        }
+    }
+    const { data: hourlyActivity, error: hourlyError } = await hourlyQuery;
 
     if (hourlyError) throw hourlyError;
 
@@ -35,11 +45,17 @@ export async function fetchManagerAnalytics(supabase: SupabaseClient) {
     }));
 
     // 2. DAILY DATA (last 7 days)
-    const { data: dailyActivity, error: dailyError } = await supabase
+    let dailyQuery = supabase
         .from('lead_activity_log')
         .select('created_at, action')
         .eq('action', 'completed')
         .gte('created_at', last7Days.toISOString());
+    if (marketId) {
+        const { data: marketLeads } = await supabase.from('leads').select('id').eq('market_id', marketId).limit(50000);
+        const marketLeadIds = (marketLeads || []).map((lead) => lead.id);
+        dailyQuery = dailyQuery.in('lead_id', marketLeadIds.length > 0 ? marketLeadIds : ['00000000-0000-0000-0000-000000000000']);
+    }
+    const { data: dailyActivity, error: dailyError } = await dailyQuery;
 
     if (dailyError) throw dailyError;
 
@@ -68,19 +84,25 @@ export async function fetchManagerAnalytics(supabase: SupabaseClient) {
     });
 
     // 3. CONVERSION FUNNEL
-    const { count: totalLeads } = await supabase
+    let totalLeadsQuery = supabase
         .from('leads')
         .select('*', { count: 'exact', head: true });
+    if (marketId) totalLeadsQuery = totalLeadsQuery.eq('market_id', marketId);
+    const { count: totalLeads } = await totalLeadsQuery;
 
-    const { count: contactedLeads } = await supabase
+    let contactedLeadsQuery = supabase
         .from('leads')
         .select('*', { count: 'exact', head: true })
         .in('status', ['contacted', 'appointment', 'callback']);
+    if (marketId) contactedLeadsQuery = contactedLeadsQuery.eq('market_id', marketId);
+    const { count: contactedLeads } = await contactedLeadsQuery;
 
-    const { count: appointmentLeads } = await supabase
+    let appointmentLeadsQuery = supabase
         .from('leads')
         .select('*', { count: 'exact', head: true })
         .eq('status', 'appointment');
+    if (marketId) appointmentLeadsQuery = appointmentLeadsQuery.eq('market_id', marketId);
+    const { count: appointmentLeads } = await appointmentLeadsQuery;
 
     const conversionFunnel = [
         { stage: 'Total Lead', count: totalLeads || 0, percentage: 100 },
@@ -107,9 +129,11 @@ export async function fetchManagerAnalytics(supabase: SupabaseClient) {
         }));
 
     // 5. CATEGORY BREAKDOWN
-    const { data: categoryData, error: categoryError } = await supabase
+    let categoryQuery = supabase
         .from('leads')
         .select('category');
+    if (marketId) categoryQuery = categoryQuery.eq('market_id', marketId);
+    const { data: categoryData, error: categoryError } = await categoryQuery;
 
     if (categoryError) throw categoryError;
 
@@ -135,17 +159,21 @@ export async function fetchManagerAnalytics(supabase: SupabaseClient) {
         .eq('action', 'completed')
         .gte('created_at', todayStart.toISOString());
 
-    const { count: todayAppointments } = await supabase
+    let todayAppointmentsQuery = supabase
         .from('leads')
         .select('*', { count: 'exact', head: true })
         .eq('status', 'appointment')
         .gte('processed_at', todayStart.toISOString());
+    if (marketId) todayAppointmentsQuery = todayAppointmentsQuery.eq('market_id', marketId);
+    const { count: todayAppointments } = await todayAppointmentsQuery;
 
     // 7. AGENT PERFORMANCE COMPARISON
-    const { data: agents, error: agentsError } = await supabase
+    let agentsQuery = supabase
         .from('profiles')
-        .select('id, full_name, avatar_url')
-        .in('role', ['agent', 'admin', 'manager', 'founder']);
+        .select('id, full_name, avatar_url, sales_role')
+        .eq('role', 'agent');
+    if (marketId) agentsQuery = agentsQuery.eq('market_id', marketId);
+    const { data: agents, error: agentsError } = await agentsQuery;
 
     if (agentsError) throw agentsError;
 
@@ -155,35 +183,52 @@ export async function fetchManagerAnalytics(supabase: SupabaseClient) {
         .select('agent_id, total_xp, current_level');
 
     const progressMap = new Map();
-    agentProgress?.forEach((p: any) => progressMap.set(p.agent_id, p));
+    agentProgress?.forEach((p) => progressMap.set(p.agent_id, p));
 
 
     const agentPerformance = await Promise.all(
         (agents || []).map(async (agent) => {
-            // Today's count
-            const { count: todayCount } = await supabase
+            const isCloser = agent.sales_role === 'closer';
+
+            // Today's role count
+            const { data: todayLogs } = await supabase
                 .from('lead_activity_log')
-                .select('*', { count: 'exact', head: true })
+                .select('metadata')
                 .eq('agent_id', agent.id)
                 .eq('action', 'completed')
                 .gte('created_at', todayStart.toISOString());
 
             // Yesterday's count for comparison
             const yesterdayStart = new Date(todayStart.getTime() - 24 * 60 * 60 * 1000);
-            const { count: yesterdayCount } = await supabase
+            const { data: yesterdayLogs } = await supabase
                 .from('lead_activity_log')
-                .select('*', { count: 'exact', head: true })
+                .select('metadata')
                 .eq('agent_id', agent.id)
                 .eq('action', 'completed')
                 .gte('created_at', yesterdayStart.toISOString())
                 .lt('created_at', todayStart.toISOString());
 
-            // Total appointments
-            const { count: appointments } = await supabase
+            const countRoleActions = (logs?: Array<{ metadata: unknown }> | null) => (logs || []).filter((log) => {
+                const metadata = log.metadata as { action_taken?: string; meeting_outcome?: string | null } | null;
+                return isCloser ? Boolean(metadata?.meeting_outcome) : metadata?.action_taken === 'appointment_scheduled';
+            }).length;
+
+            const todayCount = countRoleActions(todayLogs);
+            const yesterdayCount = countRoleActions(yesterdayLogs);
+
+            // Total appointments / meetings owned by this function
+            let appointmentsQuery = supabase
                 .from('leads')
-                .select('*', { count: 'exact', head: true })
-                .eq('assigned_to', agent.id)
-                .eq('status', 'appointment');
+                .select('*', { count: 'exact', head: true });
+            if (marketId) appointmentsQuery = appointmentsQuery.eq('market_id', marketId);
+
+            appointmentsQuery = isCloser
+                ? appointmentsQuery.eq('closer_id', agent.id)
+                : appointmentsQuery
+                    .eq('status', 'appointment')
+                    .or(`assigned_to.eq.${agent.id},sdr_id.eq.${agent.id}`);
+
+            const { count: appointments } = await appointmentsQuery;
 
             // Total Sales (Approved)
             const { count: sales } = await supabase
@@ -201,7 +246,7 @@ export async function fetchManagerAnalytics(supabase: SupabaseClient) {
 
             // Calculate growth
             const growth = yesterdayCount
-                ? Math.round(((todayCount || 0) - yesterdayCount) / yesterdayCount * 100)
+                ? Math.round((todayCount - yesterdayCount) / yesterdayCount * 100)
                 : 0;
 
             // Calculate Metrics
@@ -210,7 +255,9 @@ export async function fetchManagerAnalytics(supabase: SupabaseClient) {
             const salesCount = sales || 0;
 
             // Calculate Conversion Rate
-            const conversionRate = processedCount ? Math.round((appointmentCount) / processedCount * 100) : 0;
+            const conversionRate = isCloser
+                ? appointmentCount ? Math.round((salesCount) / appointmentCount * 100) : 0
+                : processedCount ? Math.round((appointmentCount) / processedCount * 100) : 0;
 
             // GAMIFICATION 2.0 INTEGRATION
             const progress = progressMap.get(agent.id);
@@ -227,11 +274,13 @@ export async function fetchManagerAnalytics(supabase: SupabaseClient) {
                 agent_id: agent.id,
                 agent_name: agent.full_name,
                 avatar_url: agent.avatar_url,
+                sales_role: agent.sales_role || 'sdr',
+                metric_label: isCloser ? 'toplantı sonucu' : 'toplantı organize',
                 level,
                 rank: rankInfo.title, // Standardized Title
                 score, // Shows Total XP now
-                today_count: todayCount || 0,
-                yesterday_count: yesterdayCount || 0,
+                today_count: todayCount,
+                yesterday_count: yesterdayCount,
                 growth_percentage: growth,
                 total_appointments: appointmentCount,
                 total_sales: salesCount,

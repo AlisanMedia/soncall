@@ -16,7 +16,7 @@ export async function POST(request: NextRequest) {
         // Verify manager role
         const { data: profile } = await supabase
             .from('profiles')
-            .select('role')
+            .select('role, market_id')
             .eq('id', user.id)
             .single();
 
@@ -28,6 +28,10 @@ export async function POST(request: NextRequest) {
         const formData = await request.formData();
         const file = formData.get('file') as File;
         const leadsDataString = formData.get('leadsData') as string;
+        const requestedMarketId = formData.get('marketId') as string | null;
+        const targetMarketId = ['admin', 'founder'].includes(profile?.role || '')
+            ? (requestedMarketId || profile?.market_id)
+            : profile?.market_id;
 
         if (!file || !leadsDataString) {
             return NextResponse.json({ message: 'Missing file or leads data' }, { status: 400 });
@@ -46,6 +50,7 @@ export async function POST(request: NextRequest) {
                 uploaded_by: user.id,
                 filename: file.name,
                 total_leads: leads.length,
+                market_id: targetMarketId,
             })
             .select()
             .single();
@@ -86,10 +91,14 @@ export async function POST(request: NextRequest) {
 
         for (let i = 0; i < variantsArray.length; i += chunkSize) {
             const chunk = variantsArray.slice(i, i + chunkSize);
-            const { data: found } = await supabase
+            let duplicateQuery = supabase
                 .from('leads')
                 .select('phone_number')
                 .in('phone_number', chunk);
+            if (targetMarketId) {
+                duplicateQuery = duplicateQuery.eq('market_id', targetMarketId);
+            }
+            const { data: found } = await duplicateQuery;
 
             found?.forEach(f => existingPhonesInDb.add(f.phone_number));
         }
@@ -108,10 +117,13 @@ export async function POST(request: NextRequest) {
             } else {
                 // Not a duplicate - add to insert list
                 // ALSO add to "existing" logic for this batch to prevent internal duplicates within the same file!
-                const { id, ...leadWithoutId } = lead;
+                const leadWithoutId = Object.fromEntries(
+                    Object.entries(lead).filter(([key]) => key !== 'id')
+                );
                 leadsToInsert.push({
                     ...leadWithoutId,
                     batch_id: batch.id,
+                    market_id: targetMarketId,
                     created_at: new Date().toISOString(),
                     updated_at: new Date().toISOString(),
                 });
@@ -148,10 +160,11 @@ export async function POST(request: NextRequest) {
             message: `${leadsToInsert.length} leads imported, ${skippedCount} duplicates skipped.`,
         });
 
-    } catch (error: any) {
+    } catch (error: unknown) {
+        const message = error instanceof Error ? error.message : 'Upload failed';
         console.error('Upload error:', error);
         return NextResponse.json(
-            { success: false, message: error.message || 'Upload failed' },
+            { success: false, message },
             { status: 500 }
         );
     }

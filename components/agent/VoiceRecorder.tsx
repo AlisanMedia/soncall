@@ -1,15 +1,15 @@
 
 'use client';
 
-import { useState, useRef, useEffect } from 'react';
-import { Mic, Square, Play, Pause, Save, Loader2, UploadCloud, FileAudio } from 'lucide-react';
+import { useState, useRef } from 'react';
+import { Square, Play, Pause, UploadCloud, FileAudio } from 'lucide-react';
 import { createClient } from '@/lib/supabase/client';
 import { toast } from 'sonner';
 import { PulseVoiceRecorder } from '@/components/ui/voice-recording';
 
 interface VoiceRecorderProps {
     leadId: string;
-    onRecordingComplete: (audioUrl: string, blob: Blob) => void;
+    onRecordingComplete: (audioUrl: string, blob: Blob, durationSeconds: number) => void;
     isProcessing?: boolean;
 }
 
@@ -26,6 +26,8 @@ export default function VoiceRecorder({ leadId, onRecordingComplete, isProcessin
     const audioChunksRef = useRef<Blob[]>([]);
     const timerRef = useRef<NodeJS.Timeout | null>(null);
     const audioPlayerRef = useRef<HTMLAudioElement | null>(null);
+
+    const getErrorMessage = (error: unknown) => error instanceof Error ? error.message : 'Bilinmeyen hata';
 
     // Add import at top
     // ... Inside component
@@ -86,13 +88,14 @@ export default function VoiceRecorder({ leadId, onRecordingComplete, isProcessin
                 }
             };
 
-            mediaRecorder.onerror = (event: any) => {
+            mediaRecorder.onerror = (event: Event) => {
+                const recorderError = event as Event & { error?: DOMException };
                 console.error('[VoiceRecorder] MediaRecorder error:', event);
                 console.error('[VoiceRecorder] Error details:', {
-                    error: event.error,
+                    error: recorderError.error,
                     state: mediaRecorder.state
                 });
-                toast.error(`Kayıt hatası: ${event.error?.name || 'Bilinmeyen hata'}`);
+                toast.error(`Kayıt hatası: ${recorderError.error?.name || 'Bilinmeyen hata'}`);
                 setIsRecording(false);
                 if (timerRef.current) clearInterval(timerRef.current);
                 stream.getTracks().forEach(track => track.stop());
@@ -151,22 +154,23 @@ export default function VoiceRecorder({ leadId, onRecordingComplete, isProcessin
                 setRecordingTime(prev => prev + 1);
             }, 1000);
 
-        } catch (error: any) {
+        } catch (error: unknown) {
+            const mediaError = error as { name?: string; message?: string; stack?: string };
             console.error('[VoiceRecorder] Error in startRecording:', error);
             console.error('[VoiceRecorder] Error details:', {
-                name: error.name,
-                message: error.message,
-                stack: error.stack
+                name: mediaError.name,
+                message: mediaError.message,
+                stack: mediaError.stack
             });
 
-            if (error.name === 'NotAllowedError' || error.name === 'PermissionDeniedError') {
+            if (mediaError.name === 'NotAllowedError' || mediaError.name === 'PermissionDeniedError') {
                 toast.error('Mikrofon erişimi reddedildi. Tarayıcı ayarlarını kontrol edin.');
-            } else if (error.name === 'NotFoundError') {
+            } else if (mediaError.name === 'NotFoundError') {
                 toast.error('Mikrofon bulunamadı. Cihazınızı kontrol edin.');
-            } else if (error.name === 'NotSupportedError') {
+            } else if (mediaError.name === 'NotSupportedError') {
                 toast.error('Tarayıcınız ses kaydını desteklemiyor. Chrome/Firefox kullanın.');
             } else {
-                toast.error('Ses kaydı başlatılamadı: ' + error.message);
+                toast.error('Ses kaydı başlatılamadı: ' + getErrorMessage(error));
             }
         }
     };
@@ -213,7 +217,7 @@ export default function VoiceRecorder({ leadId, onRecordingComplete, isProcessin
             const filename = `${leadId}-${Date.now()}.${ext}`;
 
             // Upload to Supabase Storage
-            const { data, error } = await supabase.storage
+            const { error } = await supabase.storage
                 .from('call-recordings')
                 .upload(filename, audioBlob, {
                     contentType: audioMimeType,
@@ -227,10 +231,10 @@ export default function VoiceRecorder({ leadId, onRecordingComplete, isProcessin
                 .from('call-recordings')
                 .getPublicUrl(filename);
 
-            onRecordingComplete(publicUrl, audioBlob);
-        } catch (error: any) {
+            onRecordingComplete(publicUrl, audioBlob, recordingTime);
+        } catch (error: unknown) {
             console.error('Upload failed:', error);
-            alert('Yükleme başarısız: ' + error.message);
+            alert('Yükleme başarısız: ' + getErrorMessage(error));
         } finally {
             setIsUploading(false);
         }

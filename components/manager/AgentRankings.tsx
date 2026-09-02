@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { Trophy, TrendingUp, TrendingDown, Award, Zap, Target, ArrowRight, Star } from 'lucide-react';
+import { Trophy, TrendingUp, TrendingDown, Award, Zap, Target, Star } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { SectionInfo } from '@/components/ui/section-info';
 
@@ -9,6 +9,8 @@ interface AgentPerformance {
     agent_id: string;
     agent_name: string;
     avatar_url?: string;
+    sales_role?: 'sdr' | 'closer' | null;
+    metric_label?: string;
     level: number;
     rank: string;
     score: number;
@@ -123,7 +125,7 @@ export default function AgentRankings() {
                     <div>
                         <h2 className="text-lg font-bold text-white flex items-center gap-2">
                             Liderlik Tablosu
-                            <SectionInfo text="Rank sistemi artık XP bazlıdır. Satış=1000XP, Randevu=200XP, Arama=10XP." />
+                            <SectionInfo text="Rank sistemi XP bazlıdır. Satış=1000XP, randevu organizasyonu=200XP, toplantı sonucu=100XP." />
                         </h2>
                         <p className="text-xs text-purple-300">Anlık performans ve XP takibi</p>
                     </div>
@@ -230,6 +232,9 @@ export default function AgentRankings() {
                                         <div className="flex items-center gap-2 text-xs">
                                             <span className="text-stone-400">{agent.rank}</span>
                                             <span className="text-purple-400 font-bold bg-purple-500/10 px-1.5 rounded">{agent.score} XP</span>
+                                            <span className={`font-bold px-1.5 rounded ${agent.sales_role === 'closer' ? 'text-emerald-300 bg-emerald-500/10' : 'text-blue-300 bg-blue-500/10'}`}>
+                                                {agent.sales_role === 'closer' ? 'Closer' : 'SDR'}
+                                            </span>
                                         </div>
                                     </div>
 
@@ -240,7 +245,7 @@ export default function AgentRankings() {
                                             <p className="text-xs sm:text-sm font-bold text-green-400">${agent.total_sales > 0 ? agent.total_sales : '0'}</p>
                                         </div>
                                         <div className="hidden sm:block">
-                                            <p className="text-[10px] text-gray-500 uppercase tracking-wider">Randevu</p>
+                                            <p className="text-[10px] text-gray-500 uppercase tracking-wider">{agent.sales_role === 'closer' ? 'Toplantı' : 'Randevu'}</p>
                                             <p className="text-xs sm:text-sm font-bold text-purple-300">{agent.total_appointments}</p>
                                         </div>
                                         <div>
@@ -302,8 +307,8 @@ export default function AgentRankings() {
                                         />
                                     </div>
                                     <div className="flex justify-between text-xs text-slate-400">
-                                        <span>{comparedAgents[0].today_count} lead</span>
-                                        <span>{comparedAgents[1].today_count} lead</span>
+                                        <span>{comparedAgents[0].today_count} {comparedAgents[0].metric_label || 'hedef'}</span>
+                                        <span>{comparedAgents[1].today_count} {comparedAgents[1].metric_label || 'hedef'}</span>
                                     </div>
                                 </div>
                                 <p className="text-center text-xs text-yellow-400 font-bold mt-2">

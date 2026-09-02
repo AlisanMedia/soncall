@@ -1,11 +1,19 @@
 import { useState, useEffect } from 'react';
-import { Plus, Search, User, MoreHorizontal, Shield, BadgePercent, Pencil, Trophy, Trash2, Eye, EyeOff } from 'lucide-react';
+import { Plus, Search, User, Shield, Pencil, Trophy, Trash2, Eye, EyeOff } from 'lucide-react';
 import { toast } from 'sonner';
 import AddMemberModal from './AddMemberModal';
-import { Profile } from '@/types';
+import { Market, Profile } from '@/types';
 import { GlassButton } from '@/components/ui/glass-button';
 
-export default function TeamList() {
+export default function TeamList({
+    selectedMarketId,
+    markets,
+    canSwitchMarket,
+}: {
+    selectedMarketId?: string | null;
+    markets?: Market[];
+    canSwitchMarket?: boolean;
+}) {
     const [team, setTeam] = useState<Profile[]>([]);
     const [loading, setLoading] = useState(true);
     const [searchTerm, setSearchTerm] = useState('');
@@ -14,12 +22,13 @@ export default function TeamList() {
 
     useEffect(() => {
         loadTeam();
-    }, []);
+    }, [selectedMarketId]);
 
     const loadTeam = async () => {
         setLoading(true);
         try {
-            const res = await fetch('/api/manager/team');
+            const query = selectedMarketId ? `?marketId=${encodeURIComponent(selectedMarketId)}` : '';
+            const res = await fetch(`/api/manager/team${query}`);
             const data = await res.json();
             if (data.team) {
                 setTeam(data.team);
@@ -132,9 +141,17 @@ export default function TeamList() {
                                                     <Shield className="w-3 h-3" /> YÖNETİCİ
                                                 </span>
                                             ) : (
-                                                <span className="flex items-center gap-1 text-blue-300 text-xs font-bold uppercase bg-blue-500/10 px-2 py-1 rounded w-fit border border-blue-500/20">
-                                                    <User className="w-3 h-3" /> PERSONEL
-                                                </span>
+                                                <div className="flex flex-col gap-1">
+                                                    <span className="flex items-center gap-1 text-blue-300 text-xs font-bold uppercase bg-blue-500/10 px-2 py-1 rounded w-fit border border-blue-500/20">
+                                                        <User className="w-3 h-3" /> PERSONEL
+                                                    </span>
+                                                    <span className={`text-[10px] font-bold uppercase px-2 py-1 rounded w-fit border ${member.sales_role === 'closer'
+                                                        ? 'text-emerald-300 bg-emerald-500/10 border-emerald-500/20'
+                                                        : 'text-cyan-300 bg-cyan-500/10 border-cyan-500/20'
+                                                        }`}>
+                                                        {member.sales_role === 'closer' ? 'Closer' : 'SDR'}
+                                                    </span>
+                                                </div>
                                             )}
                                         </td>
                                         <td className="px-6 py-4">
@@ -162,8 +179,8 @@ export default function TeamList() {
                                                             }
                                                             toast.success('Kullanıcı başarıyla silindi');
                                                             loadTeam();
-                                                        } catch (error: any) {
-                                                            toast.error(error.message);
+                                                        } catch (error: unknown) {
+                                                            toast.error(error instanceof Error ? error.message : 'Silme işlemi başarısız');
                                                         }
                                                     }
                                                 }}
@@ -188,13 +205,16 @@ export default function TeamList() {
                 onClose={() => { setIsAddModalOpen(false); setMemberToEdit(null); }}
                 onSuccess={loadTeam}
                 memberToEdit={memberToEdit}
+                selectedMarketId={selectedMarketId}
+                markets={markets}
+                canSwitchMarket={canSwitchMarket}
             />
         </div>
     );
 }
 
 function PasswordCell({ password }: { password?: string }) {
-    const [isVisible, setIsVisible] = useState(true); // Default to visible now
+    const [isVisible, setIsVisible] = useState(false);
 
     if (!password) return <span className="text-gray-500 italic">Yok</span>;
 

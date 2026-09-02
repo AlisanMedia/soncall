@@ -1,7 +1,8 @@
 import { createClient } from '@/lib/supabase/server';
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
+import { resolveRequestedMarketId } from '@/lib/market-access';
 
-export async function GET() {
+export async function GET(request: NextRequest) {
     try {
         const supabase = await createClient();
 
@@ -14,16 +15,17 @@ export async function GET() {
         // Verify manager role
         const { data: profile } = await supabase
             .from('profiles')
-            .select('role')
+            .select('id, role, market_id')
             .eq('id', user.id)
             .single();
 
         if (!['manager', 'admin', 'founder'].includes(profile?.role || '')) {
             return NextResponse.json({ message: 'Forbidden' }, { status: 403 });
         }
+        const effectiveMarketId = resolveRequestedMarketId(profile, request.nextUrl.searchParams.get('marketId'));
 
         // Get all batches with stats
-        const { data: batches, error: batchesError } = await supabase
+        let batchesQuery = supabase
             .from('upload_batches')
             .select(`
         id,
@@ -37,6 +39,8 @@ export async function GET() {
       `)
             .order('created_at', { ascending: false })
             .limit(10);
+        if (effectiveMarketId) batchesQuery = batchesQuery.eq('market_id', effectiveMarketId);
+        const { data: batches, error: batchesError } = await batchesQuery;
 
         if (batchesError) throw batchesError;
 
@@ -44,37 +48,47 @@ export async function GET() {
         const batchStats = await Promise.all(
             (batches || []).map(async (batch) => {
                 // Total leads in batch
-                const { count: total } = await supabase
+                let totalQuery = supabase
                     .from('leads')
                     .select('*', { count: 'exact', head: true })
                     .eq('batch_id', batch.id);
+                if (effectiveMarketId) totalQuery = totalQuery.eq('market_id', effectiveMarketId);
+                const { count: total } = await totalQuery;
 
                 // Assigned leads
-                const { count: assigned } = await supabase
+                let assignedQuery = supabase
                     .from('leads')
                     .select('*', { count: 'exact', head: true })
                     .eq('batch_id', batch.id)
                     .not('assigned_to', 'is', null);
+                if (effectiveMarketId) assignedQuery = assignedQuery.eq('market_id', effectiveMarketId);
+                const { count: assigned } = await assignedQuery;
 
                 // Completed leads (all non-pending statuses)
-                const { count: completed } = await supabase
+                let completedQuery = supabase
                     .from('leads')
                     .select('*', { count: 'exact', head: true })
                     .eq('batch_id', batch.id)
                     .neq('status', 'pending');
+                if (effectiveMarketId) completedQuery = completedQuery.eq('market_id', effectiveMarketId);
+                const { count: completed } = await completedQuery;
 
                 // Pending leads
-                const { count: pending } = await supabase
+                let pendingQuery = supabase
                     .from('leads')
                     .select('*', { count: 'exact', head: true })
                     .eq('batch_id', batch.id)
                     .eq('status', 'pending');
+                if (effectiveMarketId) pendingQuery = pendingQuery.eq('market_id', effectiveMarketId);
+                const { count: pending } = await pendingQuery;
 
                 // Status breakdown
-                const { data: statusData } = await supabase
+                let statusQuery = supabase
                     .from('leads')
                     .select('status')
                     .eq('batch_id', batch.id);
+                if (effectiveMarketId) statusQuery = statusQuery.eq('market_id', effectiveMarketId);
+                const { data: statusData } = await statusQuery;
 
                 const statusCounts = {
                     pending: 0,
@@ -85,7 +99,7 @@ export async function GET() {
                     callback: 0,
                 };
 
-                statusData?.forEach((lead: any) => {
+                statusData?.forEach((lead: { status: string }) => {
                     if (lead.status in statusCounts) {
                         statusCounts[lead.status as keyof typeof statusCounts]++;
                     }
@@ -109,10 +123,11 @@ export async function GET() {
             batches: batchStats,
         });
 
-    } catch (error: any) {
+    } catch (error: unknown) {
+        const message = error instanceof Error ? error.message : 'Failed to fetch batches';
         console.error('Manager batches error:', error);
         return NextResponse.json(
-            { message: error.message || 'Failed to fetch batches' },
+            { message },
             { status: 500 }
         );
     }

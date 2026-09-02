@@ -9,6 +9,7 @@ type ProfileRole = {
     role: string | null;
     full_name?: string | null;
     email?: string | null;
+    market_id?: string | null;
 };
 
 type ManagerAccess =
@@ -36,7 +37,7 @@ export async function requireManagerAccess(): Promise<ManagerAccess> {
 
     const { data: profile, error } = await supabase
         .from('profiles')
-        .select('id, role, full_name, email')
+        .select('id, role, full_name, email, market_id')
         .eq('id', user.id)
         .maybeSingle();
 

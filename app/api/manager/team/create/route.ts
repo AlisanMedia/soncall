@@ -1,5 +1,24 @@
 import { createClient } from '@/lib/supabase/server';
 import { NextResponse } from 'next/server';
+import { createClient as createSupabaseAdminClient } from '@supabase/supabase-js';
+
+const ROLE_RANK = {
+    agent: 1,
+    manager: 2,
+    admin: 3,
+    founder: 4,
+} as const;
+
+type ManagedRole = keyof typeof ROLE_RANK;
+type SalesRole = 'sdr' | 'closer';
+
+function isManagedRole(role: string): role is ManagedRole {
+    return role in ROLE_RANK;
+}
+
+function isSalesRole(role: string): role is SalesRole {
+    return role === 'sdr' || role === 'closer';
+}
 
 export async function POST(req: Request) {
     try {
@@ -11,7 +30,7 @@ export async function POST(req: Request) {
 
         const { data: profile } = await supabase
             .from('profiles')
-            .select('role')
+            .select('role, market_id')
             .eq('id', user.id)
             .single();
 
@@ -20,7 +39,29 @@ export async function POST(req: Request) {
         }
 
         const body = await req.json();
-        const { email, password, fullName, tcNumber, birthDate, city, district, phoneNumber, role, commissionRate } = body;
+        const { email, password, fullName, tcNumber, birthDate, city, district, phoneNumber, role, salesRole, commissionRate, marketId } = body;
+        const requestedRole = role || 'agent';
+        const requestedSalesRole = salesRole || 'sdr';
+        const targetMarketId = profile?.role === 'founder' || profile?.role === 'admin'
+            ? (marketId || profile?.market_id)
+            : profile?.market_id;
+
+        if (!isManagedRole(requestedRole)) {
+            return NextResponse.json({ error: 'Invalid role' }, { status: 400 });
+        }
+
+        if (!isSalesRole(requestedSalesRole)) {
+            return NextResponse.json({ error: 'Invalid sales role' }, { status: 400 });
+        }
+
+        const requesterRole = profile?.role as ManagedRole;
+
+        if (
+            (requesterRole === 'manager' && requestedRole !== 'agent') ||
+            ROLE_RANK[requestedRole] > ROLE_RANK[requesterRole]
+        ) {
+            return NextResponse.json({ error: 'Forbidden: Cannot create users with that role' }, { status: 403 });
+        }
 
         // 2. Create user in Supabase Auth
         // Note: To create a NEW user programmatically, we usually need the SERVICE_ROLE_KEY
@@ -44,10 +85,9 @@ export async function POST(req: Request) {
         */
 
         // Creating a specific admin client for this action
-        const { createClient: createSupabaseClient } = require('@supabase/supabase-js');
-        const adminSupabase = createSupabaseClient(
-            process.env.NEXT_PUBLIC_SUPABASE_URL,
-            process.env.SUPABASE_SERVICE_ROLE_KEY
+        const adminSupabase = createSupabaseAdminClient(
+            process.env.NEXT_PUBLIC_SUPABASE_URL!,
+            process.env.SUPABASE_SERVICE_ROLE_KEY!
         );
 
         let userId = '';
@@ -58,7 +98,7 @@ export async function POST(req: Request) {
             email_confirm: true, // Auto confirm
             user_metadata: {
                 full_name: fullName,
-                role: role || 'agent'
+                role: requestedRole
             }
         });
 
@@ -78,12 +118,12 @@ export async function POST(req: Request) {
                 // We have to iterate or trust we can find it. 
                 // A better way is usually to just let the admin know, but we want to fix it.
 
-                const existingUser = userList.users.find((u: any) => u.email === email);
+                const existingUser = userList.users.find((u) => u.email === email);
                 if (existingUser) {
                     userId = existingUser.id;
                     // Optional: Update user metadata if needed
                     await adminSupabase.auth.admin.updateUserById(userId, {
-                        user_metadata: { full_name: fullName, role: role || 'agent' }
+                        user_metadata: { full_name: fullName, role: requestedRole }
                     });
                 } else {
                     throw new Error('User exists but could not be found in list.');
@@ -105,21 +145,24 @@ export async function POST(req: Request) {
                 id: userId,
                 email: email,
                 full_name: fullName,
-                role: role || 'agent',
+                role: requestedRole,
                 tc_number: tcNumber,
                 birth_date: birthDate,
                 city,
                 district,
                 phone_number: phoneNumber,
-                commission_rate: commissionRate
+                commission_rate: commissionRate,
+                sales_role: requestedRole === 'agent' ? requestedSalesRole : 'sdr',
+                market_id: targetMarketId
             });
 
         if (upsertError) throw upsertError;
 
-        return NextResponse.json({ success: true, userId: authData.user.id });
+        return NextResponse.json({ success: true, userId });
 
-    } catch (error: any) {
+    } catch (error: unknown) {
+        const message = error instanceof Error ? error.message : 'Team member creation failed';
         console.error('Error creating team member:', error);
-        return NextResponse.json({ error: error.message }, { status: 500 });
+        return NextResponse.json({ error: message }, { status: 500 });
     }
 }

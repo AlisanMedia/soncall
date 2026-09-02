@@ -1,26 +1,25 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion } from 'framer-motion';
 import {
-    Calendar, Clock, Phone, MapPin, AlertTriangle,
-    CheckCircle2, XCircle, ChevronRight, Target,
-    Zap, Rocket, Shield, Timer
+    Calendar, Phone, AlertTriangle,
+    CheckCircle2, ChevronRight, Target,
+    Zap, Rocket, Shield
 } from 'lucide-react';
-import { useRouter } from 'next/navigation';
 import { GlassButton } from '@/components/ui/glass-button';
 import { GlowingEffect } from '@/components/ui/glowing-effect';
+import type { SalesRole } from '@/types';
 
-import MissionDetailModal from './MissionDetailModal';
+import MissionDetailModal, { type MissionAppointment } from './MissionDetailModal';
 
-interface Appointment {
-    id: string;
+interface Appointment extends MissionAppointment {
     business_name: string;
     phone_number: string;
     appointment_date: string; // ISO string
     potential_level: 'high' | 'medium' | 'low';
     notes: string;
-    status: 'won' | 'interviewed' | 'attempted' | 'missed' | 'pending';
+    status: 'won' | 'lost' | 'no_show' | 'completed' | 'interviewed' | 'attempted' | 'missed' | 'pending';
     urgencyScore: number;
     last_call_at: string | null;
     call_count?: number;
@@ -28,9 +27,11 @@ interface Appointment {
 
 interface AgentScheduleProps {
     agentId: string;
+    salesRole?: SalesRole | null;
+    onStartMission: (appointment: MissionAppointment) => void;
 }
 
-export default function AgentSchedule({ agentId }: AgentScheduleProps) {
+export default function AgentSchedule({ agentId, salesRole, onStartMission }: AgentScheduleProps) {
     const [appointments, setAppointments] = useState<Appointment[]>([]);
     const [loading, setLoading] = useState(true);
     const [nextMission, setNextMission] = useState<Appointment | null>(null);
@@ -38,8 +39,7 @@ export default function AgentSchedule({ agentId }: AgentScheduleProps) {
     const [urgencyLevel, setUrgencyLevel] = useState<'normal' | 'warning' | 'critical'>('normal');
     const [selectedApt, setSelectedApt] = useState<Appointment | null>(null);
     const [isModalOpen, setIsModalOpen] = useState(false);
-
-    const router = useRouter();
+    const isCloser = salesRole === 'closer';
 
     useEffect(() => {
         fetchAppointments();
@@ -105,9 +105,11 @@ export default function AgentSchedule({ agentId }: AgentScheduleProps) {
         }
     };
 
-    const handleLockAndLoad = (appointment: Appointment) => {
-        localStorage.setItem(`agent_${agentId}_current_lead`, appointment.id);
-        window.location.reload();
+    const handleLockAndLoad = (appointment: MissionAppointment) => {
+        const leadId = appointment.lead_id || appointment.id;
+        localStorage.setItem(`agent_${agentId}_current_lead`, leadId);
+        localStorage.setItem(`agent_${agentId}_current_lead_source`, 'appointment');
+        onStartMission(appointment);
     };
 
     const openMissionDetail = (apt: Appointment) => {
@@ -166,6 +168,7 @@ export default function AgentSchedule({ agentId }: AgentScheduleProps) {
                                     </div>
                                 )}
                                 <div className="text-xs text-purple-300 mt-2 p-2 bg-white/5 rounded border border-white/5 line-clamp-2">
+                                    {/* eslint-disable-next-line react/no-unescaped-entities */}
                                     📝 "{nextMission.notes}"
                                 </div>
                             </div>
@@ -182,7 +185,7 @@ export default function AgentSchedule({ agentId }: AgentScheduleProps) {
                                 contentClassName="flex items-center justify-center gap-3"
                             >
                                 <Rocket className="w-6 h-6 group-hover:translate-x-1 transition-transform" />
-                                <span>HEDEFE KİLİTLEN & ARA</span>
+                                <span>{isCloser ? 'TOPLANTIYA KİLİTLEN' : 'HEDEFE KİLİTLEN & ARA'}</span>
                             </GlassButton>
                         </div>
                     </div>
@@ -211,6 +214,8 @@ export default function AgentSchedule({ agentId }: AgentScheduleProps) {
                             transition={{ delay: index * 0.05 }}
                             onClick={() => openMissionDetail(apt)}
                             className={`group relative flex items-center gap-4 p-4 rounded-xl border transition-all cursor-pointer ${apt.status === 'won' ? 'bg-green-500/10 border-green-500/30' :
+                                apt.status === 'lost' || apt.status === 'no_show' ? 'bg-red-500/10 border-red-500/30' :
+                                    apt.status === 'completed' ? 'bg-blue-500/10 border-blue-500/30' :
                                 apt.status === 'missed' ? 'bg-red-500/10 border-red-500/30' :
                                     apt.status === 'interviewed' ? 'bg-blue-500/10 border-blue-500/30' :
                                         apt.id === nextMission?.id ? 'bg-purple-500/20 border-purple-500/50 ring-1 ring-purple-500/50' :
@@ -223,17 +228,24 @@ export default function AgentSchedule({ agentId }: AgentScheduleProps) {
                                     {new Date(apt.appointment_date).toLocaleTimeString('tr-TR', { hour: '2-digit', minute: '2-digit' })}
                                 </span>
                                 <span className={`text-[10px] uppercase font-bold tracking-wider ${apt.status === 'won' ? 'text-green-400' :
+                                    apt.status === 'lost' || apt.status === 'no_show' ? 'text-red-400' :
+                                        apt.status === 'completed' ? 'text-blue-400' :
                                     apt.status === 'interviewed' ? 'text-blue-400' :
                                         apt.status === 'missed' ? 'text-red-400' : 'text-purple-300'
                                     }`}>
                                     {apt.status === 'won' ? 'SATIŞ' :
-                                        apt.status === 'interviewed' ? 'GÖRÜŞÜLDÜ' :
-                                            apt.status === 'missed' ? 'BAŞARISIZ' : 'BEKLİYOR'}
+                                        apt.status === 'lost' ? 'KAPANMADI' :
+                                            apt.status === 'no_show' ? 'KATILMADI' :
+                                                apt.status === 'completed' ? 'TAKİP' :
+                                                    apt.status === 'interviewed' ? 'GÖRÜŞÜLDÜ' :
+                                                        apt.status === 'missed' ? 'BAŞARISIZ' : 'BEKLİYOR'}
                                 </span>
                             </div>
 
                             {/* Divider Line */}
                             <div className={`w-1 self-stretch rounded-full ${apt.status === 'won' ? 'bg-green-500' :
+                                apt.status === 'lost' || apt.status === 'no_show' ? 'bg-red-500' :
+                                    apt.status === 'completed' ? 'bg-blue-500' :
                                 apt.status === 'interviewed' ? 'bg-blue-500' :
                                     apt.status === 'missed' ? 'bg-red-500' :
                                         'bg-white/10'
@@ -258,9 +270,9 @@ export default function AgentSchedule({ agentId }: AgentScheduleProps) {
                             <div className="flex items-center">
                                 {apt.status === 'won' ? (
                                     <CheckCircle2 className="w-6 h-6 text-green-500" />
-                                ) : apt.status === 'missed' ? (
+                                ) : apt.status === 'missed' || apt.status === 'lost' || apt.status === 'no_show' ? (
                                     <AlertTriangle className="w-6 h-6 text-red-500" />
-                                ) : apt.status === 'interviewed' ? (
+                                ) : apt.status === 'interviewed' || apt.status === 'completed' ? (
                                     <Phone className="w-6 h-6 text-blue-500" />
                                 ) : (
                                     <div className="p-2 rounded-lg bg-white/5 group-hover:bg-purple-500/20 group-hover:text-purple-300 transition-colors">

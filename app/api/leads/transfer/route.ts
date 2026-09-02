@@ -39,25 +39,33 @@ export async function POST(request: NextRequest) {
                 .select('id, full_name')
                 .eq('id', targetAgentId)
                 .eq('role', 'agent')
+                .eq('sales_role', 'sdr')
                 .single();
 
             if (!agent) {
-                return NextResponse.json({ error: 'Target agent not found' }, { status: 404 });
+                return NextResponse.json({ error: 'Target SDR not found' }, { status: 404 });
             }
             agentName = agent.full_name;
         }
 
         // 4. Perform Update
-        const updateData: any = {
+        const updateData: Record<string, string | null> = {
             current_agent_id: null, // Unlock if locked
             locked_at: null,
-            status: 'pending' // Reset status to pending
+            status: 'pending', // Reset status to pending
+            processed_at: null,
+            appointment_date: null,
+            closer_id: null,
+            meeting_url: null,
+            meeting_status: 'scheduled',
         };
 
         if (targetAgentId === 'pool') {
             updateData.assigned_to = null;
+            updateData.sdr_id = null;
         } else {
             updateData.assigned_to = targetAgentId;
+            updateData.sdr_id = targetAgentId;
         }
 
         const { error: updateError } = await supabase
@@ -85,8 +93,9 @@ export async function POST(request: NextRequest) {
             message: `${leadIds.length} lead successfully transferred to ${agentName}`
         });
 
-    } catch (error: any) {
+    } catch (error: unknown) {
+        const message = error instanceof Error ? error.message : 'Transfer failed';
         console.error('Transfer error:', error);
-        return NextResponse.json({ error: error.message }, { status: 500 });
+        return NextResponse.json({ error: message }, { status: 500 });
     }
 }

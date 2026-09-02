@@ -2,25 +2,34 @@
 
 import { useState, useEffect, useRef } from 'react';
 import { createClient } from '@/lib/supabase/client';
-import type { Lead, PotentialLevel } from '@/types';
+import type { Lead, PotentialLevel, Profile } from '@/types';
 import {
     Phone, MapPin, Globe, Star, Sparkles, Calendar,
-    ArrowRight, Loader2, CheckCircle2, AlertCircle, Flame, Zap, TrendingDown, Wand2
+    ArrowRight, Loader2, CheckCircle2, AlertCircle, Flame, Zap, TrendingDown, Wand2, Hash, Copy, Clock3, RotateCcw, XCircle
 } from 'lucide-react';
 import { getWhatsAppUrl, formatPhoneNumber } from '@/lib/utils';
 import { playLeadTransition, playAppointment, playWhatsApp, playVictory, playError } from '@/lib/sounds';
 import VoiceRecorder from './VoiceRecorder';
 import { GlowingEffect } from '@/components/ui/glowing-effect';
 import { GlassButton } from '@/components/ui/glass-button';
-import AIAnalysisDisplay from './AIAnalysisDisplay';
+import AIAnalysisDisplay, { type AIAnalysis } from './AIAnalysisDisplay';
 
 interface LeadCardProps {
     agentId: string;
+    profile: Profile;
     onLeadProcessed: () => void;
     refreshKey: number;
 }
 
-export default function LeadCard({ agentId, onLeadProcessed, refreshKey }: LeadCardProps) {
+type CloserOption = Pick<Profile, 'id' | 'full_name' | 'email'>;
+type MeetingOutcome = 'won' | 'lost' | 'no_show' | 'completed' | '';
+
+function toDatetimeLocalValue(date: Date) {
+    const offsetMs = date.getTimezoneOffset() * 60 * 1000;
+    return new Date(date.getTime() - offsetMs).toISOString().slice(0, 16);
+}
+
+export default function LeadCard({ agentId, profile, onLeadProcessed, refreshKey }: LeadCardProps) {
     const [currentLead, setCurrentLead] = useState<Lead | null>(null);
     const [loading, setLoading] = useState(true);
     const [processing, setProcessing] = useState(false);
@@ -32,11 +41,29 @@ export default function LeadCard({ agentId, onLeadProcessed, refreshKey }: LeadC
     const [actionTaken, setActionTaken] = useState<string>('');
     const [isAiProcessing, setIsAiProcessing] = useState(false);
     const [savedAudioUrl, setSavedAudioUrl] = useState<string | null>(null);
-    const [aiAnalysis, setAiAnalysis] = useState<any>(null);
+    const [aiAnalysis, setAiAnalysis] = useState<AIAnalysis | null>(null);
     const [callCount, setCallCount] = useState(0);
+    const [closers, setClosers] = useState<CloserOption[]>([]);
+    const [appointmentCloserId, setAppointmentCloserId] = useState('');
+    const [meetingUrl, setMeetingUrl] = useState('');
+    const [meetingOutcome, setMeetingOutcome] = useState<MeetingOutcome>('');
 
     const supabase = createClient();
     const lastPlayedLeadId = useRef<string | null>(null);
+    const currentLeadStorageKey = `agent_${agentId}_current_lead`;
+    const currentLeadSourceKey = `agent_${agentId}_current_lead_source`;
+    const isCloser = profile.sales_role === 'closer';
+    const leadCodeLabel = currentLead?.lead_number ? `#${String(currentLead.lead_number).padStart(4, '0')}` : null;
+
+    const copyLeadCode = async () => {
+        if (!leadCodeLabel || typeof navigator === 'undefined') return;
+
+        try {
+            await navigator.clipboard?.writeText(leadCodeLabel);
+        } catch {
+            // Clipboard is optional; the visible code is still usable.
+        }
+    };
 
     // Clear AI analysis when lead changes
     useEffect(() => {
@@ -52,22 +79,53 @@ export default function LeadCard({ agentId, onLeadProcessed, refreshKey }: LeadC
         }
     }, [currentLead?.id]);
 
+    useEffect(() => {
+        if (isCloser) return;
+
+        supabase
+            .from('profiles')
+            .select('id, full_name, email')
+            .eq('role', 'agent')
+            .eq('sales_role', 'closer')
+            .order('full_name')
+            .then(({ data, error }) => {
+                if (error) {
+                    setClosers([]);
+                    return;
+                }
+
+                setClosers(data || []);
+            });
+    }, [isCloser]);
+
     // Load lead on mount - check localStorage first for persistence across page refreshes
     useEffect(() => {
         const restoreFromStorage = async () => {
-            const savedLeadId = localStorage.getItem(`agent_${agentId}_current_lead`);
+            const requestedLeadId = new URLSearchParams(window.location.search).get('leadId');
+            const hasValidRequestedLead = requestedLeadId && !['undefined', 'null'].includes(requestedLeadId);
+            const savedLeadId = hasValidRequestedLead ? requestedLeadId : localStorage.getItem(currentLeadStorageKey);
+            const savedLeadSource = hasValidRequestedLead ? 'appointment' : localStorage.getItem(currentLeadSourceKey);
+
+            if (hasValidRequestedLead) {
+                localStorage.setItem(currentLeadStorageKey, requestedLeadId);
+                localStorage.setItem(currentLeadSourceKey, 'appointment');
+                window.history.replaceState(null, '', window.location.pathname);
+            }
 
             if (savedLeadId) {
                 // Try to restore the saved lead
                 try {
-                    const { data: savedLead, error } = await supabase
+                    let savedLeadQuery = supabase
                         .from('leads')
                         .select('*')
                         .eq('id', savedLeadId)
-                        .eq('assigned_to', agentId)
-                        // [CHANGED] Allow loading pending OR appointment status (for callback workflow)
-                        .in('status', ['pending', 'appointment'])
-                        .single();
+                        .or(`assigned_to.eq.${agentId},sdr_id.eq.${agentId},closer_id.eq.${agentId}`);
+
+                    if (savedLeadSource !== 'appointment') {
+                        savedLeadQuery = savedLeadQuery.in('status', ['pending', 'appointment', 'callback']);
+                    }
+
+                    const { data: savedLead, error } = await savedLeadQuery.maybeSingle();
 
                     if (!error && savedLead) {
                         // Re-lock the lead (in case it was unlocked)
@@ -80,6 +138,14 @@ export default function LeadCard({ agentId, onLeadProcessed, refreshKey }: LeadC
                             .eq('id', savedLead.id);
 
                         setCurrentLead(savedLead);
+                        setPotentialLevel(savedLead.potential_level || 'not_assessed');
+                        setNote('');
+                        setActionTaken('');
+                        setSavedAudioUrl(null);
+                        setAppointmentCloserId('');
+                        setMeetingUrl(savedLead.meeting_url || '');
+                        setMeetingOutcome('');
+                        setCallbackDate(savedLead.callback_at ? toDatetimeLocalValue(new Date(savedLead.callback_at)) : '');
                         setLoading(false);
                         return; // Don't load new lead
                     }
@@ -103,21 +169,33 @@ export default function LeadCard({ agentId, onLeadProcessed, refreshKey }: LeadC
             // Unlock stale leads first
             await fetch('/api/leads/unlock-stale', { method: 'POST' });
 
-            // Get next pending lead assigned to this agent
-            const { data: leads, error: fetchError } = await supabase
+            // SDRs work cold leads; closers work scheduled meetings.
+            let nextLeadQuery = supabase
                 .from('leads')
                 .select('*')
-                .eq('assigned_to', agentId)
-                .eq('status', 'pending')
                 .is('current_agent_id', null)
-                .order('created_at')
                 .limit(1);
+
+            nextLeadQuery = isCloser
+                ? nextLeadQuery
+                    .eq('closer_id', agentId)
+                    .eq('meeting_status', 'scheduled')
+                    .not('appointment_date', 'is', null)
+                    .order('appointment_date')
+                : nextLeadQuery
+                    .eq('assigned_to', agentId)
+                    .or(`status.eq.pending,and(status.eq.callback,callback_at.lte.${new Date().toISOString()})`)
+                    .order('callback_at', { ascending: true, nullsFirst: false })
+                    .order('created_at');
+
+            const { data: leads, error: fetchError } = await nextLeadQuery;
 
             if (fetchError) throw fetchError;
 
             if (!leads || leads.length === 0) {
                 // Clear localStorage since there are no more leads
-                localStorage.removeItem(`agent_${agentId}_current_lead`);
+                localStorage.removeItem(currentLeadStorageKey);
+                localStorage.removeItem(currentLeadSourceKey);
 
                 setCurrentLead(null);
                 setLoading(false);
@@ -128,16 +206,24 @@ export default function LeadCard({ agentId, onLeadProcessed, refreshKey }: LeadC
 
             const lead = leads[0];
 
-            // Lock this lead
-            const { error: lockError } = await supabase
+            // Lock this lead only if it is still available. This prevents duplicate work
+            // when the same agent opens multiple tabs or devices at the same time.
+            const { data: lockedLead, error: lockError } = await supabase
                 .from('leads')
                 .update({
                     current_agent_id: agentId,
                     locked_at: new Date().toISOString(),
                 })
-                .eq('id', lead.id);
+                .eq('id', lead.id)
+                .is('current_agent_id', null)
+                .select('*')
+                .maybeSingle();
 
             if (lockError) throw lockError;
+            if (!lockedLead) {
+                await loadNextLead();
+                return;
+            }
 
             // Log 'viewed' action for handle time tracking
             // Log 'viewed' action via API to avoid RLS issues
@@ -151,15 +237,16 @@ export default function LeadCard({ agentId, onLeadProcessed, refreshKey }: LeadC
                 })
             });
 
-            setCurrentLead(lead);
+            setCurrentLead(lockedLead);
 
             // Save to localStorage for persistence across page refreshes
-            localStorage.setItem(`agent_${agentId}_current_lead`, lead.id);
+            localStorage.setItem(currentLeadStorageKey, lockedLead.id);
+            localStorage.removeItem(currentLeadSourceKey);
 
             // Play sound for new lead if not already played for this lead
-            if (lastPlayedLeadId.current !== lead.id) {
+            if (lastPlayedLeadId.current !== lockedLead.id) {
                 playLeadTransition();
-                lastPlayedLeadId.current = lead.id;
+                lastPlayedLeadId.current = lockedLead.id;
             }
 
             // Reset form
@@ -167,6 +254,10 @@ export default function LeadCard({ agentId, onLeadProcessed, refreshKey }: LeadC
             setNote('');
             setActionTaken('');
             setSavedAudioUrl(null); // Reset audio url
+            setAppointmentCloserId('');
+            setMeetingUrl('');
+            setMeetingOutcome('');
+            setCallbackDate('');
 
         } catch (err: unknown) {
             const message = err instanceof Error ? err.message : 'Lead yüklenirken bir hata oluştu';
@@ -177,7 +268,9 @@ export default function LeadCard({ agentId, onLeadProcessed, refreshKey }: LeadC
     };
 
     const [showAppointmentModal, setShowAppointmentModal] = useState(false);
+    const [showCallbackModal, setShowCallbackModal] = useState(false);
     const [appointmentDate, setAppointmentDate] = useState('');
+    const [callbackDate, setCallbackDate] = useState('');
 
     const handleWhatsApp = () => {
         if (!currentLead) return;
@@ -191,9 +284,29 @@ export default function LeadCard({ agentId, onLeadProcessed, refreshKey }: LeadC
         setShowAppointmentModal(true);
     };
 
+    const handleCallback = () => {
+        setShowCallbackModal(true);
+    };
+
     const confirmAppointment = () => {
         if (!appointmentDate) {
             alert('Lütfen bir tarih ve saat seçin!');
+            return;
+        }
+
+        if (!appointmentCloserId) {
+            alert('Lütfen toplantıyı devralacak closer seçin!');
+            return;
+        }
+
+        const cleanMeetingUrl = meetingUrl.trim();
+        if (!cleanMeetingUrl) {
+            alert('Lütfen Google Meet linkini girin!');
+            return;
+        }
+
+        if (!/^https:\/\/meet\.google\.com\//i.test(cleanMeetingUrl)) {
+            alert('Lütfen geçerli bir Google Meet linki girin!');
             return;
         }
 
@@ -205,11 +318,18 @@ export default function LeadCard({ agentId, onLeadProcessed, refreshKey }: LeadC
 
         const appointmentNote = `📅 Randevu: ${formattedDate}`;
 
+        const closer = closers.find(item => item.id === appointmentCloserId);
+        const appointmentDetails = [
+            appointmentNote,
+            closer ? `Closer: ${closer.full_name}` : null,
+            `Google Meet: ${cleanMeetingUrl}`,
+        ].filter(Boolean).join('\n');
+
         // Append to existing note or start new
         setNote(prev => {
             const cleanPrev = prev.trim();
-            if (cleanPrev) return cleanPrev + '\n\n' + appointmentNote;
-            return appointmentNote;
+            if (cleanPrev) return cleanPrev + '\n\n' + appointmentDetails;
+            return appointmentDetails;
         });
 
         setActionTaken('appointment_scheduled');
@@ -217,7 +337,41 @@ export default function LeadCard({ agentId, onLeadProcessed, refreshKey }: LeadC
         setShowAppointmentModal(false);
     };
 
+    const confirmCallback = () => {
+        if (!callbackDate) {
+            alert('Lütfen tekrar arama tarih ve saatini seçin!');
+            return;
+        }
+
+        const date = new Date(callbackDate);
+        if (Number.isNaN(date.getTime())) {
+            alert('Lütfen geçerli bir tekrar arama zamanı seçin!');
+            return;
+        }
+
+        const formattedDate = new Intl.DateTimeFormat('tr-TR', {
+            dateStyle: 'full',
+            timeStyle: 'short'
+        }).format(date);
+
+        const callbackDetails = `⏰ Tekrar Arama: ${formattedDate}`;
+
+        setNote(prev => {
+            const cleanPrev = prev.trim();
+            if (cleanPrev) return cleanPrev + '\n\n' + callbackDetails;
+            return callbackDetails;
+        });
+
+        setActionTaken('callback_scheduled');
+        playAppointment();
+        setShowCallbackModal(false);
+    };
+
     const isFormValid = () => {
+        if (isCloser) {
+            return meetingOutcome.length > 0 && note.trim().length >= 10;
+        }
+
         return (
             potentialLevel !== 'not_assessed' &&
             note.trim().length >= 10
@@ -239,11 +393,16 @@ export default function LeadCard({ agentId, onLeadProcessed, refreshKey }: LeadC
                 method: 'PATCH',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
-                    status: actionTaken === 'appointment_scheduled' ? 'appointment' : 'contacted',
-                    potentialLevel,
+                    status: isCloser ? 'appointment' : actionTaken === 'appointment_scheduled' ? 'appointment' : actionTaken === 'callback_scheduled' ? 'callback' : 'contacted',
+                    potentialLevel: isCloser ? (currentLead.potential_level || 'medium') : potentialLevel,
                     note,
-                    actionTaken: actionTaken || undefined,
-                    appointmentDate: actionTaken === 'appointment_scheduled' ? appointmentDate : null,
+                    actionTaken: isCloser ? `meeting_${meetingOutcome}` : actionTaken || undefined,
+                    appointmentDate: actionTaken === 'appointment_scheduled' ? new Date(appointmentDate).toISOString() : null,
+                    closerId: actionTaken === 'appointment_scheduled' ? appointmentCloserId || null : null,
+                    meetingUrl: actionTaken === 'appointment_scheduled' ? meetingUrl.trim() || null : null,
+                    meetingOutcome: isCloser ? meetingOutcome : null,
+                    callbackAt: actionTaken === 'callback_scheduled' ? new Date(callbackDate).toISOString() : null,
+                    callbackReason: actionTaken === 'callback_scheduled' ? note : null,
                 }),
             });
 
@@ -273,7 +432,8 @@ export default function LeadCard({ agentId, onLeadProcessed, refreshKey }: LeadC
             }
 
             // Clear saved lead from localStorage since it's been processed
-            localStorage.removeItem(`agent_${agentId}_current_lead`);
+            localStorage.removeItem(currentLeadStorageKey);
+            localStorage.removeItem(currentLeadSourceKey);
 
             // Success - notify parent and load next lead
             onLeadProcessed();
@@ -290,24 +450,39 @@ export default function LeadCard({ agentId, onLeadProcessed, refreshKey }: LeadC
         }
     };
 
-    const handleRecordingComplete = (audioUrl: string, blob: Blob) => {
+    const handleRecordingComplete = (audioUrl: string, _blob: Blob, durationSeconds: number) => {
         setSavedAudioUrl(audioUrl);
-        analyzeRecording(audioUrl);
+        analyzeRecording(audioUrl, durationSeconds);
     };
 
-    const analyzeRecording = async (audioUrl: string) => {
+    const analyzeRecording = async (audioUrl: string, durationSeconds: number) => {
         setIsAiProcessing(true);
         try {
             const res = await fetch('/api/ai/transcribe', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ audioUrl, leadId: currentLead?.id })
+                body: JSON.stringify({ audioUrl, leadId: currentLead?.id, durationSeconds })
             });
             const data = await res.json();
 
             if (data.success && data.analysis) {
                 // Store analysis data for display component
                 setAiAnalysis(data.analysis);
+
+                if (data.analysis.next_action_type === 'callback' && data.analysis.extracted_date) {
+                    const callbackTime = new Date(data.analysis.extracted_date);
+                    if (!Number.isNaN(callbackTime.getTime())) {
+                        setActionTaken('callback_scheduled');
+                        setCallbackDate(toDatetimeLocalValue(callbackTime));
+                    }
+                }
+
+                if (data.analysis.next_action_type === 'appointment' && data.analysis.extracted_date) {
+                    const extractedAppointment = new Date(data.analysis.extracted_date);
+                    if (!Number.isNaN(extractedAppointment.getTime())) {
+                        setAppointmentDate(toDatetimeLocalValue(extractedAppointment));
+                    }
+                }
 
                 // Format summary nicely for notes
                 let formattedNote = '📝 AI ANALİZ ÖZETİ\n';
@@ -351,8 +526,12 @@ export default function LeadCard({ agentId, onLeadProcessed, refreshKey }: LeadC
             <div className="glass-card p-12 flex items-center justify-center min-h-[500px] animate-scale-in">
                 <div className="text-center">
                     <CheckCircle2 className="w-16 h-16 text-green-400 mx-auto mb-4" />
-                    <h3 className="text-2xl font-bold text-white mb-2">Tebrikler!</h3>
-                    <p className="text-zinc-400">Tüm lead'lerinizi tamamladınız.</p>
+                    <h3 className="text-2xl font-bold text-white mb-2">
+                        {isCloser ? 'Bekleyen Toplantı Yok' : 'Tebrikler!'}
+                    </h3>
+                    <p className="text-zinc-400">
+                        {isCloser ? 'Size atanmış sonuçlanmamış toplantı görünmüyor.' : 'Tüm lead&apos;lerinizi tamamladınız.'}
+                    </p>
                 </div>
             </div>
         );
@@ -364,8 +543,20 @@ export default function LeadCard({ agentId, onLeadProcessed, refreshKey }: LeadC
             {/* Header */}
             <div className="flex items-start justify-between">
                 <div>
-                    <div className="flex items-center gap-3 mb-2">
-                        <h2 className="text-3xl font-bold text-white">{currentLead.business_name}</h2>
+                    <div className="flex flex-wrap items-center gap-3 mb-2">
+                        <h2 className="text-3xl font-bold text-white min-w-0">{currentLead.business_name}</h2>
+                        {leadCodeLabel && (
+                            <button
+                                type="button"
+                                onClick={copyLeadCode}
+                                className="inline-flex h-8 items-center gap-1.5 rounded-lg border border-cyan-400/30 bg-cyan-500/10 px-2.5 text-xs font-bold text-cyan-100 transition-colors hover:border-cyan-300/60 hover:bg-cyan-500/20"
+                                title="Yardımcı agent lead kodu"
+                            >
+                                <Hash className="h-3.5 w-3.5" />
+                                <span>{leadCodeLabel.slice(1)}</span>
+                                <Copy className="h-3 w-3 opacity-70" />
+                            </button>
+                        )}
                         {callCount > 0 && (
                             <span className="px-3 py-1 bg-blue-500/20 text-blue-300 border border-blue-500/30 rounded-full text-sm font-bold animate-pulse">
                                 {callCount + 1}. ARAMA
@@ -471,7 +662,7 @@ export default function LeadCard({ agentId, onLeadProcessed, refreshKey }: LeadC
             </div>
 
             {/* Potential Level Selection - Touch-Optimized */}
-            <div>
+            <div className={isCloser ? 'hidden' : ''}>
                 <label className="block text-sm font-medium text-purple-200 mb-3">
                     Potansiyel Seviyesi <span className="text-red-400">*</span>
                 </label>
@@ -515,7 +706,7 @@ export default function LeadCard({ agentId, onLeadProcessed, refreshKey }: LeadC
             </div>
 
             {/* Voice Recorder */}
-            {currentLead && (
+            {currentLead && !isCloser && (
                 <div className="mb-4">
                     <VoiceRecorder
                         leadId={currentLead.id}
@@ -532,11 +723,46 @@ export default function LeadCard({ agentId, onLeadProcessed, refreshKey }: LeadC
             )}
 
             {/* AI Analysis Display */}
-            {aiAnalysis && (
+            {aiAnalysis && !isCloser && (
                 <div className="mb-4">
                     <AIAnalysisDisplay
                         analysis={aiAnalysis}
                     />
+                </div>
+            )}
+
+            {isCloser && (
+                <div className="rounded-xl border border-emerald-500/20 bg-emerald-500/5 p-4 space-y-4">
+                    <div>
+                        <h3 className="text-lg font-bold text-white">Toplantı Operasyonu</h3>
+                        <p className="text-sm text-emerald-200/80">Closer görevi: toplantıya katıl, sonucu kaydet ve satış sürecini kapat.</p>
+                    </div>
+                    {currentLead.meeting_url && (
+                        <a
+                            href={currentLead.meeting_url}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="inline-flex items-center justify-center rounded-lg bg-emerald-600 px-4 py-3 text-sm font-bold text-white transition-colors hover:bg-emerald-500"
+                        >
+                            Google Meet Toplantısına Gir
+                        </a>
+                    )}
+                    <div>
+                        <label className="block text-sm font-medium text-emerald-100 mb-2">
+                            Toplantı Sonucu <span className="text-red-300">*</span>
+                        </label>
+                        <select
+                            value={meetingOutcome}
+                            onChange={(event) => setMeetingOutcome(event.target.value as MeetingOutcome)}
+                            className="w-full rounded-lg border border-white/20 bg-black/30 px-4 py-3 text-white outline-none focus:ring-2 focus:ring-emerald-500"
+                        >
+                            <option value="">Sonuç seçin</option>
+                            <option value="won">Satış kapandı</option>
+                            <option value="lost">Satış kapanmadı</option>
+                            <option value="no_show">Müşteri katılmadı</option>
+                            <option value="completed">Toplantı tamamlandı, takip gerekli</option>
+                        </select>
+                    </div>
                 </div>
             )}
 
@@ -563,7 +789,7 @@ export default function LeadCard({ agentId, onLeadProcessed, refreshKey }: LeadC
             </div>
 
             {/* Action Buttons - Mobile Optimized */}
-            <div className="grid grid-cols-1 xs:grid-cols-2 gap-3 sm:gap-4">
+            <div className={`grid grid-cols-1 xs:grid-cols-3 gap-3 sm:gap-4 ${isCloser ? 'hidden' : ''}`}>
                 <GlassButton
                     onClick={handleWhatsApp}
                     disabled={processing}
@@ -574,7 +800,7 @@ export default function LeadCard({ agentId, onLeadProcessed, refreshKey }: LeadC
                     contentClassName="flex items-center justify-center gap-2 py-3 sm:py-4 px-4 sm:px-6 font-semibold"
                 >
                     <Sparkles className="w-5 h-5" />
-                    <span className="text-sm sm:text-base">WhatsApp'a Yönlendir</span>
+                    <span className="text-sm sm:text-base">WhatsApp&apos;a Yönlendir</span>
                 </GlassButton>
 
                 <GlassButton
@@ -588,6 +814,19 @@ export default function LeadCard({ agentId, onLeadProcessed, refreshKey }: LeadC
                 >
                     <Calendar className="w-5 h-5" />
                     <span className="text-sm sm:text-base">Randevuya Çevir</span>
+                </GlassButton>
+
+                <GlassButton
+                    onClick={handleCallback}
+                    disabled={processing}
+                    className={`transition-all touch-target ${actionTaken === 'callback_scheduled'
+                        ? '[&>.glass-button]:!bg-amber-600 [&>.glass-button]:text-white'
+                        : '[&>.glass-button]:!bg-amber-500/20 [&>.glass-button]:!border-amber-500 [&>.glass-button]:text-amber-100 hover:[&>.glass-button]:!bg-amber-500/30'
+                        }`}
+                    contentClassName="flex items-center justify-center gap-2 py-3 sm:py-4 px-4 sm:px-6 font-semibold"
+                >
+                    <RotateCcw className="w-5 h-5" />
+                    <span className="text-sm sm:text-base">Tekrar Ara</span>
                 </GlassButton>
             </div>
 
@@ -607,7 +846,7 @@ export default function LeadCard({ agentId, onLeadProcessed, refreshKey }: LeadC
                     </>
                 ) : (
                     <>
-                        <span>Sonraki Lead</span>
+                        <span>{isCloser ? 'Toplantıyı Kaydet' : 'Sonraki Lead'}</span>
                         <ArrowRight className="w-5 h-5 sm:w-6 sm:h-6" />
                     </>
                 )}
@@ -642,6 +881,33 @@ export default function LeadCard({ agentId, onLeadProcessed, refreshKey }: LeadC
                             />
                         </div>
 
+                        <div className="mb-6 space-y-2">
+                            <label className="text-sm font-medium text-purple-200">Closer</label>
+                            <select
+                                value={appointmentCloserId}
+                                onChange={(e) => setAppointmentCloserId(e.target.value)}
+                                className="w-full bg-white/10 border border-white/20 rounded-lg px-4 py-3 text-white focus:outline-none focus:ring-2 focus:ring-purple-500"
+                            >
+                                <option value="">Closer seçin</option>
+                                {closers.map((closer) => (
+                                    <option key={closer.id} value={closer.id}>
+                                        {closer.full_name}
+                                    </option>
+                                ))}
+                            </select>
+                        </div>
+
+                        <div className="mb-6 space-y-2">
+                            <label className="text-sm font-medium text-purple-200">Google Meet Linki</label>
+                            <input
+                                type="url"
+                                value={meetingUrl}
+                                onChange={(e) => setMeetingUrl(e.target.value)}
+                                placeholder="https://meet.google.com/..."
+                                className="w-full bg-white/10 border border-white/20 rounded-lg px-4 py-3 text-white placeholder-purple-300/50 focus:outline-none focus:ring-2 focus:ring-purple-500"
+                            />
+                        </div>
+
                         <div className="flex gap-3">
                             <GlassButton
                                 onClick={() => setShowAppointmentModal(false)}
@@ -657,6 +923,58 @@ export default function LeadCard({ agentId, onLeadProcessed, refreshKey }: LeadC
                             >
                                 <CheckCircle2 className="w-5 h-5" />
                                 Onayla ve Ekle
+                            </GlassButton>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* Callback Modal */}
+            {showCallbackModal && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
+                    <div className="bg-slate-900 border border-amber-500/50 rounded-2xl p-6 w-full max-w-md shadow-2xl relative">
+                        <button
+                            onClick={() => setShowCallbackModal(false)}
+                            className="absolute top-4 right-4 text-gray-400 hover:text-white"
+                            aria-label="Kapat"
+                        >
+                            <XCircle className="w-5 h-5" />
+                        </button>
+
+                        <h3 className="text-xl font-bold text-white mb-4 flex items-center gap-2">
+                            <Clock3 className="w-6 h-6 text-amber-400" />
+                            Tekrar Arama Planla
+                        </h3>
+
+                        <p className="text-amber-100/80 mb-6">
+                            Bu müşteri toplantı değil, telefonla tekrar aranacaksa tarih ve saat seçin. Sistem 10 dakika önce agent’a SMS gönderecek.
+                        </p>
+
+                        <div className="mb-6 space-y-2">
+                            <label className="text-sm font-medium text-amber-100">Tekrar Arama Zamanı</label>
+                            <input
+                                type="datetime-local"
+                                value={callbackDate}
+                                onChange={(e) => setCallbackDate(e.target.value)}
+                                className="w-full bg-white/10 border border-white/20 rounded-lg px-4 py-3 text-white focus:outline-none focus:ring-2 focus:ring-amber-500 [color-scheme:dark]"
+                            />
+                        </div>
+
+                        <div className="flex gap-3">
+                            <GlassButton
+                                onClick={() => setShowCallbackModal(false)}
+                                className="flex-1 [&>.glass-button]:!bg-white/5 hover:[&>.glass-button]:!bg-white/10"
+                                contentClassName="py-3 px-4 text-white font-medium"
+                            >
+                                İptal
+                            </GlassButton>
+                            <GlassButton
+                                onClick={confirmCallback}
+                                className="flex-1 [&>.glass-button]:!bg-amber-600 hover:[&>.glass-button]:!bg-amber-700 shadow-lg hover:shadow-amber-500/25"
+                                contentClassName="flex items-center justify-center gap-2 py-3 px-4 text-white font-bold"
+                            >
+                                <CheckCircle2 className="w-5 h-5" />
+                                Hatırlatma Kur
                             </GlassButton>
                         </div>
                     </div>

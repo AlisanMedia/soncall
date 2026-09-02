@@ -33,7 +33,7 @@ interface AnalyticsData {
 
 const COLORS = ['#8b5cf6', '#06b6d4', '#10b981', '#f59e0b', '#ef4444', '#ec4899'];
 
-export default function AnalyticsView() {
+export default function AnalyticsView({ selectedMarketId }: { selectedMarketId?: string | null }) {
     const [data, setData] = useState<AnalyticsData | null>(null);
     const [loading, setLoading] = useState(true);
 
@@ -42,11 +42,12 @@ export default function AnalyticsView() {
         // Refresh every 30 seconds
         const interval = setInterval(loadAnalytics, 30000);
         return () => clearInterval(interval);
-    }, []);
+    }, [selectedMarketId]);
 
     const loadAnalytics = async () => {
         try {
-            const response = await fetch('/api/manager/analytics');
+            const query = selectedMarketId ? `?marketId=${encodeURIComponent(selectedMarketId)}` : '';
+            const response = await fetch(`/api/manager/analytics${query}`);
             const result = await response.json();
 
             if (response.ok) {
@@ -145,7 +146,7 @@ export default function AnalyticsView() {
             <QualityMetrics />
 
             {/* AI Performance Dashboard (Cortex) */}
-            <AiPerformancePanel />
+            <AiPerformancePanel selectedMarketId={selectedMarketId} />
 
             {/* Performance Badges */}
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4">

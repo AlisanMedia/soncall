@@ -4,10 +4,9 @@ import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import {
     Brain, Zap, TrendingUp, Activity, Target, Sparkles,
-    CheckCircle2, XCircle, Diamond, ShieldCheck
+    Diamond, ShieldCheck, DollarSign, Mic, MessageSquare, Wallet, AlertTriangle
 } from 'lucide-react';
 import {
-    RadarChart, Radar, PolarGrid, PolarAngleAxis, PolarRadiusAxis,
     LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
     PieChart, Pie, Cell
 } from 'recharts';
@@ -40,9 +39,20 @@ interface AiPerformanceData {
         totalOpportunities: number;
     };
     healthScore: number;
+    aiCost?: {
+        setupRequired: boolean;
+        today: number;
+        week: number;
+        month: number;
+        totalEvents: number;
+        transcriptionMinutes: number;
+        byFeature: Array<{ feature: string; label: string; cost: number; events: number }>;
+        byModel: Array<{ model: string; cost: number; events: number }>;
+        topAgents: Array<{ agentName: string; cost: number; events: number }>;
+    };
 }
 
-export default function AiPerformancePanel() {
+export default function AiPerformancePanel({ selectedMarketId }: { selectedMarketId?: string | null }) {
     const [data, setData] = useState<AiPerformanceData | null>(null);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
@@ -54,7 +64,8 @@ export default function AiPerformancePanel() {
 
             try {
                 setError(null);
-                const res = await fetch('/api/manager/analytics/ai-performance', {
+                const query = selectedMarketId ? `?marketId=${encodeURIComponent(selectedMarketId)}` : '';
+                const res = await fetch(`/api/manager/analytics/ai-performance${query}`, {
                     signal: controller.signal,
                 });
                 const json = await res.json();
@@ -78,7 +89,7 @@ export default function AiPerformancePanel() {
             if (!document.hidden) fetchData();
         }, 60000);
         return () => clearInterval(interval);
-    }, []);
+    }, [selectedMarketId]);
 
     if (loading) return (
         <div className="bg-gradient-to-br from-slate-900 via-purple-900/20 to-slate-900 rounded-2xl p-6 border border-cyan-500/30 min-h-[220px] flex items-center justify-center">
@@ -136,6 +147,9 @@ export default function AiPerformancePanel() {
         return 'shadow-red-500/50';
     };
 
+    const formatUsd = (value: number) => `$${value.toFixed(value < 1 ? 4 : 2)}`;
+    const aiCost = data.aiCost;
+
     return (
         <div className="space-y-6">
             {/* Header: Cortex Status */}
@@ -192,6 +206,113 @@ export default function AiPerformancePanel() {
                         <div className="flex items-center justify-end gap-1 mt-1">
                             <Activity className="w-3 h-3 text-cyan-400 animate-pulse" />
                             <span className="text-[10px] text-cyan-400">ONLINE</span>
+                        </div>
+                    </div>
+                </div>
+            </motion.div>
+
+            {/* AI Cost Control */}
+            <motion.div
+                initial={{ opacity: 0, y: 12 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.05 }}
+                className="bg-white/5 backdrop-blur-lg rounded-2xl p-5 border border-emerald-500/30"
+            >
+                <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
+                    <div className="flex items-start gap-3">
+                        <div className="p-2 bg-emerald-500/20 rounded-lg">
+                            <Wallet className="w-5 h-5 text-emerald-300" />
+                        </div>
+                        <div>
+                            <div className="flex items-center gap-2">
+                                <h3 className="text-lg font-bold text-white">AI Maliyet Kontrolü</h3>
+                                <SectionInfo text="Chat asistan, ses kaydı yazıya çevirme, görüşme analizi, SMS ve lead araştırma için tahmini API maliyeti." />
+                            </div>
+                            <p className="text-xs text-emerald-200/70">
+                                Tahmini maliyetler model kullanımına göre hesaplanır. Fatura kontrolü için sağlayıcı paneli ana kaynak kalır.
+                            </p>
+                        </div>
+                    </div>
+
+                    {aiCost?.setupRequired && (
+                        <div className="flex items-center gap-2 rounded-lg border border-amber-500/30 bg-amber-500/10 px-3 py-2 text-xs text-amber-200">
+                            <AlertTriangle className="w-4 h-4" />
+                            Supabase AI maliyet tablosu henüz uygulanmamış.
+                        </div>
+                    )}
+                </div>
+
+                <div className="mt-5 grid grid-cols-2 lg:grid-cols-4 gap-3">
+                    <div className="rounded-xl border border-white/10 bg-black/20 p-4">
+                        <p className="text-xs text-emerald-200/70">Bugün</p>
+                        <p className="mt-1 text-2xl font-bold text-white">{formatUsd(aiCost?.today || 0)}</p>
+                    </div>
+                    <div className="rounded-xl border border-white/10 bg-black/20 p-4">
+                        <p className="text-xs text-cyan-200/70">Son 7 Gün</p>
+                        <p className="mt-1 text-2xl font-bold text-white">{formatUsd(aiCost?.week || 0)}</p>
+                    </div>
+                    <div className="rounded-xl border border-white/10 bg-black/20 p-4">
+                        <p className="text-xs text-purple-200/70">Bu Ay</p>
+                        <p className="mt-1 text-2xl font-bold text-white">{formatUsd(aiCost?.month || 0)}</p>
+                    </div>
+                    <div className="rounded-xl border border-white/10 bg-black/20 p-4">
+                        <p className="text-xs text-orange-200/70">Ses Dakikası</p>
+                        <p className="mt-1 text-2xl font-bold text-white">{aiCost?.transcriptionMinutes || 0}</p>
+                    </div>
+                </div>
+
+                <div className="mt-4 grid grid-cols-1 lg:grid-cols-3 gap-3">
+                    <div className="rounded-xl border border-white/10 bg-black/20 p-4">
+                        <div className="flex items-center gap-2 mb-3">
+                            <DollarSign className="w-4 h-4 text-emerald-300" />
+                            <h4 className="text-sm font-semibold text-white">Özellik Bazlı</h4>
+                        </div>
+                        <div className="space-y-2">
+                            {(aiCost?.byFeature || []).slice(0, 4).map((item) => (
+                                <div key={item.feature} className="flex items-center justify-between gap-3 text-xs">
+                                    <span className="text-purple-100 truncate">{item.label}</span>
+                                    <span className="text-white font-semibold">{formatUsd(item.cost)}</span>
+                                </div>
+                            ))}
+                            {(!aiCost?.byFeature || aiCost.byFeature.length === 0) && (
+                                <p className="text-xs text-purple-200/60">Henüz kayıt yok.</p>
+                            )}
+                        </div>
+                    </div>
+
+                    <div className="rounded-xl border border-white/10 bg-black/20 p-4">
+                        <div className="flex items-center gap-2 mb-3">
+                            <MessageSquare className="w-4 h-4 text-cyan-300" />
+                            <h4 className="text-sm font-semibold text-white">Model Bazlı</h4>
+                        </div>
+                        <div className="space-y-2">
+                            {(aiCost?.byModel || []).slice(0, 4).map((item) => (
+                                <div key={item.model} className="flex items-center justify-between gap-3 text-xs">
+                                    <span className="text-purple-100 truncate">{item.model}</span>
+                                    <span className="text-white font-semibold">{formatUsd(item.cost)}</span>
+                                </div>
+                            ))}
+                            {(!aiCost?.byModel || aiCost.byModel.length === 0) && (
+                                <p className="text-xs text-purple-200/60">Henüz kayıt yok.</p>
+                            )}
+                        </div>
+                    </div>
+
+                    <div className="rounded-xl border border-white/10 bg-black/20 p-4">
+                        <div className="flex items-center gap-2 mb-3">
+                            <Mic className="w-4 h-4 text-orange-300" />
+                            <h4 className="text-sm font-semibold text-white">En Çok Kullananlar</h4>
+                        </div>
+                        <div className="space-y-2">
+                            {(aiCost?.topAgents || []).slice(0, 4).map((item) => (
+                                <div key={item.agentName} className="flex items-center justify-between gap-3 text-xs">
+                                    <span className="text-purple-100 truncate">{item.agentName}</span>
+                                    <span className="text-white font-semibold">{formatUsd(item.cost)}</span>
+                                </div>
+                            ))}
+                            {(!aiCost?.topAgents || aiCost.topAgents.length === 0) && (
+                                <p className="text-xs text-purple-200/60">Henüz kayıt yok.</p>
+                            )}
                         </div>
                     </div>
                 </div>
@@ -413,7 +534,7 @@ export default function AiPerformancePanel() {
                     </div>
 
                     <p className="text-xs text-orange-200 mt-3">
-                        AI, alınan randevuların %{data.appointmentDetection.rate}'sini önceden tespit etti veya logladı.
+                        AI, alınan randevuların %{data.appointmentDetection.rate}&apos;sini önceden tespit etti veya logladı.
                     </p>
                 </motion.div>
 

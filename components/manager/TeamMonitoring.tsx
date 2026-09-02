@@ -1,7 +1,7 @@
 'use client';
 
-import React, { useState, useEffect, useRef, useCallback } from 'react';
-import { Activity, Loader2, Phone, Sparkles, Calendar, CheckCircle2, Package, TrendingUp, Eye, Search, ArrowUp, XCircle, Clock } from 'lucide-react';
+import React, { useState, useEffect, useRef } from 'react';
+import { Activity, Loader2, Phone, Sparkles, Calendar, CheckCircle2, Package, TrendingUp, Eye, Search, ArrowUp, XCircle } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { playActivityNotification } from '@/lib/sounds';
 import { SectionInfo } from '@/components/ui/section-info';
@@ -10,8 +10,6 @@ import { GlassButton } from '@/components/ui/glass-button';
 import { StatusIndicator, isAgentOnline } from '@/components/ui/status-indicator';
 import ActivityDetailModal from './ActivityDetailModal';
 import BatchDetailModal from './BatchDetailModal';
-import type { Profile } from '@/types';
-import { createClient } from '@/lib/supabase/client';
 
 interface ActivityItem {
     id: string;
@@ -64,6 +62,8 @@ interface AgentStat {
     agent_id: string;
     agent_name: string;
     avatar_url?: string;
+    sales_role?: 'sdr' | 'closer' | null;
+    metric_label?: string;
     rank?: string;
     level?: number;
     total_assigned: number;
@@ -75,7 +75,7 @@ interface AgentStat {
     last_activity_timestamp?: string | null;
 }
 
-export default function TeamMonitoring() {
+export default function TeamMonitoring({ selectedMarketId }: { selectedMarketId?: string | null }) {
     const [activities, setActivities] = useState<ActivityItem[]>([]);
     const [batches, setBatches] = useState<BatchStat[]>([]);
     const [overview, setOverview] = useState<Overview | null>(null);
@@ -109,7 +109,7 @@ export default function TeamMonitoring() {
             clearInterval(interval);
             clearTimeout(timeoutId);
         };
-    }, [searchTerm]);
+    }, [searchTerm, selectedMarketId]);
 
     // Infinite Scroll Observer
     useEffect(() => {
@@ -156,12 +156,16 @@ export default function TeamMonitoring() {
         try {
             setLoading(true);
             setError(null);
-            const query = searchTerm ? `?limit=50&offset=0&search=${encodeURIComponent(searchTerm)}` : '?limit=50&offset=0';
+            const params = new URLSearchParams({ limit: '50', offset: '0' });
+            if (searchTerm) params.set('search', searchTerm);
+            if (selectedMarketId) params.set('marketId', selectedMarketId);
+            const query = `?${params.toString()}`;
+            const marketQuery = selectedMarketId ? `?marketId=${encodeURIComponent(selectedMarketId)}` : '';
 
             const [activitiesRes, batchesRes, overviewRes] = await Promise.all([
                 fetch('/api/manager/activity' + query),
-                fetch('/api/manager/batches'),
-                fetch('/api/manager/overview'),
+                fetch('/api/manager/batches' + marketQuery),
+                fetch('/api/manager/overview' + marketQuery),
             ]);
 
             if (activitiesRes.ok) {
@@ -202,7 +206,9 @@ export default function TeamMonitoring() {
         try {
             isPolling.current = true;
             // Fetch only the latest 20 to check for updates
-            const res = await fetch('/api/manager/activity?limit=20&offset=0');
+            const params = new URLSearchParams({ limit: '20', offset: '0' });
+            if (selectedMarketId) params.set('marketId', selectedMarketId);
+            const res = await fetch(`/api/manager/activity?${params.toString()}`);
             if (res.ok) {
                 const data = await res.json();
                 const fetchedActivities = data.activities || [];
@@ -233,8 +239,8 @@ export default function TeamMonitoring() {
 
             // Refresh stats silently
             Promise.all([
-                fetch('/api/manager/batches'),
-                fetch('/api/manager/overview'),
+                fetch(`/api/manager/batches${selectedMarketId ? `?marketId=${encodeURIComponent(selectedMarketId)}` : ''}`),
+                fetch(`/api/manager/overview${selectedMarketId ? `?marketId=${encodeURIComponent(selectedMarketId)}` : ''}`),
             ]).then(([batchesRes, overviewRes]) => {
                 if (batchesRes.ok) batchesRes.json().then(d => setBatches(d.batches || []));
                 if (overviewRes.ok) overviewRes.json().then(d => {
@@ -256,7 +262,9 @@ export default function TeamMonitoring() {
         try {
             const currentCount = activities.length;
             const limit = 50;
-            const searchQuery = searchTerm ? `&search=${encodeURIComponent(searchTerm)}` : '';
+            const params = new URLSearchParams({ limit: String(limit), offset: String(currentCount) });
+            if (searchTerm) params.set('search', searchTerm);
+            if (selectedMarketId) params.set('marketId', selectedMarketId);
 
             // Don't load more if we reached strict 1000 limit
             if (currentCount >= 1000) {
@@ -265,7 +273,7 @@ export default function TeamMonitoring() {
                 return;
             }
 
-            const res = await fetch(`/api/manager/activity?limit=${limit}&offset=${currentCount}${searchQuery}`);
+            const res = await fetch(`/api/manager/activity?${params.toString()}`);
 
             if (res.ok) {
                 const data = await res.json();
@@ -323,15 +331,6 @@ export default function TeamMonitoring() {
             case 'medium': return 'bg-yellow-500/20 text-yellow-300 border-yellow-500/30';
             case 'low': return 'bg-red-500/20 text-red-300 border-red-500/30';
             default: return 'bg-gray-500/20 text-gray-300 border-gray-500/30';
-        }
-    };
-
-    const getPotentialLabel = (level: string) => {
-        switch (level) {
-            case 'high': return 'Yüksek';
-            case 'medium': return 'Orta';
-            case 'low': return 'Düşük';
-            default: return 'Değerlendirilmedi';
         }
     };
 
@@ -548,7 +547,7 @@ export default function TeamMonitoring() {
                                             {activity.note && (
                                                 <div className="bg-black/30 rounded-lg p-3 mt-2 border border-white/5">
                                                     <p className="text-sm text-gray-300 leading-relaxed italic">
-                                                        "{activity.note}"
+                                                        <span>&quot;</span>{activity.note}<span>&quot;</span>
                                                     </p>
                                                 </div>
                                             )}
@@ -614,9 +613,9 @@ export default function TeamMonitoring() {
                 <div className="glass-card glass-card-hover p-6">
                     <div className="flex items-center gap-2 mb-6">
                         <TrendingUp className="w-6 h-6 text-purple-400" />
-                        <h2 className="text-xl font-bold text-white">Agent İstatistikleri</h2>
+                        <h2 className="text-xl font-bold text-white">SDR / Closer Performansı</h2>
                         <SectionInfo
-                            text="Her bir agent'ın günlük performansını, tamamlama oranlarını ve randevu sayılarını gösterir."
+                            text="SDR'lar için organize edilen toplantıları, closer'lar için sonuçlanan toplantıları ve kalan operasyon yükünü gösterir."
                         />
                     </div>
 
@@ -646,9 +645,17 @@ export default function TeamMonitoring() {
                                             </div>
                                             <div>
                                                 <div className="font-semibold text-white text-sm">{agent.agent_name}</div>
-                                                <span className={`text-[10px] px-1.5 py-0.5 rounded border ${getRankColor(agent.rank)} font-medium uppercase tracking-wider`}>
-                                                    {agent.rank || 'Çaylak'}
-                                                </span>
+                                                <div className="flex items-center gap-2 mt-1">
+                                                    <span className={`text-[10px] px-1.5 py-0.5 rounded border ${getRankColor(agent.rank)} font-medium uppercase tracking-wider`}>
+                                                        {agent.rank || 'Çaylak'}
+                                                    </span>
+                                                    <span className={`text-[10px] px-1.5 py-0.5 rounded border font-bold uppercase tracking-wider ${agent.sales_role === 'closer'
+                                                        ? 'bg-emerald-500/10 text-emerald-300 border-emerald-500/30'
+                                                        : 'bg-blue-500/10 text-blue-300 border-blue-500/30'
+                                                        }`}>
+                                                        {agent.sales_role === 'closer' ? 'Closer' : 'SDR'}
+                                                    </span>
+                                                </div>
                                             </div>
                                         </div>
                                         <span className="text-xs text-purple-300 font-mono bg-purple-500/10 px-2 py-1 rounded border border-purple-500/20">
@@ -658,7 +665,7 @@ export default function TeamMonitoring() {
 
                                     <div className="grid grid-cols-2 gap-2">
                                         <div className="bg-green-500/10 rounded p-2 border border-green-500/30">
-                                            <p className="text-xs text-green-300">Bugün</p>
+                                            <p className="text-xs text-green-300">{agent.metric_label || 'Rol Hedefi'}</p>
                                             <p className="text-lg font-bold text-green-200">{agent.completed_today}</p>
                                         </div>
                                         <div className="bg-yellow-500/10 rounded p-2 border border-yellow-500/30">
@@ -669,7 +676,9 @@ export default function TeamMonitoring() {
 
                                     {agent.appointments > 0 && (
                                         <div className="mt-2 bg-purple-500/10 rounded p-2 border border-purple-500/30">
-                                            <p className="text-xs text-purple-300">Randevular: {agent.appointments}</p>
+                                            <p className="text-xs text-purple-300">
+                                                {agent.sales_role === 'closer' ? 'Toplantılar' : 'Randevular'}: {agent.appointments}
+                                            </p>
                                         </div>
                                     )}
                                 </div>

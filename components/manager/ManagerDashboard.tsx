@@ -1,10 +1,9 @@
 'use client';
 
-import { GlassButton } from '@/components/ui/glass-button';
-import { useState } from 'react';
-import { Profile } from '@/types';
+import { useEffect, useMemo, useState } from 'react';
+import type { ElementType } from 'react';
+import { Market, Profile } from '@/types';
 import dynamic from 'next/dynamic';
-import { BGPattern } from '@/components/ui/bg-pattern';
 
 const TeamList = dynamic(() => import('@/components/manager/TeamList'));
 const FileUpload = dynamic(() => import('@/components/manager/FileUpload'));
@@ -18,18 +17,19 @@ const GoalManager = dynamic(() => import('./GoalManager'));
 const AppointmentCalendar = dynamic(() => import('./AppointmentCalendar'));
 const ProfileSettings = dynamic(() => import('./ProfileSettings'));
 const SmsLogs = dynamic(() => import('./SmsLogs'));
+const ManagerAlertsCenter = dynamic(() => import('./ManagerAlertsCenter'));
 
 // Keep default tab components static for faster LCP
 import TeamMonitoring from '@/components/manager/TeamMonitoring';
 import TopSellers from './TopSellers';
 import SalesApprovals from './SalesApprovals';
 
-import { LogOut, Upload, Users, BarChart3, Activity, TrendingUp, Trophy, Sparkles, AlertTriangle, Target, Calendar, Briefcase, Settings, MessageSquare } from 'lucide-react';
+import { LogOut, Upload, Users, BarChart3, Activity, TrendingUp, Trophy, Sparkles, AlertTriangle, Target, Calendar, Briefcase, Settings, MessageSquare, ShieldAlert, Globe2, Lock, PanelLeftClose, PanelLeftOpen } from 'lucide-react';
 import { createClient } from '@/lib/supabase/client';
 import { useRouter } from 'next/navigation';
 import ChatPanel from '../chat/ChatPanel';
 import ChatNotificationBadge from '../chat/ChatNotificationBadge';
-import DashboardSwitcher from '../shared/DashboardSwitcher';
+import { getTranslator, normalizeLocale, type TranslationKey } from '@/lib/i18n';
 
 
 interface ManagerDashboardProps {
@@ -37,17 +37,61 @@ interface ManagerDashboardProps {
 }
 
 type Step = 'upload' | 'distribute';
-type Tab = 'upload' | 'monitor' | 'reports' | 'analytics' | 'rankings' | 'leads' | 'admin' | 'goals' | 'calendar' | 'team' | 'settings' | 'sms-logs';
+type Tab = 'upload' | 'monitor' | 'alerts' | 'reports' | 'analytics' | 'rankings' | 'leads' | 'admin' | 'goals' | 'calendar' | 'team' | 'settings' | 'sms-logs';
+
+const navigationItems: { id: Tab; icon: ElementType; labelKey: TranslationKey }[] = [
+    { id: 'monitor', icon: Activity, labelKey: 'manager.nav.monitor' },
+    { id: 'alerts', icon: ShieldAlert, labelKey: 'manager.nav.alerts' },
+    { id: 'team', icon: Users, labelKey: 'manager.nav.team' },
+    { id: 'leads', icon: Briefcase, labelKey: 'manager.nav.leads' },
+    { id: 'calendar', icon: Calendar, labelKey: 'manager.nav.calendar' },
+    { id: 'analytics', icon: TrendingUp, labelKey: 'manager.nav.analytics' },
+    { id: 'reports', icon: BarChart3, labelKey: 'manager.nav.reports' },
+    { id: 'rankings', icon: Trophy, labelKey: 'manager.nav.rankings' },
+    { id: 'goals', icon: Target, labelKey: 'manager.nav.goals' },
+    { id: 'upload', icon: Upload, labelKey: 'manager.nav.upload' },
+    { id: 'admin', icon: AlertTriangle, labelKey: 'manager.nav.admin' },
+    { id: 'sms-logs', icon: MessageSquare, labelKey: 'manager.nav.smsLogs' },
+    { id: 'settings', icon: Settings, labelKey: 'manager.nav.settings' },
+];
 
 export default function ManagerDashboard({ profile }: ManagerDashboardProps) {
     const [currentTab, setCurrentTab] = useState<Tab>('monitor');
+    const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
 
     const [currentStep, setCurrentStep] = useState<Step>('upload');
     const [batchId, setBatchId] = useState<string | null>(null);
     const [totalLeads, setTotalLeads] = useState(0);
     const [chatOpen, setChatOpen] = useState(false);
+    const [markets, setMarkets] = useState<Market[]>([]);
+    const [selectedMarketId, setSelectedMarketId] = useState<string | null>(profile.market_id || null);
+    const [canSwitchMarket, setCanSwitchMarket] = useState(false);
     const supabase = createClient();
     const router = useRouter();
+
+    const selectedMarket = useMemo(
+        () => markets.find((market) => market.id === selectedMarketId) || markets[0] || null,
+        [markets, selectedMarketId]
+    );
+    const locale = normalizeLocale(selectedMarket?.default_language || profile.preferred_language);
+    const t = getTranslator(locale);
+
+    useEffect(() => {
+        const loadMarkets = async () => {
+            try {
+                const response = await fetch('/api/markets');
+                const data = await response.json();
+                const nextMarkets = data.markets || [];
+                setMarkets(nextMarkets);
+                setCanSwitchMarket(Boolean(data.canSwitchMarket));
+                setSelectedMarketId((current) => current || data.currentMarketId || nextMarkets[0]?.id || null);
+            } catch (error) {
+                console.error('Failed to load markets', error);
+            }
+        };
+
+        loadMarkets();
+    }, []);
 
     const handleLogout = async () => {
         await supabase.auth.signOut();
@@ -78,128 +122,139 @@ export default function ManagerDashboard({ profile }: ManagerDashboardProps) {
                     backgroundSize: '50px 50px'
                 }} />
             </div>
-            {/* Header */}
-            <header className="glass-nav sticky top-0 z-50">
-                <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-2">
-                    <div className="flex items-center justify-between gap-2 min-h-[56px]">
-                        {/* Left Side: Logo */}
-                        <div className="flex items-center gap-2 sm:gap-3 flex-shrink-0">
-                            <img
-                                src="/artificagent-logo.png"
-                                alt="ArtificAgent"
-                                className="h-8 opacity-90"
-                            />
-                            <div className="hidden sm:block">
-                                <h1 className="text-xl sm:text-2xl font-bold text-white">ArtificAgent</h1>
-                                <p className="text-xs sm:text-sm text-purple-200">Manager Dashboard</p>
-                            </div>
+            {/* Sidebar Navigation */}
+            <aside className={`fixed inset-y-0 left-0 z-50 flex flex-col border-r border-white/10 bg-slate-950/70 backdrop-blur-xl shadow-2xl shadow-black/30 transition-all duration-300 ${sidebarCollapsed ? 'w-20' : 'w-20 md:w-72'}`}>
+                <div className="flex h-16 items-center gap-3 border-b border-white/10 px-4">
+                    <img
+                        src="/artificagent-logo.png"
+                        alt="ArtificAgent"
+                        className="h-8 w-auto flex-shrink-0 opacity-90"
+                    />
+                    {!sidebarCollapsed && (
+                        <div className="hidden min-w-0 md:block">
+                            <h1 className="truncate text-lg font-bold text-white">ArtificAgent</h1>
+                            <p className="truncate text-xs text-purple-200">{t('manager.dashboardTitle')}</p>
                         </div>
+                    )}
+                </div>
 
-                        {/* Center: Navigation Items (Absolute) */}
-                        <div className="hidden md:flex absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 items-center gap-1 bg-slate-800/80 backdrop-blur-md rounded-2xl p-1.5 border border-white/10 shadow-xl z-10">
-                            {[
-                                { id: 'monitor', icon: Activity, label: 'Genel Bakış' },
-                                { id: 'team', icon: Users, label: 'Personel' },
-                                { id: 'leads', icon: Briefcase, label: 'Leads' },
-                                { id: 'calendar', icon: Calendar, label: 'Randevular' },
-                                { id: 'analytics', icon: TrendingUp, label: 'Analiz' },
-                                { id: 'reports', icon: BarChart3, label: 'Raporlar' },
-                                { id: 'rankings', icon: Trophy, label: 'Sıralama' },
-                                { id: 'goals', icon: Target, label: 'Hedefler' },
-                                { id: 'upload', icon: Upload, label: 'Yükle' },
-                                { id: 'admin', icon: AlertTriangle, label: 'Admin' },
-                                { id: 'sms-logs', icon: MessageSquare, label: 'SMS Geçmişi' },
-                                { id: 'settings', icon: Settings, label: 'Ayarlar' },
-                            ].map((item) => (
-                                <GlassButton
-                                    key={item.id}
-                                    onClick={() => setCurrentTab(item.id as Tab)}
-                                    size="icon"
-                                    className={`transition-all relative group ${currentTab === item.id
-                                        ? '!bg-purple-600 !border-purple-500 shadow-lg shadow-purple-500/25'
-                                        : 'opacity-70 hover:opacity-100'
-                                        }`}
-                                    title={item.label}
-                                >
-                                    <item.icon className="w-5 h-5 text-white" />
-                                    {/* Tooltip */}
-                                    <span className="absolute -bottom-10 left-1/2 -translate-x-1/2 text-[10px] bg-black/80 text-white px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap pointer-events-none z-50">
-                                        {item.label}
-                                    </span>
-                                </GlassButton>
-                            ))}
+                <div className="flex items-center justify-between border-b border-white/10 px-3 py-3">
+                    {!sidebarCollapsed && (
+                        <div className="hidden min-w-0 text-xs text-slate-300 md:block">
+                            <p className="truncate font-semibold text-white">{profile.full_name}</p>
+                            <p className="truncate text-purple-200">{t('manager.panelSubtitle')}</p>
                         </div>
+                    )}
+                    <button
+                        onClick={() => setSidebarCollapsed((value) => !value)}
+                        className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-xl border border-white/10 bg-white/5 text-slate-200 transition hover:bg-white/10 hover:text-white"
+                        title={sidebarCollapsed ? t('manager.sidebar.expand') : t('manager.sidebar.collapse')}
+                        aria-label={sidebarCollapsed ? t('manager.sidebar.expand') : t('manager.sidebar.collapse')}
+                    >
+                        {sidebarCollapsed ? <PanelLeftOpen className="h-5 w-5" /> : <PanelLeftClose className="h-5 w-5" />}
+                    </button>
+                </div>
 
-                        {/* Right Side: Profile & Logout */}
-                        <div className="flex items-center gap-2 sm:gap-3 flex-shrink-0">
-                            <div className="hidden sm:block text-right">
-                                <p className="text-xs text-purple-200">Hoş geldiniz,</p>
-                                <p className="text-sm font-semibold text-white truncate max-w-[120px]">{profile.full_name}</p>
-                            </div>
-                            <GlassButton
-                                onClick={handleLogout}
-                                size="icon"
-                                className="bg-white/10 hover:bg-white/20"
-                                title="Çıkış Yap"
+                <nav className="flex-1 space-y-1 overflow-y-auto px-3 py-4 scrollbar-thin">
+                    {navigationItems.map((item) => {
+                        const Icon = item.icon;
+                        const isActive = currentTab === item.id;
+                        const label = t(item.labelKey);
+
+                        return (
+                            <button
+                                key={item.id}
+                                onClick={() => setCurrentTab(item.id)}
+                                className={`group relative flex h-11 w-full items-center rounded-xl border text-sm font-semibold transition-all ${sidebarCollapsed ? 'justify-center px-0' : 'justify-center px-0 md:justify-start md:gap-3 md:px-3'
+                                    } ${isActive
+                                        ? 'border-purple-400/40 bg-purple-600/25 text-white shadow-lg shadow-purple-600/10'
+                                        : 'border-transparent text-slate-300 hover:border-white/10 hover:bg-white/10 hover:text-white'
+                                    }`}
+                                title={label}
                             >
-                                <LogOut className="w-5 h-5 text-white" />
-                            </GlassButton>
-                        </div>
-                    </div>
-                </div>
-            </header>
+                                <Icon className={`h-5 w-5 flex-shrink-0 ${isActive ? 'text-purple-100' : 'text-slate-300 group-hover:text-white'}`} />
+                                {!sidebarCollapsed && <span className="hidden truncate md:inline">{label}</span>}
+                                {isActive && <span className="absolute left-0 top-2 h-7 w-1 rounded-r-full bg-purple-300" />}
+                            </button>
+                        );
+                    })}
+                </nav>
 
-            {/* Mobile Navigation (Visible only on small screens) - Enhanced with Smooth Scroll */}
-            <div className="md:hidden sticky top-0 z-40 bg-slate-900/50 backdrop-blur-md border-b border-white/5 overflow-x-auto scrollbar-thin">
-                <div className="flex p-2 gap-2 min-w-max">
-                    {[
-                        { id: 'monitor', icon: Activity, label: 'Genel Bakış' },
-                        { id: 'team', icon: Users, label: 'Personel' },
-                        { id: 'leads', icon: Briefcase, label: 'Leads' },
-                        { id: 'calendar', icon: Calendar, label: 'Randevular' },
-                        { id: 'analytics', icon: TrendingUp, label: 'Analiz' },
-                        { id: 'reports', icon: BarChart3, label: 'Raporlar' },
-                        { id: 'rankings', icon: Trophy, label: 'Sıralama' },
-                        { id: 'goals', icon: Target, label: 'Hedefler' },
-                        { id: 'upload', icon: Upload, label: 'Yükle' },
-                        { id: 'admin', icon: AlertTriangle, label: 'Admin' },
-                        { id: 'sms-logs', icon: MessageSquare, label: 'SMS Geçmişi' },
-                        { id: 'settings', icon: Settings, label: 'Ayarlar' },
-                    ].map((item) => (
-                        <GlassButton
-                            key={item.id}
-                            onClick={() => setCurrentTab(item.id as Tab)}
-                            className={`flex-shrink-0 w-[84px] h-[84px] rounded-2xl transition-all touch-target active:scale-95 flex flex-col items-center justify-center gap-1 !p-0 mx-1 ${currentTab === item.id
-                                ? '[&>.glass-button]:!bg-purple-600 [&>.glass-button]:!border-purple-500 [&>.glass-button]:shadow-lg'
-                                : 'opacity-70 hover:opacity-100'
-                                }`}
-                            contentClassName="flex flex-col items-center justify-center gap-1.5 !p-0 w-full h-full"
-                        >
-                            <item.icon className="w-6 h-6 text-white mb-0.5" />
-                            <span className="text-[10px] font-medium leading-tight text-center px-1 w-full truncate">
-                                {item.label}
-                            </span>
-                        </GlassButton>
-                    ))}
+                <div className="border-t border-white/10 p-3">
+                    {!sidebarCollapsed && (
+                        <div className="mb-3 hidden rounded-xl border border-white/10 bg-white/[0.04] p-3 md:block">
+                            <div className="mb-2 flex items-center gap-2 text-xs font-semibold uppercase tracking-wide text-cyan-200">
+                                <Globe2 className="h-4 w-4" />
+                                {t('manager.sidebar.operation')}
+                            </div>
+                            {canSwitchMarket ? (
+                                <select
+                                    value={selectedMarketId || ''}
+                                    onChange={(event) => setSelectedMarketId(event.target.value || null)}
+                                    className="w-full rounded-lg border border-white/10 bg-slate-950 px-2 py-2 text-sm font-semibold text-white outline-none"
+                                >
+                                    {markets.map((market) => (
+                                        <option key={market.id} value={market.id}>
+                                            {market.code} - {market.name}
+                                        </option>
+                                    ))}
+                                </select>
+                            ) : (
+                                <div className="flex items-center gap-2 text-sm font-semibold text-white">
+                                    <span className="truncate">{selectedMarket?.code || 'TR'} - {selectedMarket?.name || 'Türkiye'}</span>
+                                    <Lock className="h-3.5 w-3.5 flex-shrink-0 text-slate-400" />
+                                </div>
+                            )}
+                        </div>
+                    )}
+                    <button
+                        onClick={handleLogout}
+                        className={`flex h-11 w-full items-center rounded-xl border border-white/10 bg-white/5 text-sm font-semibold text-slate-200 transition hover:bg-white/10 hover:text-white ${sidebarCollapsed ? 'justify-center px-0' : 'justify-center px-0 md:justify-start md:gap-3 md:px-3'}`}
+                        title={t('common.logout')}
+                    >
+                        <LogOut className="h-5 w-5 flex-shrink-0" />
+                        {!sidebarCollapsed && <span className="hidden md:inline">{t('common.logout')}</span>}
+                    </button>
                 </div>
-            </div>
+            </aside>
 
             {/* Tab Content */}
-            <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+            <main className={`min-h-screen px-4 py-6 transition-all duration-300 sm:px-6 lg:px-8 ${sidebarCollapsed ? 'ml-20' : 'ml-20 md:ml-72'}`}>
+                <div className="mb-4 flex items-center justify-between rounded-xl border border-white/10 bg-white/5 p-3 lg:hidden">
+                    <div className="flex items-center gap-2 text-sm text-white">
+                        <Globe2 className="w-4 h-4 text-cyan-300" />
+                        <span>{selectedMarket?.name || t('manager.market.defaultOperation')}</span>
+                    </div>
+                    {canSwitchMarket && (
+                        <select
+                            value={selectedMarketId || ''}
+                            onChange={(event) => setSelectedMarketId(event.target.value || null)}
+                            className="max-w-[170px] rounded-lg border border-white/10 bg-slate-950 px-2 py-1 text-sm text-white"
+                        >
+                            {markets.map((market) => (
+                                <option key={market.id} value={market.id}>
+                                    {market.code} - {market.name}
+                                </option>
+                            ))}
+                        </select>
+                    )}
+                </div>
                 {currentTab === 'monitor' && (
                     <>
+                        <ManagerAlertsCenter selectedMarketId={selectedMarketId} />
                         <SalesApprovals />
                         <div className="mb-8">
                             <TopSellers />
                         </div>
-                        <TeamMonitoring />
+                        <TeamMonitoring selectedMarketId={selectedMarketId} />
                     </>
                 )}
+                {currentTab === 'alerts' && <ManagerAlertsCenter selectedMarketId={selectedMarketId} />}
                 {/* Prevent duplicate render placeholder - removed */}
                 {currentTab === 'calendar' && <AppointmentCalendar />}
-                {currentTab === 'team' && <TeamList />}
-                {currentTab === 'leads' && <LeadManagementView />}
-                {currentTab === 'analytics' && <AnalyticsView />}
+                {currentTab === 'team' && <TeamList selectedMarketId={selectedMarketId} markets={markets} canSwitchMarket={canSwitchMarket} />}
+                {currentTab === 'leads' && <LeadManagementView selectedMarketId={selectedMarketId} />}
+                {currentTab === 'analytics' && <AnalyticsView selectedMarketId={selectedMarketId} />}
                 {currentTab === 'rankings' && <AgentRankings />}
                 {currentTab === 'goals' && <GoalManager />}
                 {currentTab === 'reports' && <ReportsView managerId={profile.id} />}
@@ -216,7 +271,7 @@ export default function ManagerDashboard({ profile }: ManagerDashboardProps) {
                                     : 'bg-white/10 text-purple-200'
                                     }`}>
                                     <Upload className="w-5 h-5" />
-                                    <span className="font-medium">1. CSV Yükle</span>
+                                    <span className="font-medium">{t('manager.upload.stepUpload')}</span>
                                 </div>
                                 <div className="hidden sm:block w-12 h-0.5 bg-white/20"></div>
                                 <div className={`flex items-center gap-2 px-4 py-2 rounded-lg transition-colors ${currentStep === 'distribute'
@@ -224,7 +279,7 @@ export default function ManagerDashboard({ profile }: ManagerDashboardProps) {
                                     : 'bg-white/10 text-purple-200'
                                     }`}>
                                     <Users className="w-5 h-5" />
-                                    <span className="font-medium">2. Lead Dağıt</span>
+                                    <span className="font-medium">{t('manager.upload.stepDistribute')}</span>
                                 </div>
                             </div>
                         </div>
@@ -232,7 +287,7 @@ export default function ManagerDashboard({ profile }: ManagerDashboardProps) {
                         {/* Step Content */}
                         <div className="bg-white/10 backdrop-blur-lg rounded-2xl shadow-2xl p-4 sm:p-8 border border-white/20">
                             {currentStep === 'upload' && (
-                                <FileUpload onUploadSuccess={handleUploadSuccess} />
+                                <FileUpload onUploadSuccess={handleUploadSuccess} selectedMarketId={selectedMarketId} selectedMarketName={selectedMarket?.name} />
                             )}
 
 

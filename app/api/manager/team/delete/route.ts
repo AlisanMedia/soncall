@@ -1,6 +1,20 @@
 import { createClient } from '@/lib/supabase/server';
 import { NextResponse } from 'next/server';
 import { createClient as createSupabaseClient } from '@supabase/supabase-js';
+import { canAccessMarket } from '@/lib/market-access';
+
+const ROLE_RANK = {
+    agent: 1,
+    manager: 2,
+    admin: 3,
+    founder: 4,
+} as const;
+
+type ManagedRole = keyof typeof ROLE_RANK;
+
+function isManagedRole(role: string): role is ManagedRole {
+    return role in ROLE_RANK;
+}
 
 export async function DELETE(req: Request) {
     try {
@@ -12,7 +26,7 @@ export async function DELETE(req: Request) {
 
         const { data: profile } = await supabase
             .from('profiles')
-            .select('role')
+            .select('id, role, market_id')
             .eq('id', user.id)
             .single();
 
@@ -38,14 +52,37 @@ export async function DELETE(req: Request) {
             process.env.SUPABASE_SERVICE_ROLE_KEY!
         );
 
+        const { data: targetProfile, error: targetError } = await adminSupabase
+            .from('profiles')
+            .select('role, market_id')
+            .eq('id', userId)
+            .maybeSingle();
+
+        if (targetError) throw targetError;
+        if (!targetProfile || !isManagedRole(targetProfile.role || '')) {
+            return NextResponse.json({ error: 'Target user not found' }, { status: 404 });
+        }
+
+        const requesterRole = profile?.role as ManagedRole;
+        const targetRole = targetProfile.role as ManagedRole;
+
+        if (
+            (requesterRole === 'manager' && targetRole !== 'agent') ||
+            ROLE_RANK[targetRole] >= ROLE_RANK[requesterRole] ||
+            !canAccessMarket(profile, targetProfile.market_id)
+        ) {
+            return NextResponse.json({ error: 'Forbidden: Cannot delete users with that role' }, { status: 403 });
+        }
+
         const { error: deleteError } = await adminSupabase.auth.admin.deleteUser(userId);
 
         if (deleteError) throw deleteError;
 
         return NextResponse.json({ success: true });
 
-    } catch (error: any) {
+    } catch (error: unknown) {
+        const message = error instanceof Error ? error.message : 'Team member deletion failed';
         console.error('Error deleting team member:', error);
-        return NextResponse.json({ error: error.message }, { status: 500 });
+        return NextResponse.json({ error: message }, { status: 500 });
     }
 }

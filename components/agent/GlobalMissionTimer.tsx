@@ -2,30 +2,23 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Timer, AlertTriangle, Crosshair, ArrowRight, Loader2 } from 'lucide-react';
-import MissionDetailModal from './MissionDetailModal'; // Reusing the detail modal
+import { Timer, AlertTriangle, Crosshair, ArrowRight, X } from 'lucide-react';
+import MissionDetailModal, { type MissionAppointment } from './MissionDetailModal'; // Reusing the detail modal
+import { playCallbackDue, playError } from '@/lib/sounds';
 
-interface Appointment {
-    id: string;
-    lead_id: string;
-    agent_id: string;
-    appointment_date: string;
-    status: 'pending' | 'completed' | 'cancelled' | 'missed' | 'won' | 'interviewed' | 'attempted';
-    notes?: string;
-    created_at: string;
-    business_name?: string;
-    phone_number?: string;
-    call_count?: number;
-    last_call_at?: string;
+interface GlobalMissionTimerProps {
+    onStartMission: (appointment: MissionAppointment) => void;
 }
 
-export function GlobalMissionTimer() {
-    const [nextMission, setNextMission] = useState<Appointment | null>(null);
+export function GlobalMissionTimer({ onStartMission }: GlobalMissionTimerProps) {
+    const [nextMission, setNextMission] = useState<MissionAppointment | null>(null);
     const [timeLeft, setTimeLeft] = useState<string>('');
     const [urgency, setUrgency] = useState<'normal' | 'preparation' | 'combat' | 'critical'>('normal');
     const [isVisible, setIsVisible] = useState(false);
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [loading, setLoading] = useState(true);
+    const [minimizedMissionId, setMinimizedMissionId] = useState<string | null>(null);
+    const [lastSoundKey, setLastSoundKey] = useState<string | null>(null);
 
     const fetchNextMission = useCallback(async () => {
         try {
@@ -34,7 +27,7 @@ export function GlobalMissionTimer() {
 
             if (data.appointments && data.appointments.length > 0) {
                 // Filter for actionable items just like the schedule
-                const actionable = data.appointments.filter((a: Appointment) =>
+                const actionable = data.appointments.filter((a: MissionAppointment) =>
                     a.status === 'missed' || a.status === 'pending' || a.status === 'attempted'
                 );
 
@@ -110,8 +103,6 @@ export function GlobalMissionTimer() {
         return () => clearInterval(timerInterval);
     }, [nextMission]);
 
-    if (!isVisible && !loading) return null;
-
     // HUD Styles based on urgency
     const getStyles = () => {
         switch (urgency) {
@@ -143,28 +134,95 @@ export function GlobalMissionTimer() {
     };
 
     const styles = getStyles();
+    const missionKey = nextMission?.lead_id || nextMission?.id || null;
+    const isMinimized = missionKey !== null && minimizedMissionId === missionKey;
+    const isCallback = nextMission?.task_type === 'callback';
+    const displayLabel = isCallback
+        ? urgency === 'critical'
+            ? 'CALLBACK GECİKTİ'
+            : 'TEKRAR ARAMA'
+        : styles.label;
+
+    useEffect(() => {
+        if (!isVisible || !missionKey) return;
+
+        const soundKey = `${missionKey}-${urgency}`;
+        if (lastSoundKey === soundKey) return;
+
+        if (isCallback) {
+            if (urgency === 'critical') {
+                playError();
+            } else if (urgency === 'combat' || urgency === 'preparation') {
+                playCallbackDue();
+            }
+        }
+
+        setLastSoundKey(soundKey);
+    }, [isCallback, isVisible, lastSoundKey, missionKey, urgency]);
+
+    if (!isVisible && !loading) return null;
 
     return (
         <>
             <AnimatePresence>
-                {isVisible && (
-                    <motion.div
-                        initial={{ y: -50, opacity: 0 }}
+                {isVisible && isMinimized && (
+                    <motion.button
+                        type="button"
+                        initial={{ y: 12, opacity: 0 }}
                         animate={{ y: 0, opacity: 1 }}
-                        exit={{ y: -50, opacity: 0 }}
-                        className="hidden md:block absolute left-1/2 transform -translate-x-1/2 top-4 z-50 cursor-pointer"
+                        exit={{ y: 12, opacity: 0 }}
+                        className={`fixed bottom-24 right-4 z-40 max-w-[calc(100vw-2rem)] rounded-full border px-4 py-2 shadow-xl backdrop-blur-md transition-transform hover:scale-105 md:bottom-auto md:top-[76px] ${styles.container}`}
+                        onClick={() => {
+                            setMinimizedMissionId(null);
+                            setIsModalOpen(true);
+                        }}
+                        aria-label="Görev uyarısını aç"
+                        title="Görev uyarısını aç"
+                    >
+                        <span className="flex items-center gap-2">
+                            {styles.icon}
+                            <span className="font-mono text-sm font-bold">{isCallback && urgency !== 'critical' ? 'Callback' : timeLeft}</span>
+                            <ArrowRight className="h-3 w-3" />
+                        </span>
+                    </motion.button>
+                )}
+
+                {isVisible && !isMinimized && (
+                    <motion.div
+                        initial={{ y: -12, opacity: 0 }}
+                        animate={{ y: 0, opacity: 1 }}
+                        exit={{ y: -12, opacity: 0 }}
+                        className="fixed bottom-24 left-3 right-3 z-40 cursor-pointer md:bottom-auto md:left-auto md:right-4 md:top-[76px] md:w-[420px]"
                         onClick={() => setIsModalOpen(true)}
                     >
-                        <div className={`px-4 py-2 rounded-full border backdrop-blur-md flex items-center gap-3 shadow-xl hover:scale-105 transition-transform ${styles.container}`}>
-                            {styles.icon}
-                            <div className="flex flex-col items-center leading-none">
-                                <span className="text-[10px] uppercase font-bold tracking-wider opacity-80">{styles.label}</span>
-                                <span className="font-mono font-bold text-sm min-w-[60px] text-center">{timeLeft}</span>
-                            </div>
-                            <div className="w-[1px] h-6 bg-white/20 mx-1" />
-                            <div className="flex items-center gap-1 text-xs font-semibold opacity-90 max-w-[150px] truncate">
-                                <span>{nextMission?.business_name}</span>
-                                <ArrowRight className="w-3 h-3" />
+                        <div className={`rounded-2xl border p-3 shadow-xl backdrop-blur-md transition-transform hover:scale-[1.01] ${styles.container}`}>
+                            <div className="flex items-center gap-3">
+                                <div className="shrink-0">{styles.icon}</div>
+                                <div className="min-w-0 flex-1">
+                                    <div className="flex items-center justify-between gap-3">
+                                        <span className="text-[10px] font-bold uppercase tracking-wider opacity-80">{displayLabel}</span>
+                                        <button
+                                            type="button"
+                                            onClick={(event) => {
+                                                event.stopPropagation();
+                                                if (missionKey) setMinimizedMissionId(missionKey);
+                                            }}
+                                            className="rounded-full p-1 text-white/70 transition-colors hover:bg-white/10 hover:text-white"
+                                            aria-label="Görev uyarısını küçült"
+                                            title="Görev uyarısını küçült"
+                                        >
+                                            <X className="h-4 w-4" />
+                                        </button>
+                                    </div>
+                                    <div className="mt-1 flex min-w-0 items-center gap-3">
+                                        <span className="min-w-[76px] text-center font-mono text-sm font-bold">{timeLeft}</span>
+                                        <div className="h-5 w-px bg-white/20" />
+                                        <span className="truncate text-xs font-semibold opacity-90">
+                                            {nextMission?.business_name}
+                                        </span>
+                                        <ArrowRight className="h-3 w-3 shrink-0" />
+                                    </div>
+                                </div>
                             </div>
                         </div>
                     </motion.div>
@@ -176,9 +234,9 @@ export function GlobalMissionTimer() {
                 isOpen={isModalOpen}
                 onClose={() => setIsModalOpen(false)}
                 appointment={nextMission}
-                onAction={(apt: any) => {
-                    // Start operation logic (same as schedule)
-                    window.location.href = `/agent/dashboard?mode=work&leadId=${apt.lead_id}`;
+                onAction={(apt) => {
+                    onStartMission(apt);
+                    setIsModalOpen(false);
                 }}
             />
         </>

@@ -1,7 +1,7 @@
 import { createClient } from '@/lib/supabase/server';
 import { NextResponse } from 'next/server';
 
-export async function GET(request: Request) {
+export async function GET() {
     try {
         const supabase = await createClient();
 
@@ -11,22 +11,47 @@ export async function GET(request: Request) {
             return NextResponse.json({ message: 'Unauthorized' }, { status: 401 });
         }
 
+        const { data: profile, error: profileError } = await supabase
+            .from('profiles')
+            .select('sales_role, market_id')
+            .eq('id', user.id)
+            .maybeSingle();
+
+        if (profileError) throw profileError;
+        const isCloser = profile?.sales_role === 'closer';
+
         // Fetch leads assigned to this agent with appointment dates
-        const { data: leads, error } = await supabase
+        let query = supabase
             .from('leads')
             .select(`
                 id,
+                market_id,
                 business_name,
                 phone_number,
                 potential_level,
                 appointment_date,
+                callback_at,
+                callback_reason,
+                sdr_id,
+                closer_id,
+                meeting_url,
+                meeting_status,
                 processed_at,
                 status,
                 notes:lead_notes(note, created_at)
             `)
-            .eq('assigned_to', user.id)
-            .or('appointment_date.not.is.null,status.eq.appointment')
+            .or('appointment_date.not.is.null,status.eq.appointment,status.eq.callback')
             .order('appointment_date', { ascending: true }); // Get earliest first
+
+        if (profile?.market_id) {
+            query = query.eq('market_id', profile.market_id);
+        }
+
+        query = isCloser
+            ? query.eq('closer_id', user.id)
+            : query.or(`assigned_to.eq.${user.id},sdr_id.eq.${user.id}`);
+
+        const { data: leads, error } = await query;
 
         if (error) throw error;
 
@@ -62,27 +87,26 @@ export async function GET(request: Request) {
                     if (month === undefined) return null;
                     const date = new Date(year, month, day, hour, minute);
                     return date.toISOString();
-                } catch (e) { return null; }
+                } catch { return null; }
             };
 
             // Determine effective date because sometimes it's in notes
             const latestNote = lead.notes?.[0]?.note || '';
             const parsedDate = parseTurkishDate(latestNote);
-            const dateStr = lead.appointment_date || parsedDate || lead.processed_at || new Date().toISOString();
+            const taskType = lead.status === 'callback' ? 'callback' : 'appointment';
+            const dateStr = lead.callback_at || lead.appointment_date || parsedDate || lead.processed_at || new Date().toISOString();
             const appDate = new Date(dateStr);
             const today = new Date();
 
             // Calculate Status
             const leadCalls = activities?.filter(a => {
-                const actDate = new Date(a.created_at);
                 // Check if call was made on the same day or generally after appointment creation
                 return a.lead_id === lead.id;
             }) || [];
 
-            const hasCall = leadCalls.length > 0;
             const lastCall = leadCalls[0];
 
-            let status: 'won' | 'interviewed' | 'attempted' | 'missed' | 'pending' = 'pending';
+            let status: 'won' | 'lost' | 'no_show' | 'completed' | 'interviewed' | 'attempted' | 'missed' | 'pending' = 'pending';
             const diffMs = appDate.getTime() - today.getTime();
 
             // Check for actual sale/win
@@ -99,8 +123,22 @@ export async function GET(request: Request) {
             // 4. Missed -> Past time, no call
             // 5. Pending -> Future
 
-            if (lead.status === 'won') {
+            if (taskType === 'callback' && lead.status === 'callback') {
+                if (leadCalls.length > 0) {
+                    status = 'attempted';
+                } else if (diffMs < -15 * 60 * 1000) {
+                    status = 'missed';
+                } else {
+                    status = 'pending';
+                }
+            } else if (lead.meeting_status === 'won') {
                 status = 'won';
+            } else if (lead.meeting_status === 'lost') {
+                status = 'lost';
+            } else if (lead.meeting_status === 'no_show') {
+                status = 'no_show';
+            } else if (lead.meeting_status === 'completed') {
+                status = 'completed';
             } else if (leadCalls.length > 0) {
                 const duration = lastCall.metadata?.duration || 0;
                 if (duration > 60 || lastCall.action === 'completed') {
@@ -121,6 +159,7 @@ export async function GET(request: Request) {
             let urgencyScore = diffMs;
             if (status === 'missed') urgencyScore = -999999999; // Top priority to clear
             if (status === 'interviewed') urgencyScore = 999999999; // Low priority (already talked)
+            if (status === 'completed' || status === 'lost' || status === 'no_show') urgencyScore = 999999999;
             if (status === 'won') urgencyScore = 1000000000; // Complete
 
             return {
@@ -128,6 +167,13 @@ export async function GET(request: Request) {
                 business_name: lead.business_name,
                 phone_number: lead.phone_number,
                 appointment_date: dateStr,
+                task_type: taskType,
+                callback_at: lead.callback_at,
+                callback_reason: lead.callback_reason,
+                sdr_id: lead.sdr_id,
+                closer_id: lead.closer_id,
+                meeting_url: lead.meeting_url,
+                meeting_status: lead.meeting_status,
                 potential_level: lead.potential_level,
                 notes: latestNote,
                 status,
@@ -145,10 +191,11 @@ export async function GET(request: Request) {
             appointments
         });
 
-    } catch (error: any) {
+    } catch (error: unknown) {
+        const message = error instanceof Error ? error.message : 'Failed to fetch appointments';
         console.error('Agent appointments error:', error);
         return NextResponse.json(
-            { success: false, message: error.message },
+            { success: false, message },
             { status: 500 }
         );
     }

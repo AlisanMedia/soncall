@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { createClient } from '@/lib/supabase/client';
-import { Trophy, Phone, Zap, Target, Flame, Lock } from 'lucide-react';
+import { Trophy, Phone, Zap, Target, Flame, Calendar, type LucideIcon } from 'lucide-react';
 import { clsx } from 'clsx';
 
 interface Achievement {
@@ -16,8 +16,13 @@ interface Achievement {
     unlocked_at?: string; // If present, user has it
 }
 
-const IconMap: Record<string, any> = {
-    Trophy, Phone, Zap, Target, Flame
+interface UnlockedAchievement {
+    achievement_id: string;
+    unlocked_at?: string;
+}
+
+const IconMap: Record<string, LucideIcon> = {
+    Trophy, Phone, Zap, Target, Flame, Calendar
 };
 
 import { DisplayCard } from '@/components/ui/display-cards';
@@ -41,9 +46,10 @@ export default function AchievementsGrid({ agentId }: { agentId: string }) {
                 .from('achievement_definitions')
                 .select('*');
 
-            const mergeData = (unlocked: any[]) => {
+            const mergeData = (unlocked: UnlockedAchievement[]) => {
                 if (defs) {
-                    const merged = defs.map(def => ({
+                    const definitions = defs as Achievement[];
+                    const merged = definitions.map(def => ({
                         ...def,
                         unlocked_at: unlocked?.find(u => u.achievement_id === def.id)?.unlocked_at
                     }));
@@ -78,7 +84,7 @@ export default function AchievementsGrid({ agentId }: { agentId: string }) {
                         table: 'agent_achievements',
                         filter: `agent_id=eq.${agentId}`
                     },
-                    (payload) => {
+                    () => {
                         supabase
                             .from('agent_achievements')
                             .select('achievement_id, unlocked_at')

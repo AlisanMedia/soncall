@@ -1,6 +1,6 @@
 
 import React from 'react';
-import { Page, Text, View, Document, StyleSheet, renderToBuffer, Font } from '@react-pdf/renderer';
+import { Page, Text, View, Document, StyleSheet, renderToBuffer } from '@react-pdf/renderer';
 
 // Register a standard font (optional, using standard Helvetica by default)
 // Font.register({ family: 'Roboto', src: 'https://cdnjs.cloudflare.com/ajax/libs/ink/3.1.10/fonts/Roboto/roboto-light-webfont.ttf' });
@@ -113,6 +113,7 @@ interface ReportData {
     };
     agentPerformance: Array<{
         name: string;
+        metricLabel?: string;
         totalProcessed: number;
         appointments: number;
         score: number;
@@ -157,8 +158,8 @@ const ReportDocument = ({ data }: { data: ReportData }) => (
                     {/* Header Row */}
                     <View style={[styles.tableRow, styles.tableHeader]}>
                         <View style={styles.tableCol}><Text style={styles.tableCell}>Agent Name</Text></View>
-                        <View style={styles.tableCol}><Text style={styles.tableCell}>Processed Leads</Text></View>
-                        <View style={styles.tableCol}><Text style={styles.tableCell}>Appointments</Text></View>
+                        <View style={styles.tableCol}><Text style={styles.tableCell}>Role Target</Text></View>
+                        <View style={styles.tableCol}><Text style={styles.tableCell}>Meetings</Text></View>
                         <View style={styles.tableCol}><Text style={styles.tableCell}>Score</Text></View>
                     </View>
 
@@ -166,7 +167,7 @@ const ReportDocument = ({ data }: { data: ReportData }) => (
                     {data.agentPerformance.map((agent, i) => (
                         <View key={i} style={styles.tableRow}>
                             <View style={styles.tableCol}><Text style={styles.tableCell}>{agent.name}</Text></View>
-                            <View style={styles.tableCol}><Text style={styles.tableCell}>{agent.totalProcessed}</Text></View>
+                            <View style={styles.tableCol}><Text style={styles.tableCell}>{agent.totalProcessed} {agent.metricLabel || ''}</Text></View>
                             <View style={styles.tableCol}><Text style={styles.tableCell}>{agent.appointments}</Text></View>
                             <View style={styles.tableCol}><Text style={styles.tableCell}>{agent.score}</Text></View>
                         </View>
@@ -182,7 +183,7 @@ const ReportDocument = ({ data }: { data: ReportData }) => (
     </Document>
 );
 
-export async function generatePDF(data: any): Promise<Buffer> {
+export async function generatePDF(data: Pick<ReportData, 'summary' | 'agentPerformance'>): Promise<Buffer> {
     const reportData: ReportData = {
         summary: data.summary,
         agentPerformance: data.agentPerformance,

@@ -1,6 +1,7 @@
 import { createClient } from '@/lib/supabase/server';
 import { createAdminClient } from '@/lib/supabase/admin';
 import { NextRequest, NextResponse } from 'next/server';
+import { isGlobalRole } from '@/lib/market-access';
 
 export const dynamic = 'force-dynamic';
 
@@ -12,12 +13,17 @@ const MAX_LIMIT = 100;
 
 const LEAD_HISTORY_SELECT = `
     id,
+    lead_number,
     business_name,
     phone_number,
     address,
     category,
     status,
     potential_level,
+    appointment_date,
+    callback_at,
+    callback_reason,
+    callback_reminder_10m_sent,
     processed_at,
     created_at,
     lead_notes (
@@ -33,6 +39,13 @@ type LeadHistoryFilters = {
     dateFrom: string | null;
     dateTo: string | null;
     search: string | null;
+};
+
+type IdRow = Record<'id' | 'lead_id', string | null>;
+
+type LeadHistoryRow = {
+    processed_at?: string | null;
+    created_at?: string | null;
 };
 
 function chunkArray<T>(items: T[], size: number) {
@@ -53,6 +66,8 @@ function parsePositiveInteger(value: string | null, fallback: number, max?: numb
     return typeof max === 'number' ? Math.min(parsed, max) : parsed;
 }
 
+// Supabase dynamic filter builders are intentionally mutable here.
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 function applyLeadFilters(query: any, filters: LeadHistoryFilters) {
     if (filters.status && filters.status !== 'all') {
         query = query.eq('status', filters.status);
@@ -74,7 +89,11 @@ function applyLeadFilters(query: any, filters: LeadHistoryFilters) {
 
     const search = sanitizeSearch(filters.search);
     if (search) {
-        query = query.or(`business_name.ilike.%${search}%,phone_number.ilike.%${search}%`);
+        const leadNumber = Number.parseInt(search.replace(/[^\d]/g, ''), 10);
+        const baseSearch = `business_name.ilike.%${search}%,phone_number.ilike.%${search}%`;
+        query = Number.isFinite(leadNumber) && leadNumber > 0
+            ? query.or(`${baseSearch},lead_number.eq.${leadNumber}`)
+            : query.or(baseSearch);
     }
 
     return query;
@@ -84,7 +103,7 @@ async function fetchAllIds(
     supabase: ReturnType<typeof createAdminClient>,
     table: 'leads' | 'lead_activity_log',
     idColumn: 'id' | 'lead_id',
-    filterColumn: 'assigned_to' | 'agent_id',
+    filterColumn: 'assigned_to' | 'sdr_id' | 'closer_id' | 'agent_id',
     userId: string
 ) {
     const ids: string[] = [];
@@ -100,7 +119,7 @@ async function fetchAllIds(
         if (error) throw error;
         if (!data || data.length === 0) break;
 
-        data.forEach((row: any) => {
+        data.forEach((row: Partial<IdRow>) => {
             const id = row[idColumn];
             if (typeof id === 'string' && id) ids.push(id);
         });
@@ -112,7 +131,7 @@ async function fetchAllIds(
     return ids;
 }
 
-function sortLeadsByRecentActivity(a: any, b: any) {
+function sortLeadsByRecentActivity(a: LeadHistoryRow, b: LeadHistoryRow) {
     const aProcessed = a.processed_at ? new Date(a.processed_at).getTime() : 0;
     const bProcessed = b.processed_at ? new Date(b.processed_at).getTime() : 0;
     if (aProcessed !== bProcessed) return bProcessed - aProcessed;
@@ -137,7 +156,7 @@ export async function GET(request: NextRequest) {
 
         const { data: profile, error: profileError } = await adminSupabase
             .from('profiles')
-            .select('role')
+            .select('id, role, market_id')
             .eq('id', user.id)
             .maybeSingle();
 
@@ -158,13 +177,15 @@ export async function GET(request: NextRequest) {
         const offset = parsePositiveInteger(searchParams.get('offset'), 0);
 
         // 3. Get Relevant Lead IDs
-        const [assignedIds, workedIds] = await Promise.all([
+        const [assignedIds, sdrIds, closerIds, workedIds] = await Promise.all([
             fetchAllIds(adminSupabase, 'leads', 'id', 'assigned_to', user.id),
+            fetchAllIds(adminSupabase, 'leads', 'id', 'sdr_id', user.id),
+            fetchAllIds(adminSupabase, 'leads', 'id', 'closer_id', user.id),
             fetchAllIds(adminSupabase, 'lead_activity_log', 'lead_id', 'agent_id', user.id),
         ]);
 
         // Combine and deduplicate
-        const allRelevantIds = Array.from(new Set([...assignedIds, ...workedIds])).slice(0, MAX_RELEVANT_IDS);
+        const allRelevantIds = Array.from(new Set([...assignedIds, ...sdrIds, ...closerIds, ...workedIds])).slice(0, MAX_RELEVANT_IDS);
 
         if (allRelevantIds.length === 0) {
             return NextResponse.json({
@@ -196,7 +217,11 @@ export async function GET(request: NextRequest) {
                     .select(LEAD_HISTORY_SELECT)
                     .in('id', ids);
 
-                return applyLeadFilters(query, filters);
+                const marketQuery = !isGlobalRole(profile?.role) && profile?.market_id
+                    ? query.eq('market_id', profile.market_id)
+                    : query;
+
+                return applyLeadFilters(marketQuery, filters);
             })
         );
 
@@ -226,10 +251,11 @@ export async function GET(request: NextRequest) {
             }
         });
 
-    } catch (error: any) {
+    } catch (error: unknown) {
+        const message = error instanceof Error ? error.message : 'Failed to fetch leads';
         console.error('Agent leads fetch error:', error);
         return NextResponse.json(
-            { error: error.message || 'Failed to fetch leads' },
+            { error: message },
             { status: 500 }
         );
     }

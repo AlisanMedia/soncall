@@ -15,7 +15,7 @@ import LeadProfileModal from '../crm/LeadProfileModal';
 import type { Profile } from '@/types';
 import * as XLSX from 'xlsx';
 
-export default function LeadManagementView() {
+export default function LeadManagementView({ selectedMarketId }: { selectedMarketId?: string | null }) {
     const [viewMode, setViewMode] = useState<'table' | 'kanban'>('kanban');
     const [leads, setLeads] = useState<KanbanLead[]>([]);
     const [loading, setLoading] = useState(true);
@@ -37,18 +37,18 @@ export default function LeadManagementView() {
     useEffect(() => {
         loadMetadata();
         // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, []);
+    }, [selectedMarketId]);
 
     useEffect(() => {
         loadData();
         // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [agentFilter, statusFilter, categoryFilter, dateFilter]);
+    }, [agentFilter, statusFilter, categoryFilter, dateFilter, selectedMarketId]);
 
     const loadMetadata = async () => {
         try {
             const [agentsRes, categoriesRes] = await Promise.all([
-                fetch('/api/manager/team/list-all'),
-                fetch('/api/manager/leads/categories'),
+                fetch(`/api/manager/team/list-all${selectedMarketId ? `?marketId=${encodeURIComponent(selectedMarketId)}` : ''}`),
+                fetch(`/api/manager/leads/categories${selectedMarketId ? `?marketId=${encodeURIComponent(selectedMarketId)}` : ''}`),
             ]);
 
             if (agentsRes.ok) {
@@ -75,6 +75,10 @@ export default function LeadManagementView() {
                 id, business_name, phone_number, status, assigned_to, created_at, category, batch_id, potential_level, ai_summary,
                 profiles:assigned_to (full_name)
             `);
+
+        if (selectedMarketId) {
+            query = query.eq('market_id', selectedMarketId);
+        }
 
         // Apply Status Filter
         if (statusFilter !== 'all') {
@@ -154,9 +158,10 @@ export default function LeadManagementView() {
 
             if (error) throw error;
             toast.success('Müşteri durumu güncellendi');
-        } catch (error: any) {
+        } catch (error: unknown) {
+            const message = error instanceof Error ? error.message : 'Güncelleme başarısız';
             console.error('Update error:', error);
-            toast.error('Güncelleme başarısız: ' + error.message);
+            toast.error('Güncelleme başarısız: ' + message);
             loadData(); // Revert optimistic update
         }
     };
@@ -211,9 +216,10 @@ export default function LeadManagementView() {
             toast.success(`${selectedLeads.length} lead başarıyla silindi.`);
             setSelectedLeads([]);
             loadData();
-        } catch (error: any) {
+        } catch (error: unknown) {
+            const message = error instanceof Error ? error.message : 'Silme işlemi başarısız';
             console.error('Delete error:', error);
-            toast.error('Silme işlemi başarısız: ' + error.message);
+            toast.error('Silme işlemi başarısız: ' + message);
             setLoading(false);
         }
     };

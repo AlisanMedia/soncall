@@ -1,8 +1,8 @@
 
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
-import { createClient as createSupabaseClient } from '@supabase/supabase-js'; // For type if needed, but here just import the function
 import OpenAI from 'openai';
+import { logAiUsage } from '@/lib/ai-usage';
 
 const openai = new OpenAI({
     apiKey: process.env.OPENAI_API_KEY,
@@ -20,7 +20,7 @@ export async function POST(request: NextRequest) {
 
         const { data: profile } = await supabase
             .from('profiles')
-            .select('role')
+            .select('role, market_id')
             .eq('id', user.id)
             .single();
 
@@ -47,8 +47,9 @@ export async function POST(request: NextRequest) {
             Sadece mesaj metnini döndür, başka hiçbir şey yazma.
         `;
 
+        const model = process.env.OPENAI_SMS_MODEL || 'gpt-4o-mini';
         const completion = await openai.chat.completions.create({
-            model: "gpt-4o",
+            model,
             messages: [
                 { role: "system", content: systemPrompt },
                 { role: "user", content: `Lütfen ${agentName} için bir mesaj oluştur.` }
@@ -58,10 +59,22 @@ export async function POST(request: NextRequest) {
 
         const message = completion.choices[0].message.content?.trim();
 
+        await logAiUsage(supabase, {
+            userId: user.id,
+            marketId: profile?.market_id || null,
+            feature: 'sms_generate',
+            model,
+            inputTokens: completion.usage?.prompt_tokens || 0,
+            outputTokens: completion.usage?.completion_tokens || 0,
+            totalTokens: completion.usage?.total_tokens || 0,
+            metadata: { agent_name: agentName },
+        });
+
         return NextResponse.json({ message });
 
-    } catch (error: any) {
+    } catch (error: unknown) {
+        const message = error instanceof Error ? error.message : 'SMS generation failed';
         console.error('Error generating SMS:', error);
-        return NextResponse.json({ error: error.message }, { status: 500 });
+        return NextResponse.json({ error: message }, { status: 500 });
     }
 }

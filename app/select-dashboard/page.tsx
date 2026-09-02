@@ -85,15 +85,15 @@ export default async function SelectDashboard() {
                                     <User className="w-8 h-8 sm:w-10 sm:h-10 text-white" />
                                 </div>
                                 <h2 className="text-xl sm:text-2xl font-bold text-white mb-2">
-                                    Agent Paneli
+                                    SDR / Closer Paneli
                                 </h2>
                                 <p className="text-sm sm:text-base text-gray-300 mb-4">
-                                    Lead işleme, arama yapma ve satış takibi
+                                    Randevu organizasyonu, toplantı takibi ve satış kapama
                                 </p>
                                 <div className="flex flex-wrap gap-2 justify-center text-xs">
-                                    <span className="px-2 py-1 bg-blue-500/20 text-blue-300 rounded">Lead Çağrıları</span>
+                                    <span className="px-2 py-1 bg-blue-500/20 text-blue-300 rounded">SDR Pipeline</span>
+                                    <span className="px-2 py-1 bg-blue-500/20 text-blue-300 rounded">Closer Takibi</span>
                                     <span className="px-2 py-1 bg-blue-500/20 text-blue-300 rounded">Satışlar</span>
-                                    <span className="px-2 py-1 bg-blue-500/20 text-blue-300 rounded">Hedefler</span>
                                 </div>
                             </div>
                         </div>

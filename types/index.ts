@@ -1,6 +1,19 @@
 // Database Types
 export type UserRole = 'founder' | 'admin' | 'manager' | 'agent';
 
+export type SalesRole = 'sdr' | 'closer';
+
+export interface Market {
+  id: string;
+  code: string;
+  name: string;
+  country: string;
+  default_language: string;
+  timezone: string;
+  currency: string;
+  calling_country_code?: string | null;
+}
+
 export type LeadStatus =
   | 'pending'
   | 'in_progress'
@@ -33,6 +46,9 @@ export interface Profile {
   commission_rate?: number;
   phone_number?: string;
   raw_password?: string;
+  sales_role?: SalesRole | null;
+  market_id?: string | null;
+  preferred_language?: string | null;
 }
 
 export interface Lead {
@@ -54,6 +70,18 @@ export interface Lead {
   updated_at: string;
   processed_at: string | null;
   batch_id: string | null;
+  appointment_date?: string | null;
+  callback_at?: string | null;
+  callback_reason?: string | null;
+  callback_reminder_10m_sent?: boolean | null;
+  sdr_id?: string | null;
+  closer_id?: string | null;
+  meeting_url?: string | null;
+  meeting_status?: 'scheduled' | 'completed' | 'no_show' | 'won' | 'lost' | null;
+  market_id?: string | null;
+  country?: string | null;
+  timezone?: string | null;
+  language?: string | null;
 }
 
 export interface LeadNote {
@@ -94,6 +122,8 @@ export interface LeaderboardEntry {
   agent_name: string;
   processed_count: number;
   rank: number;
+  sales_role?: SalesRole | null;
+  metric_label?: string;
 }
 
 export interface CSVRow {
@@ -139,6 +169,7 @@ export interface StatsResponse {
     processed_today: number;
     total_assigned: number;
     remaining: number;
+    metric_label?: string;
   };
 }
 

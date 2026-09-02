@@ -8,9 +8,11 @@ import type { Lead } from '@/types';
 
 interface FileUploadProps {
     onUploadSuccess: (batchId: string, totalLeads: number) => void;
+    selectedMarketId?: string | null;
+    selectedMarketName?: string | null;
 }
 
-export default function FileUpload({ onUploadSuccess }: FileUploadProps) {
+export default function FileUpload({ onUploadSuccess, selectedMarketId, selectedMarketName }: FileUploadProps) {
     const [file, setFile] = useState<File | null>(null);
     const [leads, setLeads] = useState<Lead[]>([]);
     const [uploading, setUploading] = useState(false);
@@ -43,8 +45,9 @@ export default function FileUpload({ onUploadSuccess }: FileUploadProps) {
             }
 
             setLeads(parsedLeads);
-        } catch (err: any) {
-            setError(err.message || 'Dosya işlenirken bir hata oluştu');
+        } catch (err: unknown) {
+            const message = err instanceof Error ? err.message : 'Dosya işlenirken bir hata oluştu';
+            setError(message);
             setPreviewMode(false);
         }
     }, []);
@@ -71,6 +74,9 @@ export default function FileUpload({ onUploadSuccess }: FileUploadProps) {
             const formData = new FormData();
             formData.append('file', file);
             formData.append('leadsData', JSON.stringify(leads));
+            if (selectedMarketId) {
+                formData.append('marketId', selectedMarketId);
+            }
 
             const response = await fetch('/api/leads/upload', {
                 method: 'POST',
@@ -85,8 +91,9 @@ export default function FileUpload({ onUploadSuccess }: FileUploadProps) {
 
             // Success
             onUploadSuccess(data.batchId, data.totalLeads);
-        } catch (err: any) {
-            setError(err.message || 'Upload sırasında bir hata oluştu');
+        } catch (err: unknown) {
+            const message = err instanceof Error ? err.message : 'Upload sırasında bir hata oluştu';
+            setError(message);
         } finally {
             setUploading(false);
         }
@@ -107,6 +114,9 @@ export default function FileUpload({ onUploadSuccess }: FileUploadProps) {
                         <h2 className="text-2xl font-semibold text-white">Lead Önizleme</h2>
                         <p className="text-purple-200 mt-1">
                             {file?.name} - {leads.length} lead bulundu
+                        </p>
+                        <p className="text-xs text-cyan-200 mt-1">
+                            Market: {selectedMarketName || 'Varsayılan operasyon'}
                         </p>
                     </div>
                     <button
@@ -169,7 +179,7 @@ export default function FileUpload({ onUploadSuccess }: FileUploadProps) {
                     ) : (
                         <>
                             <CheckCircle2 className="w-5 h-5" />
-                            {leads.length} Lead'i Onayla ve Yükle
+                            {leads.length} Lead&apos;i Onayla ve Yükle
                         </>
                     )}
                 </button>
@@ -182,7 +192,10 @@ export default function FileUpload({ onUploadSuccess }: FileUploadProps) {
             <div>
                 <h2 className="text-2xl font-semibold text-white">CSV Dosyası Yükle</h2>
                 <p className="text-purple-200 mt-1">
-                    Google Maps'ten çekilen lead verilerinizi yükleyin
+                    Google Maps&apos;ten çekilen lead verilerinizi yükleyin
+                </p>
+                <p className="text-xs text-cyan-200 mt-1">
+                    Yüklenecek market: {selectedMarketName || 'Varsayılan operasyon'}
                 </p>
             </div>
 

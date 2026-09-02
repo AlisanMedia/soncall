@@ -4,11 +4,13 @@ import { AlertCircle, Calendar, Flame, TrendingDown, Target, User, Zap, ArrowRig
 import SentimentMeter from '../ui/sentiment-meter';
 import CallCoachingTips from '../ui/call-coaching-tips';
 
-interface AIAnalysis {
+export interface AIAnalysis {
     summary?: string | null;
     potential_level?: string | null;
+    next_action_type?: 'appointment' | 'callback' | 'none' | string | null;
     sentiment_score?: number | null;
     extracted_date?: string | null;
+    callback_reason?: string | null;
     customer_name?: string | null;
     decision_maker?: boolean;
     interested_service?: string | null;
@@ -121,12 +123,19 @@ export default function AIAnalysisDisplay({ analysis, className = '' }: AIAnalys
 
                 {/* Date */}
                 {analysis.extracted_date && (
-                    <div className="p-3 rounded-lg border border-purple-500/20 bg-purple-500/5">
+                    <div className={`p-3 rounded-lg border ${analysis.next_action_type === 'callback' ? 'border-amber-500/20 bg-amber-500/5' : 'border-purple-500/20 bg-purple-500/5'}`}>
                         <div className="flex items-center gap-2">
-                            <Calendar className="w-4 h-4 text-purple-400" />
-                            <span className="text-xs text-gray-400 uppercase tracking-wider font-semibold">Randevu/Tarih</span>
+                            <Calendar className={`w-4 h-4 ${analysis.next_action_type === 'callback' ? 'text-amber-400' : 'text-purple-400'}`} />
+                            <span className="text-xs text-gray-400 uppercase tracking-wider font-semibold">
+                                {analysis.next_action_type === 'callback' ? 'Tekrar Arama' : 'Randevu/Tarih'}
+                            </span>
                         </div>
-                        <p className="text-sm font-medium text-purple-300 mt-1">{analysis.extracted_date}</p>
+                        <p className={`text-sm font-medium mt-1 ${analysis.next_action_type === 'callback' ? 'text-amber-300' : 'text-purple-300'}`}>
+                            {analysis.extracted_date}
+                        </p>
+                        {analysis.callback_reason && (
+                            <p className="text-xs text-amber-100/80 mt-2">{analysis.callback_reason}</p>
+                        )}
                     </div>
                 )}
 

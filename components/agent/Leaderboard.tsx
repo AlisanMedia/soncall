@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
-import { BarChart3, TrendingUp, Loader2, Zap, Flame, Target } from 'lucide-react';
+import { BarChart3, TrendingUp, Zap, Flame } from 'lucide-react';
 import type { LeaderboardEntry } from '@/types';
 
 import { GlowingEffect } from '@/components/ui/glowing-effect';
@@ -14,6 +14,7 @@ interface ExtendedLeaderboardEntry extends LeaderboardEntry {
     avatar_url?: string;
     level?: number;
     rank_title?: string;
+    metric_label?: string;
 }
 
 interface LeaderboardProps {
@@ -28,7 +29,8 @@ export default function Leaderboard({ agentId, refreshKey }: LeaderboardProps) {
         total_assigned: 0,
         remaining: 0,
         streak: 0,
-        speed_last_5min: 0
+        speed_last_5min: 0,
+        metric_label: 'toplantı organize',
     });
     const [loading, setLoading] = useState(true);
     const [activityPulse, setActivityPulse] = useState<Record<string, boolean>>({});
@@ -71,7 +73,8 @@ export default function Leaderboard({ agentId, refreshKey }: LeaderboardProps) {
                 total_assigned: 0,
                 remaining: 0,
                 streak: 0,
-                speed_last_5min: 0
+                speed_last_5min: 0,
+                metric_label: 'toplantı organize',
             });
         } catch (err) {
             console.error('Leaderboard load error:', err);
@@ -125,8 +128,9 @@ export default function Leaderboard({ agentId, refreshKey }: LeaderboardProps) {
                 <div className="bg-purple-500/20 rounded-lg p-3 border border-purple-500/30 col-span-2">
                     <div className="flex items-center justify-between">
                         <div>
-                            <div className="text-purple-200 text-xs mb-1">Bugün İşlenen</div>
+                            <div className="text-purple-200 text-xs mb-1">Bugünkü Rol Hedefi</div>
                             <div className="text-2xl sm:text-3xl font-bold text-white">{userStats.processed_today}</div>
+                            <div className="text-xs text-purple-300 mt-1">{userStats.metric_label}</div>
                         </div>
                         {userStats.streak > 0 && (
                             <div className="flex items-center gap-1 bg-orange-500/20 px-2 py-1 rounded-lg">
@@ -153,7 +157,7 @@ export default function Leaderboard({ agentId, refreshKey }: LeaderboardProps) {
                             <Zap className="w-4 h-4 text-blue-400" />
                             <div>
                                 <div className="text-blue-300 text-xs">Verimlilik</div>
-                                <div className="text-sm font-semibold text-blue-200">{userStats.speed_last_5min} lead/5dk</div>
+                                <div className="text-sm font-semibold text-blue-200">{userStats.speed_last_5min} işlem/5dk</div>
                             </div>
                         </div>
                     </div>
@@ -168,7 +172,7 @@ export default function Leaderboard({ agentId, refreshKey }: LeaderboardProps) {
                 </div>
 
                 <div className="space-y-2">
-                    {leaderboard.map((entry, index) => {
+                    {leaderboard.map((entry) => {
                         const isCurrentUser = entry.agent_id === agentId;
                         const hasPulse = activityPulse[entry.agent_id];
                         const initials = entry.agent_name.split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase();
@@ -236,7 +240,7 @@ export default function Leaderboard({ agentId, refreshKey }: LeaderboardProps) {
 
                                     <div className="flex items-center gap-3">
                                         <div className="text-xs text-white font-medium">
-                                            {entry.processed_count} <span className="text-purple-300 font-normal">lead</span>
+                                            {entry.processed_count} <span className="text-purple-300 font-normal">{entry.metric_label || 'hedef'}</span>
                                         </div>
                                     </div>
                                 </div>

@@ -1,10 +1,17 @@
 // Sound effects utility using Web Audio API
+type AudioWindow = Window & {
+    webkitAudioContext?: typeof AudioContext;
+};
+
 class SoundPlayer {
     private audioContext: AudioContext | null = null;
 
     constructor() {
         if (typeof window !== 'undefined') {
-            this.audioContext = new (window.AudioContext || (window as any).webkitAudioContext)();
+            const AudioContextConstructor = window.AudioContext || (window as AudioWindow).webkitAudioContext;
+            if (AudioContextConstructor) {
+                this.audioContext = new AudioContextConstructor();
+            }
         }
     }
 
@@ -276,6 +283,63 @@ class SoundPlayer {
         oscillator.start(this.audioContext.currentTime);
         oscillator.stop(this.audioContext.currentTime + 0.2);
     }
+
+    // Agent callback due - clear double reminder tone
+    playCallbackDue() {
+        if (!this.audioContext) return;
+
+        const notes = [
+            { freq: 720, time: 0 },
+            { freq: 720, time: 0.18 },
+        ];
+
+        notes.forEach(note => {
+            const oscillator = this.audioContext!.createOscillator();
+            const gainNode = this.audioContext!.createGain();
+
+            oscillator.connect(gainNode);
+            gainNode.connect(this.audioContext!.destination);
+
+            oscillator.frequency.value = note.freq;
+            oscillator.type = 'square';
+
+            const startTime = this.audioContext!.currentTime + note.time;
+            gainNode.gain.setValueAtTime(0.12, startTime);
+            gainNode.gain.exponentialRampToValueAtTime(0.01, startTime + 0.12);
+
+            oscillator.start(startTime);
+            oscillator.stop(startTime + 0.12);
+        });
+    }
+
+    // Manager critical alarm - lower, more serious tri-tone
+    playManagerCriticalAlert() {
+        if (!this.audioContext) return;
+
+        const notes = [
+            { freq: 360, time: 0 },
+            { freq: 300, time: 0.16 },
+            { freq: 240, time: 0.32 },
+        ];
+
+        notes.forEach(note => {
+            const oscillator = this.audioContext!.createOscillator();
+            const gainNode = this.audioContext!.createGain();
+
+            oscillator.connect(gainNode);
+            gainNode.connect(this.audioContext!.destination);
+
+            oscillator.frequency.value = note.freq;
+            oscillator.type = 'sawtooth';
+
+            const startTime = this.audioContext!.currentTime + note.time;
+            gainNode.gain.setValueAtTime(0.11, startTime);
+            gainNode.gain.exponentialRampToValueAtTime(0.01, startTime + 0.18);
+
+            oscillator.start(startTime);
+            oscillator.stop(startTime + 0.18);
+        });
+    }
 }
 
 // Singleton instance
@@ -299,3 +363,5 @@ export const playAchievement = () => getSoundPlayer().playAchievement();
 export const playEncouragement = () => getSoundPlayer().playEncouragement();
 export const playWarning = () => getSoundPlayer().playWarning();
 export const playError = () => getSoundPlayer().playError();
+export const playCallbackDue = () => getSoundPlayer().playCallbackDue();
+export const playManagerCriticalAlert = () => getSoundPlayer().playManagerCriticalAlert();

@@ -1,8 +1,9 @@
 import { createClient } from '@/lib/supabase/server';
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 import { fetchManagerAnalytics } from '@/lib/analytics';
+import { resolveRequestedMarketId } from '@/lib/market-access';
 
-export async function GET() {
+export async function GET(request: NextRequest) {
     try {
         const supabase = await createClient();
 
@@ -15,7 +16,7 @@ export async function GET() {
         // Verify manager role
         const { data: profile } = await supabase
             .from('profiles')
-            .select('role')
+            .select('id, role, market_id')
             .eq('id', user.id)
             .single();
 
@@ -24,14 +25,16 @@ export async function GET() {
         }
 
         // Fetch analytics using shared logic
-        const analyticsData = await fetchManagerAnalytics(supabase);
+        const effectiveMarketId = resolveRequestedMarketId(profile, request.nextUrl.searchParams.get('marketId'));
+        const analyticsData = await fetchManagerAnalytics(supabase, effectiveMarketId);
 
         return NextResponse.json(analyticsData);
 
-    } catch (error: any) {
+    } catch (error: unknown) {
+        const message = error instanceof Error ? error.message : 'Failed to fetch analytics';
         console.error('Analytics error:', error);
         return NextResponse.json(
-            { message: error.message || 'Failed to fetch analytics' },
+            { message },
             { status: 500 }
         );
     }

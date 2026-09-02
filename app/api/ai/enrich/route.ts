@@ -2,6 +2,18 @@
 import { NextRequest, NextResponse } from 'next/server';
 import OpenAI from 'openai';
 import { requireManagerAccess } from '@/lib/api/auth';
+import { logAiUsage } from '@/lib/ai-usage';
+
+type GoogleSearchItem = {
+    title: string;
+    link: string;
+    snippet: string;
+};
+
+type SocialLink = {
+    platform: string;
+    url: string;
+};
 
 // Initialize OpenAI
 const openai = new OpenAI({
@@ -9,10 +21,8 @@ const openai = new OpenAI({
 });
 
 // Helper to extract social links from HTML
-const extractSocials = (html: string, businessName: string) => {
-    const socials = [];
-    const lowerHtml = html.toLowerCase();
-
+const extractSocials = (html: string) => {
+    const socials: SocialLink[] = [];
     // Regex patterns for major platforms
     const patterns = [
         { platform: 'instagram', regex: /https?:\/\/(www\.)?instagram\.com\/[a-zA-Z0-9_.-]+/gi },
@@ -26,7 +36,7 @@ const extractSocials = (html: string, businessName: string) => {
         const matches = html.match(pat.regex);
         if (matches) {
             // Get the first match, clean it up
-            let url = matches[0];
+            const url = matches[0];
             // Filter out obviously wrong ones (like share links if needed, but basic regex usually ok)
             socials.push({ platform: pat.platform, url: url });
         }
@@ -49,11 +59,10 @@ export async function POST(request: NextRequest) {
         console.log(`🔍 [Enrichment] Searching for: ${businessName}`);
 
         // 1. Search Logic
-        let searchResults = [];
+        let searchResults: GoogleSearchItem[] = [];
         let searchSource = 'none';
-        let websiteUrl = null;
-        let scrapedSocials: any[] = [];
-        let addressFound = null;
+        let websiteUrl: string | null = null;
+        let scrapedSocials: SocialLink[] = [];
 
         if (process.env.GOOGLE_API_KEY && process.env.GOOGLE_SEARCH_ENGINE_ID) {
             console.log('🌐 [Enrichment] Using Google Custom Search API');
@@ -66,7 +75,7 @@ export async function POST(request: NextRequest) {
                 const data = await res.json();
 
                 if (data.items && data.items.length > 0) {
-                    searchResults = data.items.map((item: any) => ({
+                    searchResults = data.items.map((item: GoogleSearchItem) => ({
                         title: item.title,
                         link: item.link,
                         snippet: item.snippet
@@ -76,7 +85,7 @@ export async function POST(request: NextRequest) {
                     // Try to identify the official website (skip known directories if possible, but for now take first non-social)
                     const socialDomains = ['instagram.com', 'facebook.com', 'linkedin.com', 'twitter.com', 'youtube.com', 'trendyol.com', 'getir.com', 'yemeksepeti.com'];
 
-                    const bestResult = data.items.find((item: any) => {
+                    const bestResult = data.items.find((item: GoogleSearchItem) => {
                         const link = item.link.toLowerCase();
                         return !socialDomains.some(d => link.includes(d));
                     });
@@ -109,7 +118,7 @@ export async function POST(request: NextRequest) {
 
                 if (siteRes.ok) {
                     const html = await siteRes.text();
-                    scrapedSocials = extractSocials(html, businessName);
+                    scrapedSocials = extractSocials(html);
                     searchSource = 'website_scrape';
                 }
             } catch (scrapeErr) {
@@ -149,8 +158,9 @@ export async function POST(request: NextRequest) {
             }
         `;
 
+        const model = process.env.OPENAI_ENRICH_MODEL || 'gpt-4o-mini';
         const completion = await openai.chat.completions.create({
-            model: "gpt-4o",
+            model,
             response_format: { type: "json_object" },
             messages: [
                 { role: "system", content: systemPrompt },
@@ -165,11 +175,26 @@ export async function POST(request: NextRequest) {
 
         const analysis = JSON.parse(completion.choices[0].message.content || '{}');
 
+        await logAiUsage(auth.supabase, {
+            userId: auth.user.id,
+            marketId: auth.profile.market_id || null,
+            feature: 'lead_enrich',
+            model,
+            inputTokens: completion.usage?.prompt_tokens || 0,
+            outputTokens: completion.usage?.completion_tokens || 0,
+            totalTokens: completion.usage?.total_tokens || 0,
+            metadata: {
+                business_name: businessName,
+                search_source: searchSource,
+                results_count: searchResults.length,
+            },
+        });
+
         // Force overwrite with scraping data if available (AI sometimes hallucinates)
         if (websiteUrl) analysis.website = websiteUrl;
         if (scrapedSocials.length > 0) {
             // Merge logic: Add scraped ones if not present
-            const existingPlatforms = new Set(analysis.socials?.map((s: any) => s.platform) || []);
+            const existingPlatforms = new Set(analysis.socials?.map((s: SocialLink) => s.platform) || []);
             scrapedSocials.forEach(s => {
                 if (!existingPlatforms.has(s.platform)) {
                     analysis.socials = [...(analysis.socials || []), s];
@@ -186,8 +211,9 @@ export async function POST(request: NextRequest) {
             }
         });
 
-    } catch (error: any) {
+    } catch (error: unknown) {
+        const message = error instanceof Error ? error.message : 'Enrichment failed';
         console.error('❌ [Enrichment] Error:', error);
-        return NextResponse.json({ error: error.message }, { status: 500 });
+        return NextResponse.json({ error: message }, { status: 500 });
     }
 }

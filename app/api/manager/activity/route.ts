@@ -1,7 +1,29 @@
 import { createClient } from '@/lib/supabase/server';
 import { NextResponse } from 'next/server';
+import { resolveRequestedMarketId } from '@/lib/market-access';
 
 export const dynamic = 'force-dynamic';
+
+type ActivityNote = {
+    lead_id: string;
+    note: string | null;
+    action_taken: string | null;
+    created_at: string;
+    agent_id: string;
+};
+
+type RawActivity = {
+    id: string;
+    action: string;
+    created_at: string;
+    metadata?: Record<string, unknown> | null;
+    agent_id: string;
+    lead_id: string;
+    ai_summary?: string | null;
+    ai_score?: number | null;
+    profiles?: unknown;
+    leads?: unknown;
+};
 
 export async function GET(request: Request) {
     console.log('[ActivityAPI] ========== REQUEST START ==========');
@@ -18,7 +40,7 @@ export async function GET(request: Request) {
         // 2. Verify manager role (Use regular client - if overview works, this should too)
         const { data: profile } = await supabase
             .from('profiles')
-            .select('role')
+            .select('id, role, market_id')
             .eq('id', user.id)
             .single();
 
@@ -32,6 +54,10 @@ export async function GET(request: Request) {
         const limit = parseInt(searchParams.get('limit') || '50');
         const offset = parseInt(searchParams.get('offset') || '0');
         const search = searchParams.get('search') || '';
+        const effectiveMarketId = resolveRequestedMarketId(profile, searchParams.get('marketId'));
+        const marketLeadIds = effectiveMarketId
+            ? (await supabase.from('leads').select('id').eq('market_id', effectiveMarketId).limit(50000)).data?.map((lead) => lead.id) || []
+            : null;
 
         console.log(`[ActivityAPI] Fetching limit=${limit} offset=${offset} search=${search}`);
 
@@ -52,18 +78,28 @@ export async function GET(request: Request) {
             `)
             .order('created_at', { ascending: false });
 
+        if (marketLeadIds) {
+            query = query.in('lead_id', marketLeadIds.length > 0 ? marketLeadIds : ['00000000-0000-0000-0000-000000000000']);
+        }
+
         // 5. Handle Search
         if (search) {
             console.log('[ActivityAPI] Applying search filter:', search);
             const cleanSearch = search.replace(/^(sc-?|#)/i, '');
             const isNumberSearch = /^\d+$/.test(cleanSearch);
 
-            const { data: agentIdsData } = await supabase.from('profiles').select('id').ilike('full_name', `%${search}%`);
-            const { data: leadIdsData } = await supabase.from('leads').select('id').or(`business_name.ilike.%${search}%,phone_number.ilike.%${search}%`);
+            let agentSearchQuery = supabase.from('profiles').select('id').ilike('full_name', `%${search}%`);
+            if (effectiveMarketId) agentSearchQuery = agentSearchQuery.eq('market_id', effectiveMarketId);
+            const { data: agentIdsData } = await agentSearchQuery;
+            let leadSearchQuery = supabase.from('leads').select('id').or(`business_name.ilike.%${search}%,phone_number.ilike.%${search}%`);
+            if (effectiveMarketId) leadSearchQuery = leadSearchQuery.eq('market_id', effectiveMarketId);
+            const { data: leadIdsData } = await leadSearchQuery;
 
             let targetLeadIds = leadIdsData?.map(l => l.id) || [];
             if (isNumberSearch) {
-                const { data: leadsByNum } = await supabase.from('leads').select('id').eq('lead_number', parseInt(cleanSearch));
+                let leadNumberQuery = supabase.from('leads').select('id').eq('lead_number', parseInt(cleanSearch));
+                if (effectiveMarketId) leadNumberQuery = leadNumberQuery.eq('market_id', effectiveMarketId);
+                const { data: leadsByNum } = await leadNumberQuery;
                 if (leadsByNum) targetLeadIds.push(...leadsByNum.map(l => l.id));
             }
 
@@ -95,7 +131,7 @@ export async function GET(request: Request) {
 
         // 7. Enrichment (Notes matching logic like before)
         const leadIds = rawActivities.map(a => a.lead_id).filter(Boolean);
-        let notesData: any[] = [];
+        let notesData: ActivityNote[] = [];
         if (leadIds.length > 0) {
             const { data: notes } = await supabase
                 .from('lead_notes')
@@ -106,17 +142,18 @@ export async function GET(request: Request) {
             if (notes) notesData = notes;
         }
 
-        const notesMap = new Map();
+        const notesMap = new Map<string, ActivityNote[]>();
         notesData.forEach(n => {
-            if (!notesMap.has(n.lead_id)) notesMap.set(n.lead_id, []);
-            notesMap.get(n.lead_id).push(n);
+            const existing = notesMap.get(n.lead_id) || [];
+            existing.push(n);
+            notesMap.set(n.lead_id, existing);
         });
 
-        const activities = rawActivities.map((act: any) => {
+        const activities = (rawActivities as RawActivity[]).map((act) => {
             const profile = Array.isArray(act.profiles) ? act.profiles[0] : act.profiles;
             const lead = Array.isArray(act.leads) ? act.leads[0] : act.leads;
             const leadNotes = notesMap.get(act.lead_id) || [];
-            const matchingNote = leadNotes.find((n: any) =>
+            const matchingNote = leadNotes.find((n) =>
                 n.agent_id === act.agent_id &&
                 Math.abs(new Date(n.created_at).getTime() - new Date(act.created_at).getTime()) < 120000
             );
@@ -133,10 +170,11 @@ export async function GET(request: Request) {
         console.log(`[ActivityAPI] Success: Returned ${activities.length} activities.`);
         return NextResponse.json({ activities });
 
-    } catch (err: any) {
+    } catch (err: unknown) {
+        const message = err instanceof Error ? err.message : 'Failed to fetch activities';
         console.error('[ActivityAPI] Critical Error:', err);
         return NextResponse.json(
-            { message: err.message || 'Failed to fetch activities', error: err.toString() },
+            { message, error: String(err) },
             { status: 500 }
         );
     }

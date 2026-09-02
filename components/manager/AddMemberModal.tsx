@@ -1,18 +1,21 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { X, Calendar, User, MapPin, BadgePercent, Building, Loader2, Save } from 'lucide-react';
+import { X, Loader2, Save } from 'lucide-react';
 import { toast } from 'sonner';
-import { Profile } from '@/types';
+import { Market, Profile } from '@/types';
 
 interface AddMemberModalProps {
     isOpen: boolean;
     onClose: () => void;
     onSuccess: () => void;
     memberToEdit?: Profile | null;
+    selectedMarketId?: string | null;
+    markets?: Market[];
+    canSwitchMarket?: boolean;
 }
 
-export default function AddMemberModal({ isOpen, onClose, onSuccess, memberToEdit }: AddMemberModalProps) {
+export default function AddMemberModal({ isOpen, onClose, onSuccess, memberToEdit, selectedMarketId, markets = [], canSwitchMarket = false }: AddMemberModalProps) {
     const [isLoading, setIsLoading] = useState(false);
     const [formData, setFormData] = useState({
         email: '',
@@ -24,7 +27,9 @@ export default function AddMemberModal({ isOpen, onClose, onSuccess, memberToEdi
         district: '',
         phoneNumber: '',
         role: 'agent',
-        commissionRate: '0'
+        salesRole: 'sdr',
+        commissionRate: '0',
+        marketId: selectedMarketId || ''
     });
 
     // Reset or Populate form on open
@@ -41,7 +46,9 @@ export default function AddMemberModal({ isOpen, onClose, onSuccess, memberToEdi
                     district: memberToEdit.district || '',
                     phoneNumber: memberToEdit.phone_number || '',
                     role: memberToEdit.role || 'agent',
-                    commissionRate: memberToEdit.commission_rate?.toString() || '0'
+                    salesRole: memberToEdit.sales_role || 'sdr',
+                    commissionRate: memberToEdit.commission_rate?.toString() || '0',
+                    marketId: memberToEdit.market_id || selectedMarketId || ''
                 });
             } else {
                 setFormData({
@@ -54,11 +61,13 @@ export default function AddMemberModal({ isOpen, onClose, onSuccess, memberToEdi
                     district: '',
                     phoneNumber: '',
                     role: 'agent',
-                    commissionRate: '0'
+                    salesRole: 'sdr',
+                    commissionRate: '0',
+                    marketId: selectedMarketId || ''
                 });
             }
         }
-    }, [isOpen, memberToEdit]);
+    }, [isOpen, memberToEdit, selectedMarketId]);
 
     if (!isOpen) return null;
 
@@ -86,9 +95,10 @@ export default function AddMemberModal({ isOpen, onClose, onSuccess, memberToEdi
             toast.success(isEdit ? 'Bilgiler güncellendi ✅' : 'Takım üyesi başarıyla eklendi 🎉');
             onSuccess();
             onClose();
-        } catch (error: any) {
+        } catch (error: unknown) {
+            const message = error instanceof Error ? error.message : 'İşlem başarısız';
             console.error(error);
-            toast.error(error.message);
+            toast.error(message);
         } finally {
             setIsLoading(false);
         }
@@ -205,8 +215,8 @@ export default function AddMemberModal({ isOpen, onClose, onSuccess, memberToEdi
 
                     {/* Role & Commission */}
                     <div className="space-y-4">
-                        <h3 className="text-sm font-semibold text-purple-300 uppercase tracking-wider">Rol & Prim</h3>
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <h3 className="text-sm font-semibold text-purple-300 uppercase tracking-wider">Rol, Fonksiyon & Prim</h3>
+                        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                             <div>
                                 <label className="block text-xs text-gray-400 mb-1">Rol</label>
                                 <select
@@ -221,6 +231,18 @@ export default function AddMemberModal({ isOpen, onClose, onSuccess, memberToEdi
                                 </select>
                             </div>
                             <div>
+                                <label className="block text-xs text-gray-400 mb-1">Satış Fonksiyonu</label>
+                                <select
+                                    className="w-full bg-black/40 border border-white/10 rounded-lg p-3 text-white focus:border-purple-500 outline-none disabled:opacity-50"
+                                    value={formData.salesRole}
+                                    onChange={e => setFormData({ ...formData, salesRole: e.target.value })}
+                                    disabled={formData.role !== 'agent'}
+                                >
+                                    <option value="sdr">SDR - Randevu Organize Eder</option>
+                                    <option value="closer">Closer - Toplantı ve Satış Kapar</option>
+                                </select>
+                            </div>
+                            <div>
                                 <label className="block text-xs text-gray-400 mb-1">Komisyon Oranı (%)</label>
                                 <input
                                     type="number"
@@ -232,6 +254,22 @@ export default function AddMemberModal({ isOpen, onClose, onSuccess, memberToEdi
                                     onChange={e => setFormData({ ...formData, commissionRate: e.target.value })}
                                 />
                             </div>
+                        </div>
+                        <div>
+                            <label className="block text-xs text-gray-400 mb-1">Market</label>
+                            <select
+                                className="w-full bg-black/40 border border-white/10 rounded-lg p-3 text-white focus:border-purple-500 outline-none disabled:opacity-60"
+                                value={formData.marketId}
+                                disabled={!canSwitchMarket}
+                                onChange={e => setFormData({ ...formData, marketId: e.target.value })}
+                            >
+                                {markets.length === 0 && <option value={formData.marketId}>Mevcut market</option>}
+                                {markets.map((market) => (
+                                    <option key={market.id} value={market.id}>
+                                        {market.code} - {market.name}
+                                    </option>
+                                ))}
+                            </select>
                         </div>
                     </div>
 

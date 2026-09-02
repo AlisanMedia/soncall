@@ -5,18 +5,7 @@ import { createClient } from '@/lib/supabase/client';
 import { useRouter } from 'next/navigation';
 import { toast } from 'sonner';
 import { Upload, User, Save, Camera, Sparkles, Trophy, Mail, Hash, AlertCircle, Phone, Lock, Eye, EyeOff, Shield } from 'lucide-react';
-
-interface Profile {
-    id: string;
-    email: string;
-    full_name: string;
-    avatar_url?: string;
-    nickname?: string;
-    theme_color?: string;
-    bio?: string;
-    phone_number?: string;
-    role: string;
-}
+import type { Profile } from '@/types';
 
 const THEME_COLORS = [
     { name: 'Purple', value: 'purple', from: 'from-purple-600', to: 'to-indigo-600', bg: 'bg-purple-500' },
@@ -26,7 +15,13 @@ const THEME_COLORS = [
     { name: 'Rose', value: 'rose', from: 'from-rose-600', to: 'to-pink-600', bg: 'bg-rose-500' },
 ];
 
-export default function AgentSettings({ userProfile }: { userProfile: any }) {
+export default function AgentSettings({
+    userProfile,
+    onProfileUpdated
+}: {
+    userProfile: Profile;
+    onProfileUpdated?: (profile: Profile) => void;
+}) {
     const [profile, setProfile] = useState<Profile>(userProfile);
     const [loading, setLoading] = useState(false);
     const [file, setFile] = useState<File | null>(null);
@@ -131,13 +126,14 @@ export default function AgentSettings({ userProfile }: { userProfile: any }) {
             }
 
             // 2. Update Profile Table
-            const updates: any = {
+            const updates: Record<string, string | undefined> = {
                 full_name: profile.full_name,
                 nickname: profile.nickname,
                 avatar_url: avatarPath,
                 theme_color: profile.theme_color,
                 bio: profile.bio,
                 phone_number: profile.phone_number,
+                preferred_language: profile.preferred_language || 'tr',
                 updated_at: new Date().toISOString(),
             };
 
@@ -157,21 +153,29 @@ export default function AgentSettings({ userProfile }: { userProfile: any }) {
             }
 
             // Success handling
+            const nextProfile = {
+                ...profile,
+                avatar_url: avatarPath,
+                email: userProfile.email
+            };
+
             setProfile(prev => ({
                 ...prev,
                 avatar_url: avatarPath,
                 // Revert displayed email to original until approved
                 email: userProfile.email
             }));
+            onProfileUpdated?.(nextProfile);
 
             // Critical: Force refresh server components
             router.refresh();
 
             toast.success(`Profil başarıyla güncellendi!${emailMessage}`);
 
-        } catch (error: any) {
+        } catch (error: unknown) {
+            const message = error instanceof Error ? error.message : 'Profil kaydedilemedi';
             console.error('Error saving profile:', error);
-            toast.error('Hata: ' + error.message);
+            toast.error('Hata: ' + message);
         } finally {
             setLoading(false);
         }
@@ -210,9 +214,10 @@ export default function AgentSettings({ userProfile }: { userProfile: any }) {
             setShowPasswordSection(false);
 
             toast.success('Şifreniz başarıyla güncellendi!');
-        } catch (error: any) {
+        } catch (error: unknown) {
+            const message = error instanceof Error ? error.message : 'Şifre güncellenemedi';
             console.error('Password update error:', error);
-            toast.error('Şifre güncellenemedi: ' + error.message);
+            toast.error('Şifre güncellenemedi: ' + message);
         } finally {
             setPasswordLoading(false);
         }
@@ -244,7 +249,7 @@ export default function AgentSettings({ userProfile }: { userProfile: any }) {
     return (
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 p-4">
             {/* LEFT: Edit Form */}
-            <div className="!bg-black/20 border border-white/10 rounded-2xl p-6 backdrop-blur-xl">
+            <div className="bg-slate-950/20 border border-white/10 rounded-2xl p-6 backdrop-blur-xl shadow-2xl shadow-black/20">
                 <h2 className="text-xl font-bold text-white mb-6 flex items-center gap-2">
                     <User className="w-5 h-5 text-purple-400" />
                     Profil Düzenle
@@ -319,6 +324,19 @@ export default function AgentSettings({ userProfile }: { userProfile: any }) {
                                 onChange={e => setProfile({ ...profile, full_name: e.target.value })}
                                 className="w-full bg-black/20 border border-white/10 rounded-lg py-2 px-4 text-white focus:ring-1 focus:ring-purple-500 transition-all"
                             />
+                        </div>
+
+                        <div>
+                            <label className="block text-xs font-medium text-gray-400 mb-1">Panel Dili</label>
+                            <select
+                                value={profile.preferred_language || 'tr'}
+                                onChange={e => setProfile({ ...profile, preferred_language: e.target.value })}
+                                className="w-full bg-black/20 border border-white/10 rounded-lg py-2 px-4 text-white focus:ring-1 focus:ring-purple-500 transition-all"
+                            >
+                                <option value="tr" className="bg-slate-950 text-white">Türkçe</option>
+                                <option value="en" className="bg-slate-950 text-white">English</option>
+                            </select>
+                            <p className="text-[10px] text-blue-400/60 mt-1">Bu tercih sadece sizin panelinizin dilini değiştirir.</p>
                         </div>
 
                         <div>
@@ -480,13 +498,13 @@ export default function AgentSettings({ userProfile }: { userProfile: any }) {
             <div className="flex flex-col items-center justify-center">
                 <div className="relative group perspective-1000 w-full max-w-sm">
                     {/* Card Container */}
-                    <div className={`relative bg-gradient-to-br ${currentTheme.from} ${currentTheme.to} p-[1px] rounded-2xl shadow-2xl transform transition-transform duration-500 hover:rotate-y-6 hover:rotate-x-6`}>
-                        <div className="absolute inset-0 blur-xl bg-purple-500/30 -z-10 rounded-2xl"></div>
+                    <div className="relative rounded-2xl border border-white/10 bg-white/[0.03] shadow-2xl shadow-black/30 transform transition-transform duration-500 hover:rotate-y-6 hover:rotate-x-6">
+                        <div className="absolute inset-0 blur-xl bg-black/20 -z-10 rounded-2xl"></div>
 
                         {/* Card Content (Glass) */}
                         <div className="bg-slate-900/90 backdrop-blur-md rounded-2xl p-6 h-full border-t border-white/10 relative overflow-hidden">
                             {/* Decorative Elements */}
-                            <div className={`absolute top-0 right-0 w-32 h-32 bg-gradient-to-br ${currentTheme.from} ${currentTheme.to} opacity-10 rounded-bl-full`}></div>
+                            <div className="absolute top-0 right-0 w-32 h-32 bg-white/[0.04] rounded-bl-full"></div>
                             <div className="absolute bottom-0 left-0 w-24 h-24 bg-white/5 rounded-tr-full"></div>
 
                             {/* Header: Logo & Rank */}
@@ -526,7 +544,7 @@ export default function AgentSettings({ userProfile }: { userProfile: any }) {
                                 {/* Bio Quote */}
                                 {profile.bio && (
                                     <div className="mt-4 relative">
-                                        <span className={`absolute -top-2 left-0 text-4xl leading-3 opacity-20 font-serif ${currentTheme.bg.replace('bg-', 'text-')}-400`}>"</span>
+                                        <span className={`absolute -top-2 left-0 text-4xl leading-3 opacity-20 font-serif ${currentTheme.bg.replace('bg-', 'text-')}-400`}>&quot;</span>
                                         <p className="text-sm italic text-gray-300 px-4">
                                             {profile.bio}
                                         </p>
@@ -537,7 +555,7 @@ export default function AgentSettings({ userProfile }: { userProfile: any }) {
                             {/* Footer Stats Mockup */}
                             <div className="mt-8 grid grid-cols-2 gap-2 border-t border-white/10 pt-4">
                                 <div className="text-center p-2 bg-white/5 rounded-lg">
-                                    <p className="text-xs text-gray-500 uppercase">Toplam Çağrı</p>
+                                    <p className="text-xs text-gray-500 uppercase">Toplam İşlem</p>
                                     <p className="text-lg font-bold text-white">{stats.totalCalls}</p>
                                 </div>
                                 <div className="text-center p-2 bg-white/5 rounded-lg">

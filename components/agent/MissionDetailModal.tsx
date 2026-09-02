@@ -1,21 +1,44 @@
 import React from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
-    X, Phone, Calendar, Clock, MapPin, FileText,
+    X, Phone, Clock, FileText,
     History, ArrowRight, Shield, Target, Zap
 } from 'lucide-react';
 import { GlassButton } from '@/components/ui/glass-button';
 import { GlowingEffect } from '@/components/ui/glowing-effect';
 
+export interface MissionAppointment {
+    id: string;
+    lead_id?: string;
+    agent_id?: string;
+    appointment_date: string;
+    status?: string;
+    notes?: string | null;
+    created_at?: string;
+    business_name?: string | null;
+    phone_number?: string | null;
+    potential_level?: string | null;
+    call_count?: number | null;
+    last_call_at?: string | null;
+    sdr_id?: string | null;
+    closer_id?: string | null;
+    meeting_url?: string | null;
+    meeting_status?: string | null;
+    task_type?: 'appointment' | 'callback';
+    callback_at?: string | null;
+    callback_reason?: string | null;
+}
+
 interface MissionDetailModalProps {
     isOpen: boolean;
     onClose: () => void;
-    appointment: any;
-    onAction: (apt: any) => void;
+    appointment: MissionAppointment | null;
+    onAction: (apt: MissionAppointment) => void;
 }
 
 export default function MissionDetailModal({ isOpen, onClose, appointment, onAction }: MissionDetailModalProps) {
     if (!appointment) return null;
+    const isCallback = appointment.task_type === 'callback';
 
     return (
         <AnimatePresence>
@@ -52,7 +75,7 @@ export default function MissionDetailModal({ isOpen, onClose, appointment, onAct
                                 <div className="pr-8">
                                     <h2 className="text-xl font-bold text-white mb-1 flex items-center gap-2">
                                         <Target className="w-5 h-5 text-purple-400" />
-                                        Görev Detayları
+                                        {isCallback ? 'Tekrar Arama Detayı' : 'Görev Detayları'}
                                     </h2>
                                     <p className="text-sm text-gray-400">
                                         {new Date(appointment.appointment_date).toLocaleDateString('tr-TR', {
@@ -72,6 +95,17 @@ export default function MissionDetailModal({ isOpen, onClose, appointment, onAct
                                             <Phone className="w-4 h-4" />
                                             <span className="font-mono">{appointment.phone_number}</span>
                                         </div>
+                                        {appointment.meeting_url && !isCallback && (
+                                            <a
+                                                href={appointment.meeting_url}
+                                                target="_blank"
+                                                rel="noopener noreferrer"
+                                                className="mt-3 inline-flex items-center gap-2 rounded-lg border border-emerald-500/30 bg-emerald-500/10 px-3 py-2 text-sm font-semibold text-emerald-200 transition-colors hover:bg-emerald-500/20"
+                                            >
+                                                Google Meet Linki
+                                                <ArrowRight className="w-4 h-4" />
+                                            </a>
+                                        )}
                                         {appointment.potential_level === 'high' && (
                                             <div className="flex items-center gap-2 text-emerald-400 font-bold mt-2 text-sm">
                                                 <Zap className="w-3 h-3 fill-emerald-400" />
@@ -87,7 +121,9 @@ export default function MissionDetailModal({ isOpen, onClose, appointment, onAct
                                             İstihbarat Notları
                                         </div>
                                         <div className="p-4 bg-yellow-500/5 border border-yellow-500/20 rounded-xl text-yellow-100/90 text-sm leading-relaxed">
-                                            {appointment.notes || "Not bulunmuyor."}
+                                            {isCallback && appointment.callback_reason
+                                                ? appointment.callback_reason
+                                                : appointment.notes || "Not bulunmuyor."}
                                         </div>
                                     </div>
 
@@ -126,7 +162,7 @@ export default function MissionDetailModal({ isOpen, onClose, appointment, onAct
                                     contentClassName="flex items-center justify-center gap-3"
                                 >
                                     <Shield className="w-5 h-5" />
-                                    <span>OPERASYONU BAŞLAT</span>
+                                    <span>{isCallback ? 'LEADİ AÇ VE ARA' : 'OPERASYONU BAŞLAT'}</span>
                                     <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
                                 </GlassButton>
                             </div>

@@ -11,6 +11,20 @@ interface SendReportParams {
     }>;
 }
 
+interface DailyDigestData {
+    summary: {
+        totalLeadsTotal: number;
+        appointments: number;
+        conversionRate: number;
+    };
+    mvp?: {
+        name: string;
+        processed: number;
+        metricLabel?: string;
+    } | null;
+    highlights: string[];
+}
+
 function getResend() {
     const apiKey = process.env.RESEND_API_KEY;
     if (!apiKey) {
@@ -63,7 +77,7 @@ export async function sendEmail({ to, subject, html, attachments }: SendReportPa
     }
 }
 
-export function generateDailyDigestHTML(data: any) {
+export function generateDailyDigestHTML(data: DailyDigestData) {
     // Basic HTML template for the email body
     // In a real app, use @react-email/components
     return `
@@ -93,11 +107,11 @@ export function generateDailyDigestHTML(data: any) {
                 <div class="stats">
                     <div class="card">
                         <div class="value">${data.summary.totalLeadsTotal}</div>
-                        <div class="label">Lead İşlendi</div>
+                        <div class="label">Operasyon İşlemi</div>
                     </div>
                     <div class="card">
                         <div class="value">${data.summary.appointments}</div>
-                        <div class="label">Randevu</div>
+                        <div class="label">Toplantı Organize</div>
                     </div>
                     <div class="card">
                         <div class="value">%${data.summary.conversionRate}</div>
@@ -109,7 +123,7 @@ export function generateDailyDigestHTML(data: any) {
                 <div class="mvp">
                     <h3 style="margin-top:0;">🏆 Günün MVP'si</h3>
                     <p style="margin-bottom:0;">
-                        <strong>${data.mvp.name}</strong> bugün <strong>${data.mvp.processed}</strong> lead işleyerek en yüksek skoru elde etti!
+                        <strong>${data.mvp.name}</strong> bugün <strong>${data.mvp.processed}</strong> ${data.mvp.metricLabel || 'operasyon hedefi'} ile en yüksek skoru elde etti!
                     </p>
                 </div>
                 ` : ''}

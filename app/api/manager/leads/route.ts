@@ -1,5 +1,6 @@
 import { createClient } from '@/lib/supabase/server';
 import { NextRequest, NextResponse } from 'next/server';
+import { resolveRequestedMarketId } from '@/lib/market-access';
 
 export async function GET(request: NextRequest) {
     try {
@@ -14,7 +15,7 @@ export async function GET(request: NextRequest) {
         // Verify manager role
         const { data: profile } = await supabase
             .from('profiles')
-            .select('role')
+            .select('id, role, market_id')
             .eq('id', user.id)
             .single();
 
@@ -26,6 +27,7 @@ export async function GET(request: NextRequest) {
         const agentId = searchParams.get('agentId');
         const status = searchParams.get('status');
         const batchId = searchParams.get('batchId');
+        const effectiveMarketId = resolveRequestedMarketId(profile, searchParams.get('marketId'));
 
         // Build query
         let query = supabase
@@ -47,6 +49,9 @@ export async function GET(request: NextRequest) {
         )
       `)
             .order('created_at', { ascending: false });
+        if (effectiveMarketId) {
+            query = query.eq('market_id', effectiveMarketId);
+        }
 
         // Apply filters
         if (agentId) {
@@ -92,7 +97,7 @@ export async function GET(request: NextRequest) {
         if (logsError) throw logsError;
 
         // Group notes and logs by lead_id
-        const notesByLead: Record<string, any[]> = {};
+        const notesByLead: Record<string, unknown[]> = {};
         notes?.forEach(note => {
             if (!notesByLead[note.lead_id]) {
                 notesByLead[note.lead_id] = [];
@@ -100,7 +105,7 @@ export async function GET(request: NextRequest) {
             notesByLead[note.lead_id].push(note);
         });
 
-        const logsByLead: Record<string, any[]> = {};
+        const logsByLead: Record<string, unknown[]> = {};
         callLogs?.forEach(log => {
             if (!logsByLead[log.lead_id]) {
                 logsByLead[log.lead_id] = [];
@@ -121,10 +126,11 @@ export async function GET(request: NextRequest) {
             leads: enrichedLeads,
         });
 
-    } catch (error: any) {
+    } catch (error: unknown) {
+        const message = error instanceof Error ? error.message : 'Failed to fetch leads';
         console.error('Manager leads error:', error);
         return NextResponse.json(
-            { message: error.message || 'Failed to fetch leads' },
+            { message },
             { status: 500 }
         );
     }
