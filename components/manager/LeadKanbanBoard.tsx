@@ -88,15 +88,15 @@ export default function LeadKanbanBoard({ leads, onLeadMove, onLeadClick, isLoad
     }
 
     return (
-        <div className="flex gap-4 overflow-x-auto pb-4 min-h-[70vh] items-start">
+        <div className="flex min-h-[65vh] items-start gap-3 overflow-x-auto pb-4 sm:gap-4 md:min-h-[70vh]">
             <DragDropContext onDragEnd={handleDragEnd}>
                 {Object.values(COLUMNS).map((column) => (
-                    <div key={column.id} className={`flex-shrink-0 w-80 bg-black/20 border ${column.color}/30 rounded-xl flex flex-col h-full max-h-[75vh]`}>
+                    <div key={column.id} className={`flex h-full max-h-[70vh] w-[82vw] flex-shrink-0 flex-col rounded-xl border bg-black/20 sm:w-80 md:max-h-[75vh] ${column.color}/30`}>
                         {/* Header */}
-                        <div className={`p-3 ${column.headerBg} border-b ${column.color}/20 flex items-center justify-between rounded-t-xl`}>
-                            <div className="flex items-center gap-2">
+                            <div className={`flex items-center justify-between rounded-t-xl border-b p-3 ${column.headerBg} ${column.color}/20`}>
+                            <div className="min-w-0 flex items-center gap-2">
                                 <column.icon className={`w-5 h-5 text-${column.color.split('-')[1]}-400`} />
-                                <h3 className="font-bold text-white text-sm">{column.title}</h3>
+                                <h3 className="truncate text-sm font-bold text-white">{column.title}</h3>
                             </div>
                             <span className="bg-black/40 text-white text-xs px-2 py-1 rounded-full">
                                 {columns[column.id]?.length || 0}
@@ -126,8 +126,8 @@ export default function LeadKanbanBoard({ leads, onLeadMove, onLeadClick, isLoad
                                                         snapshot.isDragging ? 'shadow-2xl shadow-purple-500/20 scale-105 z-50 ring-2 ring-purple-500' : 'shadow-md'
                                                     }`}
                                                 >
-                                                    <div className="flex justify-between items-start mb-2">
-                                                        <h4 className="font-bold text-white text-sm truncate pr-2">{lead.business_name}</h4>
+                                                    <div className="mb-2 flex items-start justify-between">
+                                                        <h4 className="min-w-0 truncate pr-2 text-sm font-bold text-white">{lead.business_name}</h4>
                                                         <span className="text-[10px] bg-white/10 px-2 py-0.5 rounded text-gray-300 shrink-0">
                                                             {lead.status === 'pending' ? 'Bekliyor' : lead.status === 'appointment' ? 'Randevu' : 'Arandı'}
                                                         </span>
@@ -137,9 +137,9 @@ export default function LeadKanbanBoard({ leads, onLeadMove, onLeadClick, isLoad
                                                         {lead.category || 'Kategori Yok'}
                                                     </div>
 
-                                                    <div className="flex items-center gap-1 text-xs text-gray-400 mb-2">
+                                                    <div className="mb-2 flex min-w-0 items-center gap-1 text-xs text-gray-400">
                                                         <Phone className="w-3 h-3" />
-                                                        {formatPhoneNumber(lead.phone_number)}
+                                                        <span className="truncate">{formatPhoneNumber(lead.phone_number)}</span>
                                                     </div>
 
                                                     {lead.profiles?.full_name && (

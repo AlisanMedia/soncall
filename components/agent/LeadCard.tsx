@@ -512,7 +512,7 @@ export default function LeadCard({ agentId, profile, onLeadProcessed, refreshKey
 
     if (loading) {
         return (
-            <div className="glass-card p-12 flex items-center justify-center min-h-[500px] animate-scale-in">
+            <div className="glass-card flex min-h-[360px] items-center justify-center p-6 sm:min-h-[500px] sm:p-12 animate-scale-in">
                 <div className="text-center">
                     <img src="/loading-logo.png" alt="Loading" className="w-24 h-8 animate-pulse mx-auto mb-4 object-contain" />
                     <p className="text-zinc-400">Sistem Hazırlanıyor...</p>
@@ -538,13 +538,13 @@ export default function LeadCard({ agentId, profile, onLeadProcessed, refreshKey
     }
 
     return (
-        <div className="glass-card glass-card-hover p-8 space-y-6 animate-fade-in-up relative">
+        <div className="glass-card glass-card-hover relative space-y-4 p-4 sm:space-y-6 sm:p-8 animate-fade-in-up">
             <GlowingEffect spread={40} glow={true} disabled={false} proximity={64} borderWidth={3} />
             {/* Header */}
-            <div className="flex items-start justify-between">
-                <div>
+            <div className="flex min-w-0 items-start justify-between">
+                <div className="min-w-0">
                     <div className="flex flex-wrap items-center gap-3 mb-2">
-                        <h2 className="text-3xl font-bold text-white min-w-0">{currentLead.business_name}</h2>
+                        <h2 className="min-w-0 break-words text-2xl font-bold leading-tight text-white sm:text-3xl">{currentLead.business_name}</h2>
                         {leadCodeLabel && (
                             <button
                                 type="button"
@@ -563,8 +563,8 @@ export default function LeadCard({ agentId, profile, onLeadProcessed, refreshKey
                             </span>
                         )}
                     </div>
-                    <div className="flex items-center gap-2 text-purple-200">
-                        <span className="px-3 py-1 bg-purple-500/30 rounded-full text-sm">
+                    <div className="flex flex-wrap items-center gap-2 text-purple-200">
+                        <span className="max-w-full truncate rounded-full bg-purple-500/30 px-3 py-1 text-sm">
                             {currentLead.category || 'Kategori yok'}
                         </span>
                         {currentLead.rating && (
@@ -590,14 +590,14 @@ export default function LeadCard({ agentId, profile, onLeadProcessed, refreshKey
                     ? 'bg-gradient-to-r from-emerald-500/20 to-green-500/20 border-emerald-400 animate-pulse'
                     : 'bg-gradient-to-r from-yellow-500/20 to-orange-500/20 border-yellow-400'
                     }`}>
-                    <div className="flex items-start gap-3">
+                    <div className="flex flex-col gap-3 sm:flex-row sm:items-start">
                         <div className={`p-2 rounded-lg ${currentLead.potential_level === 'high' ? 'bg-emerald-500/30' : 'bg-yellow-500/30'
                             }`}>
                             <Wand2 className={`w-6 h-6 ${currentLead.potential_level === 'high' ? 'text-emerald-300' : 'text-yellow-300'
                                 }`} />
                         </div>
-                        <div className="flex-1">
-                            <h3 className="text-white font-bold text-lg mb-1 flex items-center gap-2">
+                        <div className="min-w-0 flex-1">
+                            <h3 className="mb-1 flex flex-wrap items-center gap-2 text-base font-bold text-white sm:text-lg">
                                 🧠 AI TAVSİYESİ
                                 {currentLead.potential_level === 'high' && (
                                     <span className="px-2 py-0.5 bg-emerald-500/40 text-emerald-100 text-xs rounded-full animate-pulse">
@@ -666,7 +666,7 @@ export default function LeadCard({ agentId, profile, onLeadProcessed, refreshKey
                 <label className="block text-sm font-medium text-purple-200 mb-3">
                     Potansiyel Seviyesi <span className="text-red-400">*</span>
                 </label>
-                <div className="grid grid-cols-3 gap-2 sm:gap-3">
+                <div className="grid grid-cols-1 gap-2 xs:grid-cols-3 sm:gap-3">
                     <GlassButton
                         onClick={() => setPotentialLevel('high')}
                         className={`transition-all touch-target h-auto ${potentialLevel === 'high'

@@ -266,7 +266,7 @@ export default function AgentDashboard({ profile: initialProfile }: AgentDashboa
     };
 
     return (
-        <div className="min-h-screen pb-20 relative overflow-hidden isolate animate-fade-in">
+        <div className="min-h-screen pb-28 sm:pb-20 relative overflow-hidden isolate animate-fade-in">
             {/* Animated Background Grid */}
             <div className="fixed inset-0 -z-10">
                 <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top,_rgba(168,85,247,0.15)_0%,_transparent_50%)]" />
@@ -278,16 +278,16 @@ export default function AgentDashboard({ profile: initialProfile }: AgentDashboa
             {/* Header */}
             <header className="glass-nav sticky top-0 z-50">
                 <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3 sm:py-4">
-                    <div className="flex items-center justify-between gap-2">
+                    <div className="flex flex-wrap items-center justify-between gap-2 sm:flex-nowrap">
                         {/* Logo & Brand - Hidden on very small screens if needed, or simplified */}
-                        <div className="flex items-center gap-2 sm:gap-6 flex-shrink-0">
+                        <div className="flex min-w-0 items-center gap-2 sm:gap-6 flex-shrink-0">
                             <div className="flex items-center gap-2 sm:gap-3">
                                 <img
                                     src="/artificagent-logo.png"
                                     alt="ArtificAgent"
                                     className="h-8 w-8 sm:h-8 sm:w-auto opacity-90"
                                 />
-                                <div className="hidden sm:block">
+                                <div className="hidden min-w-0 sm:block">
                                     <h1 className="text-xl font-bold text-white tracking-tight">ArtificAgent</h1>
                                     <p className="text-xs text-purple-200">{isCloser ? t('agent.panel.closer') : t('agent.panel.sdr')}</p>
                                 </div>
@@ -298,7 +298,7 @@ export default function AgentDashboard({ profile: initialProfile }: AgentDashboa
                         <GlobalMissionTimer onStartMission={handleStartMission} />
 
                         {/* Navigation Tabs - Integrated into header for easy access */}
-                        <div className="hidden sm:block">
+                        <div className="order-3 hidden w-full justify-center sm:order-none sm:block sm:w-auto">
                             <ExpandableTabs
                                 tabs={[
                                     { title: isCloser ? t('agent.nav.meeting') : t('agent.nav.call'), icon: Phone },
@@ -334,12 +334,12 @@ export default function AgentDashboard({ profile: initialProfile }: AgentDashboa
                             </button>
                         )}
                         {/* Mobile Fallback - Simplified */}
-                        <nav className="flex sm:hidden items-center gap-1 bg-black/20 p-1 rounded-lg border border-white/5">
+                        <nav className="order-3 flex w-full items-center gap-1 overflow-x-auto rounded-lg border border-white/5 bg-black/20 p-1 sm:hidden">
                             <button
                                 onClick={() => setActiveTab('work')}
                                 aria-label={isCloser ? t('agent.nav.meeting') : t('agent.nav.call')}
                                 title={isCloser ? t('agent.nav.meeting') : t('agent.nav.call')}
-                                className={`p-2 rounded-md transition-all ${activeTab === 'work' ? 'bg-purple-600 text-white' : 'text-gray-300'}`}
+                                className={`min-h-10 min-w-10 rounded-md p-2 transition-all ${activeTab === 'work' ? 'bg-purple-600 text-white' : 'text-gray-300'}`}
                             >
                                 <Phone className="w-5 h-5" />
                             </button>
@@ -347,7 +347,7 @@ export default function AgentDashboard({ profile: initialProfile }: AgentDashboa
                                 onClick={() => setActiveTab('appointments')}
                                 aria-label={t('agent.nav.appointments')}
                                 title={t('agent.nav.appointments')}
-                                className={`p-2 rounded-md transition-all ${activeTab === 'appointments' ? 'bg-purple-600 text-white' : 'text-gray-300'}`}
+                                className={`min-h-10 min-w-10 rounded-md p-2 transition-all ${activeTab === 'appointments' ? 'bg-purple-600 text-white' : 'text-gray-300'}`}
                             >
                                 <Calendar className="w-5 h-5" />
                             </button>
@@ -356,7 +356,7 @@ export default function AgentDashboard({ profile: initialProfile }: AgentDashboa
                                     onClick={() => setManualLeadOpen(true)}
                                     aria-label={t('agent.manual.add')}
                                     title={t('agent.manual.add')}
-                                    className="p-2 rounded-md text-purple-400 hover:bg-white/5 transition-all active:scale-95"
+                                    className="min-h-10 min-w-10 rounded-md p-2 text-purple-400 transition-all hover:bg-white/5 active:scale-95"
                                 >
                                     <UserPlus className="w-5 h-5" />
                                 </button>
@@ -365,7 +365,7 @@ export default function AgentDashboard({ profile: initialProfile }: AgentDashboa
                                 onClick={() => setActiveTab('history')}
                                 aria-label={t('agent.nav.leadSearch')}
                                 title={t('agent.nav.leadSearch')}
-                                className={`p-2 rounded-md transition-all ${activeTab === 'history' ? 'bg-purple-600 text-white' : 'text-gray-300'}`}
+                                className={`min-h-10 min-w-10 rounded-md p-2 transition-all ${activeTab === 'history' ? 'bg-purple-600 text-white' : 'text-gray-300'}`}
                             >
                                 <List className="w-5 h-5" />
                             </button>
@@ -373,7 +373,7 @@ export default function AgentDashboard({ profile: initialProfile }: AgentDashboa
                                 onClick={() => setActiveTab('sales')}
                                 aria-label={t('agent.nav.mySales')}
                                 title={t('agent.nav.mySales')}
-                                className={`p-2 rounded-md transition-all ${activeTab === 'sales' ? 'bg-purple-600 text-white' : 'text-gray-300'}`}
+                                className={`min-h-10 min-w-10 rounded-md p-2 transition-all ${activeTab === 'sales' ? 'bg-purple-600 text-white' : 'text-gray-300'}`}
                             >
                                 <DollarSign className="w-5 h-5" />
                             </button>
@@ -381,14 +381,14 @@ export default function AgentDashboard({ profile: initialProfile }: AgentDashboa
                                 onClick={() => setActiveTab('settings')}
                                 aria-label={t('agent.nav.settings')}
                                 title={t('agent.nav.settings')}
-                                className={`p-2 rounded-md transition-all ${activeTab === 'settings' ? 'bg-purple-600 text-white' : 'text-gray-300'}`}
+                                className={`min-h-10 min-w-10 rounded-md p-2 transition-all ${activeTab === 'settings' ? 'bg-purple-600 text-white' : 'text-gray-300'}`}
                             >
                                 <Settings className="w-5 h-5" />
                             </button>
                         </nav>
 
                         {/* User Profile Info */}
-                        <div className="flex items-center gap-3 flex-shrink-0">
+                        <div className="flex flex-shrink-0 items-center gap-2 sm:gap-3">
                             <div className="flex items-center gap-3 text-right">
                                 <div className="hidden md:block">
                                     <p className="text-xs text-purple-200">{t('agent.profile.welcome')}</p>
@@ -412,7 +412,7 @@ export default function AgentDashboard({ profile: initialProfile }: AgentDashboa
                             </div>
                             <button
                                 onClick={handleLogout}
-                                className="p-2 rounded-lg bg-white/10 hover:bg-white/20 text-white transition-colors"
+                                className="min-h-10 min-w-10 rounded-lg bg-white/10 p-2 text-white transition-colors hover:bg-white/20"
                                 title={t('common.logout')}
                             >
                                 <LogOut className="w-5 h-5" />
@@ -433,7 +433,7 @@ export default function AgentDashboard({ profile: initialProfile }: AgentDashboa
             }
 
             {/* Main Content */}
-            <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-8">
+            <main className="mx-auto max-w-7xl px-3 py-4 sm:px-6 sm:py-8 lg:px-8">
                 {/* Work Tab - Keep mounted to preserve state */}
                 <div className={`space-y-6 ${activeTab !== 'work' ? 'hidden' : ''}`}>
                     {/* Gamification Bar */}
@@ -441,9 +441,9 @@ export default function AgentDashboard({ profile: initialProfile }: AgentDashboa
                         <GamificationBar agentId={profile.id} />
                     </div>
 
-                    <div className="flex flex-col lg:grid lg:grid-cols-4 gap-6">
+                    <div className="flex flex-col gap-4 lg:grid lg:grid-cols-4 lg:gap-6">
                         {/* Lead Card - Main Work Area (First on Mobile) */}
-                        <div className="lg:col-span-3 order-1 lg:order-2 space-y-6">
+                        <div className="order-1 min-w-0 space-y-4 lg:order-2 lg:col-span-3 lg:space-y-6">
                             <LeadCard
                                 agentId={profile.id}
                                 profile={profile}
@@ -464,7 +464,7 @@ export default function AgentDashboard({ profile: initialProfile }: AgentDashboa
                         </div>
 
                         {/* Leaderboard Sidebar */}
-                        <div className="lg:col-span-1 order-2 lg:order-1">
+                        <div className="order-2 min-w-0 lg:order-1 lg:col-span-1">
                             <Leaderboard agentId={profile.id} refreshKey={refreshKey} />
                         </div>
                     </div>
@@ -501,7 +501,7 @@ export default function AgentDashboard({ profile: initialProfile }: AgentDashboa
                 (activeTab === 'work' || activeTab === 'history' || activeTab === 'appointments') && (
                     <button
                         onClick={() => setChatOpen(!chatOpen)}
-                        className="fixed bottom-6 right-6 z-40 bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 text-white w-14 h-14 md:w-16 md:h-16 rounded-full shadow-2xl transition-all hover:scale-110 active:scale-95 flex items-center justify-center safe-bottom safe-right touch-target-large"
+                        className="fixed bottom-4 right-4 z-40 flex h-14 w-14 items-center justify-center rounded-full bg-gradient-to-r from-purple-600 to-indigo-600 text-white shadow-2xl transition-all hover:scale-110 hover:from-purple-700 hover:to-indigo-700 active:scale-95 safe-bottom safe-right touch-target-large md:bottom-6 md:right-6 md:h-16 md:w-16"
                         title="Open Chat"
                         aria-label="Open Chat"
                     >

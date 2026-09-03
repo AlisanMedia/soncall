@@ -123,7 +123,7 @@ export default function ManagerDashboard({ profile }: ManagerDashboardProps) {
                 }} />
             </div>
             {/* Sidebar Navigation */}
-            <aside className={`fixed inset-y-0 left-0 z-50 flex flex-col border-r border-white/10 bg-slate-950/70 backdrop-blur-xl shadow-2xl shadow-black/30 transition-all duration-300 ${sidebarCollapsed ? 'w-20' : 'w-20 md:w-72'}`}>
+            <aside className={`fixed inset-y-0 left-0 z-50 hidden flex-col border-r border-white/10 bg-slate-950/70 backdrop-blur-xl shadow-2xl shadow-black/30 transition-all duration-300 md:flex ${sidebarCollapsed ? 'w-20' : 'w-72'}`}>
                 <div className="flex h-16 items-center gap-3 border-b border-white/10 px-4">
                     <img
                         src="/artificagent-logo.png"
@@ -165,7 +165,7 @@ export default function ManagerDashboard({ profile }: ManagerDashboardProps) {
                             <button
                                 key={item.id}
                                 onClick={() => setCurrentTab(item.id)}
-                                className={`group relative flex h-11 w-full items-center rounded-xl border text-sm font-semibold transition-all ${sidebarCollapsed ? 'justify-center px-0' : 'justify-center px-0 md:justify-start md:gap-3 md:px-3'
+                                className={`group relative flex h-11 w-full items-center rounded-xl border text-sm font-semibold transition-all ${sidebarCollapsed ? 'justify-center px-0' : 'justify-start gap-3 px-3'
                                     } ${isActive
                                         ? 'border-purple-400/40 bg-purple-600/25 text-white shadow-lg shadow-purple-600/10'
                                         : 'border-transparent text-slate-300 hover:border-white/10 hover:bg-white/10 hover:text-white'
@@ -173,7 +173,7 @@ export default function ManagerDashboard({ profile }: ManagerDashboardProps) {
                                 title={label}
                             >
                                 <Icon className={`h-5 w-5 flex-shrink-0 ${isActive ? 'text-purple-100' : 'text-slate-300 group-hover:text-white'}`} />
-                                {!sidebarCollapsed && <span className="hidden truncate md:inline">{label}</span>}
+                                {!sidebarCollapsed && <span className="truncate">{label}</span>}
                                 {isActive && <span className="absolute left-0 top-2 h-7 w-1 rounded-r-full bg-purple-300" />}
                             </button>
                         );
@@ -209,17 +209,17 @@ export default function ManagerDashboard({ profile }: ManagerDashboardProps) {
                     )}
                     <button
                         onClick={handleLogout}
-                        className={`flex h-11 w-full items-center rounded-xl border border-white/10 bg-white/5 text-sm font-semibold text-slate-200 transition hover:bg-white/10 hover:text-white ${sidebarCollapsed ? 'justify-center px-0' : 'justify-center px-0 md:justify-start md:gap-3 md:px-3'}`}
+                        className={`flex h-11 w-full items-center rounded-xl border border-white/10 bg-white/5 text-sm font-semibold text-slate-200 transition hover:bg-white/10 hover:text-white ${sidebarCollapsed ? 'justify-center px-0' : 'justify-start gap-3 px-3'}`}
                         title={t('common.logout')}
                     >
                         <LogOut className="h-5 w-5 flex-shrink-0" />
-                        {!sidebarCollapsed && <span className="hidden md:inline">{t('common.logout')}</span>}
+                        {!sidebarCollapsed && <span>{t('common.logout')}</span>}
                     </button>
                 </div>
             </aside>
 
             {/* Tab Content */}
-            <main className={`min-h-screen px-4 py-6 transition-all duration-300 sm:px-6 lg:px-8 ${sidebarCollapsed ? 'ml-20' : 'ml-20 md:ml-72'}`}>
+            <main className={`min-h-screen px-3 py-4 pb-28 transition-all duration-300 sm:px-6 sm:py-6 md:pb-10 lg:px-8 ${sidebarCollapsed ? 'md:ml-20' : 'md:ml-72'}`}>
                 <div className="mb-4 flex items-center justify-between rounded-xl border border-white/10 bg-white/5 p-3 lg:hidden">
                     <div className="flex items-center gap-2 text-sm text-white">
                         <Globe2 className="w-4 h-4 text-cyan-300" />
@@ -305,8 +305,34 @@ export default function ManagerDashboard({ profile }: ManagerDashboardProps) {
                 {currentTab === 'sms-logs' && <SmsLogs />}
             </main>
 
+            <nav className="fixed inset-x-0 bottom-0 z-50 border-t border-white/10 bg-slate-950/90 px-2 py-2 shadow-2xl shadow-black/40 backdrop-blur-xl md:hidden safe-bottom">
+                <div className="flex items-center gap-2 overflow-x-auto pb-1">
+                    {navigationItems.map((item) => {
+                        const Icon = item.icon;
+                        const isActive = currentTab === item.id;
+                        const label = t(item.labelKey);
+
+                        return (
+                            <button
+                                key={item.id}
+                                onClick={() => setCurrentTab(item.id)}
+                                className={`flex min-w-[72px] flex-col items-center justify-center gap-1 rounded-xl border px-2 py-2 text-[10px] font-semibold transition ${isActive
+                                    ? 'border-purple-400/40 bg-purple-600/25 text-white'
+                                    : 'border-transparent text-slate-300 hover:bg-white/10 hover:text-white'
+                                    }`}
+                                title={label}
+                                aria-label={label}
+                            >
+                                <Icon className="h-5 w-5 flex-shrink-0" />
+                                <span className="w-full truncate text-center leading-tight">{label}</span>
+                            </button>
+                        );
+                    })}
+                </div>
+            </nav>
+
             {/* Floating Action Buttons - Mobile Optimized */}
-            <div className="fixed bottom-6 right-6 z-50 flex flex-col gap-4 safe-bottom safe-right">
+            <div className="fixed bottom-24 right-4 z-50 flex flex-col gap-3 safe-bottom safe-right md:bottom-6 md:right-6 md:gap-4">
                 {/* Chat Button */}
                 <button
                     onClick={() => setChatOpen(!chatOpen)}
