@@ -10,6 +10,7 @@ import {
 import { getWhatsAppUrl, formatPhoneNumber } from '@/lib/utils';
 import { playLeadTransition, playAppointment, playWhatsApp, playVictory, playError } from '@/lib/sounds';
 import VoiceRecorder from './VoiceRecorder';
+import { parseCallDate } from '@/lib/call-analysis';
 import { GlowingEffect } from '@/components/ui/glowing-effect';
 import { GlassButton } from '@/components/ui/glass-button';
 import AIAnalysisDisplay, { type AIAnalysis } from './AIAnalysisDisplay';
@@ -68,6 +69,7 @@ export default function LeadCard({ agentId, profile, onLeadProcessed, refreshKey
     // Clear AI analysis when lead changes
     useEffect(() => {
         setAiAnalysis(null);
+        setSavedAudioUrl(null);
         if (currentLead?.id) {
             // Fetch call count
             supabase
@@ -379,6 +381,7 @@ export default function LeadCard({ agentId, profile, onLeadProcessed, refreshKey
     };
 
     const handleNextLead = async () => {
+        if (isAiProcessing) return;
         if (!currentLead || !isFormValid()) {
             setError('Lütfen tüm alanları doldurun! (Not en az 10 karakter olmalı)');
             playError();
@@ -456,21 +459,25 @@ export default function LeadCard({ agentId, profile, onLeadProcessed, refreshKey
     };
 
     const analyzeRecording = async (audioUrl: string, durationSeconds: number) => {
+        if (!currentLead || isAiProcessing) return;
         setIsAiProcessing(true);
+        setError(null);
         try {
             const res = await fetch('/api/ai/transcribe', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ audioUrl, leadId: currentLead?.id, durationSeconds })
             });
-            const data = await res.json();
+            const data = await res.json().catch(() => ({ error: 'Analiz servisi yanıt vermedi. Lütfen tekrar deneyin.' }));
 
+            if (!res.ok) throw new Error(data.error || 'Analiz başarısız oldu.');
             if (data.success && data.analysis) {
                 // Store analysis data for display component
                 setAiAnalysis(data.analysis);
+                if (Array.isArray(data.warnings) && data.warnings.length) setError(data.warnings.join(' '));
 
                 if (data.analysis.next_action_type === 'callback' && data.analysis.extracted_date) {
-                    const callbackTime = new Date(data.analysis.extracted_date);
+                    const callbackTime = parseCallDate(data.analysis.extracted_date);
                     if (!Number.isNaN(callbackTime.getTime())) {
                         setActionTaken('callback_scheduled');
                         setCallbackDate(toDatetimeLocalValue(callbackTime));
@@ -478,7 +485,7 @@ export default function LeadCard({ agentId, profile, onLeadProcessed, refreshKey
                 }
 
                 if (data.analysis.next_action_type === 'appointment' && data.analysis.extracted_date) {
-                    const extractedAppointment = new Date(data.analysis.extracted_date);
+                    const extractedAppointment = parseCallDate(data.analysis.extracted_date);
                     if (!Number.isNaN(extractedAppointment.getTime())) {
                         setAppointmentDate(toDatetimeLocalValue(extractedAppointment));
                     }
@@ -500,11 +507,11 @@ export default function LeadCard({ agentId, profile, onLeadProcessed, refreshKey
                     setPotentialLevel(data.analysis.potential_level as PotentialLevel);
                 }
             } else {
-                alert('Analiz hatası: ' + (data.error || 'Bilinmeyen hata'));
+                setError('Analiz hatası: ' + (data.error || 'Bilinmeyen hata'));
             }
         } catch (e) {
             console.error(e);
-            alert('Analysis error');
+            setError(e instanceof Error ? e.message : 'Analiz sırasında bağlantı hatası oluştu. Tekrar deneyin.');
         } finally {
             setIsAiProcessing(false);
         }
@@ -709,6 +716,7 @@ export default function LeadCard({ agentId, profile, onLeadProcessed, refreshKey
             {currentLead && !isCloser && (
                 <div className="mb-4">
                     <VoiceRecorder
+                        key={currentLead.id}
                         leadId={currentLead.id}
                         onRecordingComplete={handleRecordingComplete}
                         isProcessing={isAiProcessing}
@@ -834,7 +842,7 @@ export default function LeadCard({ agentId, profile, onLeadProcessed, refreshKey
             {/* Next Lead Button - Mobile Optimized */}
             <GlassButton
                 onClick={handleNextLead}
-                disabled={!isFormValid() || processing}
+                disabled={!isFormValid() || processing || isAiProcessing}
                 className="w-full shadow-lg hover:shadow-xl transform hover:scale-[1.02] active:scale-95 transition-smooth disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none touch-target-large"
                 contentClassName="flex items-center justify-center gap-3 py-4 sm:py-5 px-6 font-bold text-base sm:text-lg text-white"
                 size="lg"

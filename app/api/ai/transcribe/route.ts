@@ -3,11 +3,11 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 import OpenAI from 'openai';
 import { logAiUsage } from '@/lib/ai-usage';
+import { getRecordingPath, parseCallDate } from '@/lib/call-analysis';
 
-// Initialize OpenAI
-const openai = new OpenAI({
-    apiKey: process.env.OPENAI_API_KEY,
-});
+// Audio transcription and analysis can exceed the default function duration.
+export const runtime = 'nodejs';
+export const maxDuration = 120;
 
 type CallAnalysis = {
     summary?: string;
@@ -41,78 +41,50 @@ export async function POST(request: NextRequest) {
         const { data: { user } } = await supabase.auth.getUser();
         if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
-        // 2. Parse Request
-        const { audioUrl, leadId, durationSeconds } = await request.json();
-        if (!audioUrl || !leadId) {
-            return NextResponse.json({ error: 'Missing audioUrl or leadId' }, { status: 400 });
+        const body = await request.json().catch(() => null);
+        const { audioUrl, leadId, durationSeconds } = body || {};
+        if (typeof audioUrl !== 'string' || typeof leadId !== 'string' ||
+            !/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(leadId)) {
+            return NextResponse.json({ error: 'Geçerli bir kayıt ve müşteri seçin.' }, { status: 400 });
         }
 
-        console.log('🤖 [AI Analysis] Starting for lead:', leadId);
+        // Authorize before reading audio or incurring provider charges. RLS also applies.
+        const { data: leadMarket, error: leadError } = await supabase
+            .from('leads')
+            .select('market_id, assigned_to, sdr_id, closer_id')
+            .eq('id', leadId)
+            .maybeSingle();
+        if (leadError) {
+            return NextResponse.json({ error: 'Müşteri erişimi kontrol edilemedi.' }, { status: 500 });
+        }
+        if (!leadMarket || ![leadMarket.assigned_to, leadMarket.sdr_id, leadMarket.closer_id].includes(user.id)) {
+            return NextResponse.json({ error: 'Bu müşterinin kaydını analiz etme yetkiniz yok.' }, { status: 403 });
+        }
 
-        // Check API key
+        const recordingPath = getRecordingPath(audioUrl, leadId, process.env.NEXT_PUBLIC_SUPABASE_URL || '');
+        if (!recordingPath) {
+            return NextResponse.json({ error: 'Ses kaydı bu müşteriye ait değil veya kayıt adresi geçersiz.' }, { status: 400 });
+        }
         if (!process.env.OPENAI_API_KEY) {
-            console.error('❌ [AI Analysis] OPENAI_API_KEY not found in environment!');
-            return NextResponse.json({
-                error: 'OpenAI API key not configured',
-                fallback: {
-                    summary: '⚠️ AI analizi yapılamadı: API key eksik',
-                    potential_level: 'not_assessed'
-                }
-            }, { status: 500 });
+            return NextResponse.json({ error: 'AI servisi yapılandırılmamış. Yönetici OpenAI bağlantısını kontrol etmeli.' }, { status: 503 });
         }
+        const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY, timeout: 45_000, maxRetries: 0 });
 
-        // 3. Fetch Audio
-        console.log('📥 [AI Analysis] Fetching audio from:', audioUrl);
-        const audioResponse = await fetch(audioUrl);
-        if (!audioResponse.ok) {
-            console.error('❌ [AI Analysis] Audio fetch failed:', audioResponse.statusText);
-            throw new Error(`Audio fetch failed: ${audioResponse.statusText}`);
+        // Download only from the configured bucket with the caller's Storage permissions.
+        const { data: audioBlob, error: audioError } = await supabase.storage
+            .from('call-recordings').download(recordingPath);
+        if (audioError || !audioBlob) {
+            return NextResponse.json({ error: 'Ses kaydı okunamadı. Kayıt yüklemesini ve erişim izinlerini kontrol edin.' }, { status: 422 });
         }
-
-
-        console.log('🤖 [AI Analysis] Starting for lead:', leadId);
-
-        // Check API key
-        if (!process.env.OPENAI_API_KEY) {
-            console.error('❌ [AI Analysis] OPENAI_API_KEY not found in environment!');
-            return NextResponse.json({
-                error: 'OpenAI API key not configured',
-                fallback: {
-                    summary: '⚠️ AI analizi yapılamadı: API key eksik',
-                    potential_level: 'not_assessed'
-                }
-            }, { status: 500 });
+        if (audioBlob.size === 0 || audioBlob.size > 25 * 1024 * 1024) {
+            return NextResponse.json({ error: 'Ses kaydı boş veya 25 MB sınırını aşıyor.' }, { status: 413 });
         }
-
-        // 3. Fetch Audio
-        console.log('📥 [AI Analysis] Fetching audio from:', audioUrl);
-        const audioResponse = await fetch(audioUrl);
-        if (!audioResponse.ok) {
-            console.error('❌ [AI Analysis] Audio fetch failed:', audioResponse.statusText);
-            throw new Error(`Audio fetch failed: ${audioResponse.statusText}`);
-        }
-
-        const audioBlob = await audioResponse.blob();
         const audioSeconds = Number.isFinite(Number(durationSeconds)) && Number(durationSeconds) > 0
             ? Math.round(Number(durationSeconds))
             : Math.max(1, Math.round(audioBlob.size / 4000));
-        console.log('✅ [AI Analysis] Audio fetched, size:', audioBlob.size, 'bytes');
+        const fileName = recordingPath;
+        const mimeType = audioBlob.type || 'audio/webm';
 
-        const { data: leadMarket } = await supabase
-            .from('leads')
-            .select('market_id')
-            .eq('id', leadId)
-            .maybeSingle();
-
-        // Determine MIME type from the fetched audio response
-        const contentType = audioResponse.headers.get('content-type') || 'audio/webm';
-        const extension = contentType.includes('mp4') ? 'mp4' :
-            contentType.includes('ogg') ? 'ogg' :
-            contentType.includes('wav') ? 'wav' : 'webm';
-        const fileName = `recording.${extension}`;
-        const mimeType = contentType;
-        console.log('🔄 [AI Analysis] Using MIME type for Whisper:', mimeType);
-        
         let transcriptText = "";
         try {
             const file = new File([audioBlob], fileName, { type: mimeType });
@@ -124,7 +96,8 @@ export async function POST(request: NextRequest) {
                 response_format: 'text',
             });
 
-            transcriptText = transcription as unknown as string;
+            transcriptText = String(transcription).trim();
+            if (!transcriptText) throw new Error('Kayıtta anlaşılır konuşma bulunamadı.');
             await logAiUsage(supabase, {
                 userId: user.id,
                 leadId,
@@ -138,13 +111,12 @@ export async function POST(request: NextRequest) {
                 },
             });
             console.log('✅ [AI Analysis] Transcription complete, length:', transcriptText.length);
-            console.log('📝 [AI Analysis] Transcript preview:', transcriptText.substring(0, 100));
+
         } catch (whisperError: unknown) {
             const message = whisperError instanceof Error ? whisperError.message : 'Unknown transcription error';
             console.error('❌ [AI Analysis] Whisper error:', message);
             return NextResponse.json({
-                error: 'Transcription failed',
-                details: message,
+                error: 'Ses yazıya çevrilemedi. AI sağlayıcısının erişimini ve kullanım limitini kontrol edin.',
                 fallback: {
                     summary: '⚠️ Ses tanıma başarısız oldu',
                     potential_level: 'not_assessed'
@@ -361,9 +333,14 @@ export async function POST(request: NextRequest) {
             });
 
             const analysisRaw = completion.choices[0].message.content;
-            console.log('📝 [AI Analysis] GPT-4o raw response:', analysisRaw?.substring(0, 200));
+
 
             analysis = JSON.parse(analysisRaw || '{}');
+            if (typeof analysis.summary !== 'string' || !analysis.summary.trim() ||
+                !['high', 'medium', 'low', 'not_assessed'].includes(analysis.potential_level || '') ||
+                (analysis.key_objections !== undefined && (!Array.isArray(analysis.key_objections) || analysis.key_objections.some(value => typeof value !== 'string')))) {
+                throw new Error('AI yanıtı geçerli bir analiz içermiyor.');
+            }
             await logAiUsage(supabase, {
                 userId: user.id,
                 leadId,
@@ -382,10 +359,12 @@ export async function POST(request: NextRequest) {
         } catch (gptError: unknown) {
             const message = gptError instanceof Error ? gptError.message : 'Unknown analysis error';
             console.error('❌ [AI Analysis] GPT-4o error:', message);
-            analysis.summary = `⚠️ AI analizi kısmen başarısız: ${message}`;
+            return NextResponse.json({ error: 'AI analizi tamamlanamadı. Lütfen tekrar deneyin.' }, { status: 502 });
         }
 
         // 6. Database Updates (Auto-Pilot)
+
+        const warnings: string[] = [];
 
         // A) Update Lead Status & Potential
         if (analysis.potential_level !== 'not_assessed') {
@@ -398,7 +377,7 @@ export async function POST(request: NextRequest) {
             if (analysis.extracted_date && analysis.next_action_type === 'appointment') {
                 try {
                     // Parse the AI-provided date (should be in "YYYY-MM-DD HH:MM" format)
-                    const appointmentDate = new Date(analysis.extracted_date);
+                    const appointmentDate = parseCallDate(analysis.extracted_date);
                     if (!isNaN(appointmentDate.getTime())) {
                         updateData.appointment_date = appointmentDate.toISOString();
                         console.log('📅 [AI Analysis] Setting appointment_date:', appointmentDate.toISOString());
@@ -410,7 +389,7 @@ export async function POST(request: NextRequest) {
 
             if (analysis.extracted_date && analysis.next_action_type === 'callback') {
                 try {
-                    const callbackDate = new Date(analysis.extracted_date);
+                    const callbackDate = parseCallDate(analysis.extracted_date);
                     if (!isNaN(callbackDate.getTime())) {
                         updateData.status = 'callback';
                         updateData.callback_at = callbackDate.toISOString();
@@ -423,10 +402,11 @@ export async function POST(request: NextRequest) {
                 }
             }
 
-            const { error: updateError } = await supabase.from('leads').update(updateData).eq('id', leadId);
+            const { data: updatedLead, error: updateError } = await supabase.from('leads').update(updateData).eq('id', leadId).select('id').maybeSingle();
 
-            if (updateError) {
-                console.error('⚠️ [AI Analysis] Lead update error:', updateError.message);
+            if (updateError || !updatedLead) {
+                console.error('AI lead update failed:', updateError?.code || 'no rows updated');
+                warnings.push('Müşteri alanları güncellenemedi.');
             } else {
                 console.log('✅ [AI Analysis] Lead updated with AI analysis fields');
             }
@@ -458,13 +438,14 @@ export async function POST(request: NextRequest) {
         });
 
         if (noteError) {
-            console.error('❌ [AI Analysis] Note insert error:', noteError.message);
+            console.error('AI note insert failed:', noteError.code);
+            warnings.push('Analiz notu kaydedilemedi.');
         } else {
             console.log('✅ [AI Analysis] AI note saved successfully');
         }
 
         // C) Save Log
-        await supabase.from('call_logs').insert({
+        const { error: callLogError } = await supabase.from('call_logs').insert({
             lead_id: leadId,
             agent_id: user.id,
             audio_url: audioUrl,
@@ -473,8 +454,10 @@ export async function POST(request: NextRequest) {
             duration_seconds: audioSeconds
         });
 
+        if (callLogError) warnings.push('Ses kaydı ve transkript geçmişe kaydedilemedi.');
+
         // D) Log to Activity Feed (Explicitly with AI details)
-        await supabase.from('lead_activity_log').insert({
+        const { error: activityError } = await supabase.from('lead_activity_log').insert({
             lead_id: leadId,
             agent_id: user.id,
             action: 'call_analyzed',
@@ -487,11 +470,12 @@ export async function POST(request: NextRequest) {
             ai_score: analysis.sentiment_score
         });
 
-        console.log('🎉 [AI Analysis] Process complete for lead:', leadId);
+        if (activityError) warnings.push('Canlı aktivite kaydı oluşturulamadı.');
 
         return NextResponse.json({
             success: true,
             analysis: analysis,
+            warnings,
             transcription: transcriptText
         });
 

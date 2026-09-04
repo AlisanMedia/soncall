@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 import { createAdminClient } from '@/lib/supabase/admin';
+import { canAccessMarket } from '@/lib/market-access';
 
 export const dynamic = 'force-dynamic';
 
@@ -44,7 +45,7 @@ export async function GET(
         const adminSupabase = createAdminClient();
         const { data: profile, error: profileError } = await adminSupabase
             .from('profiles')
-            .select('id, role, full_name')
+            .select('id, role, full_name, market_id')
             .eq('id', user.id)
             .maybeSingle();
 
@@ -88,6 +89,7 @@ export async function GET(
                 .select(`
                     id,
                     action,
+                    agent_id,
                     metadata,
                     ai_summary,
                     ai_score,
@@ -130,7 +132,13 @@ export async function GET(
             return NextResponse.json({ error: 'Lead bulunamadı' }, { status: 404 });
         }
 
-        const workedLeadIds = new Set((activityResult.data || []).length > 0 ? [id] : []);
+        if (!canAccessMarket(profile, lead.market_id)) {
+            return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+        }
+
+        const workedLeadIds = new Set(
+            (activityResult.data || []).some(activity => activity.agent_id === user.id) ? [id] : []
+        );
         if (!hasLeadAccess(lead, user.id, profile.role, workedLeadIds)) {
             return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
         }

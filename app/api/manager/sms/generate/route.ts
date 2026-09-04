@@ -4,9 +4,6 @@ import { createClient } from '@/lib/supabase/server';
 import OpenAI from 'openai';
 import { logAiUsage } from '@/lib/ai-usage';
 
-const openai = new OpenAI({
-    apiKey: process.env.OPENAI_API_KEY,
-});
 
 export async function POST(request: NextRequest) {
     try {
@@ -17,6 +14,11 @@ export async function POST(request: NextRequest) {
         if (!user) {
             return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
         }
+
+        if (!process.env.OPENAI_API_KEY) {
+            return NextResponse.json({ error: 'AI service is not configured' }, { status: 503 });
+        }
+        const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 
         const { data: profile } = await supabase
             .from('profiles')

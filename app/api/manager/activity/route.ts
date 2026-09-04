@@ -38,27 +38,28 @@ export async function GET(request: Request) {
         }
 
         // 2. Verify manager role (Use regular client - if overview works, this should too)
-        const { data: profile } = await supabase
+        const { data: profile, error: profileError } = await supabase
             .from('profiles')
             .select('id, role, market_id')
             .eq('id', user.id)
             .single();
 
+        if (profileError) throw profileError;
         const role = (profile?.role || '').toLowerCase();
-if (!['manager', 'admin', 'founder'].includes(role)) {
+        if (!['manager', 'admin', 'founder'].includes(role)) {
             console.log('[ActivityAPI] Forbidden: Invalid role', profile?.role);
             return NextResponse.json({ message: 'Forbidden' }, { status: 403 });
         }
 
         // 3. Parse query params
         const { searchParams } = new URL(request.url);
-        const limit = parseInt(searchParams.get('limit') || '50');
-        const offset = parseInt(searchParams.get('offset') || '0');
+        const limit = Number(searchParams.get('limit') || '50');
+        const offset = Number(searchParams.get('offset') || '0');
+        if (!Number.isInteger(limit) || limit < 1 || limit > 100 || !Number.isInteger(offset) || offset < 0) {
+            return NextResponse.json({ message: 'Invalid pagination' }, { status: 400 });
+        }
         const search = searchParams.get('search') || '';
         const effectiveMarketId = resolveRequestedMarketId(profile, searchParams.get('marketId'));
-        const marketLeadIds = effectiveMarketId
-            ? (await supabase.from('leads').select('id').eq('market_id', effectiveMarketId).limit(50000)).data?.map((lead) => lead.id) || []
-            : null;
 
         console.log(`[ActivityAPI] Fetching limit=${limit} offset=${offset} search=${search}`);
 
@@ -75,12 +76,13 @@ if (!['manager', 'admin', 'founder'].includes(role)) {
                 ai_summary,
                 ai_score,
                 profiles:agent_id (full_name, avatar_url),
-                leads:lead_id (business_name, phone_number, lead_number, status, potential_level)
+                leads:lead_id!inner (business_name, phone_number, lead_number, status, potential_level, market_id)
             `)
-            .order('created_at', { ascending: false });
+            .order('created_at', { ascending: false })
+            .order('id', { ascending: false });
 
-        if (marketLeadIds) {
-            query = query.in('lead_id', marketLeadIds.length > 0 ? marketLeadIds : ['00000000-0000-0000-0000-000000000000']);
+        if (effectiveMarketId) {
+            query = query.eq('leads.market_id', effectiveMarketId);
         }
 
         // 5. Handle Search
