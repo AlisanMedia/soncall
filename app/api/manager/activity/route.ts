@@ -44,7 +44,8 @@ export async function GET(request: Request) {
             .eq('id', user.id)
             .single();
 
-        if (!['manager', 'admin', 'founder'].includes(profile?.role || '')) {
+        const role = (profile?.role || '').toLowerCase();
+if (!['manager', 'admin', 'founder'].includes(role)) {
             console.log('[ActivityAPI] Forbidden: Invalid role', profile?.role);
             return NextResponse.json({ message: 'Forbidden' }, { status: 403 });
         }
