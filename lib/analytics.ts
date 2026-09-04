@@ -1,5 +1,22 @@
 import { SupabaseClient } from '@supabase/supabase-js';
-import { getRankInfo } from './gamification';
+import { getRankInfo } from './gamification-utils';
+
+// PostgREST caps a response at 1,000 rows. Read every page so charts do not
+// silently stop counting once a market grows beyond that default.
+async function readAllRows<T>(query: {
+    range: (from: number, to: number) => PromiseLike<{ data: T[] | null; error: unknown }>;
+}): Promise<T[]> {
+    const rows: T[] = [];
+    const pageSize = 1000;
+    for (let offset = 0; ; offset += pageSize) {
+        const { data, error } = await query.range(offset, offset + pageSize - 1);
+        if (error) throw error;
+        const page = data || [];
+        rows.push(...page);
+        if (page.length < pageSize) return rows;
+    }
+}
+
 
 export async function fetchManagerAnalytics(supabase: SupabaseClient, marketId?: string | null) {
     // Get timezone-aware timestamps
@@ -11,21 +28,12 @@ export async function fetchManagerAnalytics(supabase: SupabaseClient, marketId?:
     // 1. HOURLY DATA (last 24 hours)
     let hourlyQuery = supabase
         .from('lead_activity_log')
-        .select('created_at, action')
+        .select('created_at, action, leads:lead_id!inner(market_id)')
         .eq('action', 'completed')
-        .gte('created_at', last24Hours.toISOString());
-    if (marketId) {
-        const { data: marketLeads } = await supabase.from('leads').select('id').eq('market_id', marketId).limit(50000);
-        const marketLeadIds = (marketLeads || []).map((lead) => lead.id);
-        if (marketLeadIds.length === 0) {
-            hourlyQuery = hourlyQuery.in('lead_id', ['00000000-0000-0000-0000-000000000000']);
-        } else {
-            hourlyQuery = hourlyQuery.in('lead_id', marketLeadIds);
-        }
-    }
-    const { data: hourlyActivity, error: hourlyError } = await hourlyQuery;
-
-    if (hourlyError) throw hourlyError;
+        .gte('created_at', last24Hours.toISOString())
+        .order('id');
+    if (marketId) hourlyQuery = hourlyQuery.eq('leads.market_id', marketId);
+    const hourlyActivity = await readAllRows(hourlyQuery);
 
     // Aggregate by hour
     const hourlyBuckets: Record<number, number> = {};
@@ -47,17 +55,12 @@ export async function fetchManagerAnalytics(supabase: SupabaseClient, marketId?:
     // 2. DAILY DATA (last 7 days)
     let dailyQuery = supabase
         .from('lead_activity_log')
-        .select('created_at, action')
+        .select('created_at, action, leads:lead_id!inner(market_id)')
         .eq('action', 'completed')
-        .gte('created_at', last7Days.toISOString());
-    if (marketId) {
-        const { data: marketLeads } = await supabase.from('leads').select('id').eq('market_id', marketId).limit(50000);
-        const marketLeadIds = (marketLeads || []).map((lead) => lead.id);
-        dailyQuery = dailyQuery.in('lead_id', marketLeadIds.length > 0 ? marketLeadIds : ['00000000-0000-0000-0000-000000000000']);
-    }
-    const { data: dailyActivity, error: dailyError } = await dailyQuery;
-
-    if (dailyError) throw dailyError;
+        .gte('created_at', last7Days.toISOString())
+        .order('id');
+    if (marketId) dailyQuery = dailyQuery.eq('leads.market_id', marketId);
+    const dailyActivity = await readAllRows(dailyQuery);
 
     // Aggregate by day
     const dailyBuckets: Record<string, number> = {};
@@ -131,11 +134,10 @@ export async function fetchManagerAnalytics(supabase: SupabaseClient, marketId?:
     // 5. CATEGORY BREAKDOWN
     let categoryQuery = supabase
         .from('leads')
-        .select('category');
+        .select('category')
+        .order('id');
     if (marketId) categoryQuery = categoryQuery.eq('market_id', marketId);
-    const { data: categoryData, error: categoryError } = await categoryQuery;
-
-    if (categoryError) throw categoryError;
+    const categoryData = await readAllRows(categoryQuery);
 
     const categoryCounts: Record<string, number> = {};
     categoryData?.forEach((lead: { category: string | null }) => {
@@ -153,11 +155,14 @@ export async function fetchManagerAnalytics(supabase: SupabaseClient, marketId?:
         }));
 
     // 6. TODAY'S STATS
-    const { count: todayProcessed } = await supabase
+    let todayProcessedQuery = supabase
         .from('lead_activity_log')
-        .select('*', { count: 'exact', head: true })
+        .select('id, leads:lead_id!inner(market_id)', { count: 'exact', head: true })
         .eq('action', 'completed')
         .gte('created_at', todayStart.toISOString());
+    if (marketId) todayProcessedQuery = todayProcessedQuery.eq('leads.market_id', marketId);
+    const { count: todayProcessed, error: todayProcessedError } = await todayProcessedQuery;
+    if (todayProcessedError) throw todayProcessedError;
 
     let todayAppointmentsQuery = supabase
         .from('leads')

@@ -1,14 +1,11 @@
-import { createClient } from '@supabase/supabase-js';
+import { createAdminClient } from '@/lib/supabase/admin';
 import { NextResponse } from 'next/server';
 import { sendSMS } from '@/lib/sms';
 
 export const dynamic = 'force-dynamic';
 
 // Use Service Role to bypass RLS
-const supabaseAdmin = createClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.SUPABASE_SERVICE_ROLE_KEY!
-);
+
 
 const QUOTES = {
     wolf: [
@@ -30,6 +27,11 @@ const QUOTES = {
 
 export async function GET(request: Request) {
     try {
+        const secret = process.env.CRON_SECRET;
+        if (!secret || request.headers.get('authorization') !== `Bearer ${secret}`) {
+            return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+        }
+        const supabaseAdmin = createAdminClient();
         const { searchParams } = new URL(request.url);
         const forceAll = searchParams.get('force') === 'true'; // ?force=true to test on EVERYONE
         const today = new Date().toISOString().split('T')[0];

@@ -14,14 +14,15 @@ export async function GET(request: NextRequest) {
         }
 
         // Verify manager role
-        const { data: profile } = await supabase
+        const { data: profile, error: profileError } = await supabase
             .from('profiles')
             .select('id, role, market_id')
             .eq('id', user.id)
             .single();
 
+        if (profileError) throw profileError;
         const role = (profile?.role || '').toLowerCase();
-if (!['manager', 'admin', 'founder'].includes(role)) {
+        if (!['manager', 'admin', 'founder'].includes(role)) {
             return NextResponse.json({ message: 'Forbidden' }, { status: 403 });
         }
 

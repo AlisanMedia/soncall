@@ -1,6 +1,7 @@
 import { createClient } from '@/lib/supabase/server';
 import { createServiceRoleClient } from '@/lib/supabase/service-role';
 import { NextResponse } from 'next/server';
+import { canAccessMarket, canManageMarket } from '@/lib/market-access';
 
 export async function POST(req: Request) {
     try {
@@ -22,9 +23,29 @@ export async function POST(req: Request) {
             );
         }
 
-        // Use the provided agent_id, or fallback to the current user (in case caller didn't send agent_id)
-        // If agent_id is different from user.id, maybe check if user is manager? For now assume agent is adding for self.
+        const serviceClient = createServiceRoleClient();
+        const { data: profile, error: profileError } = await serviceClient
+            .from('profiles').select('id, role, market_id, sales_role')
+            .eq('id', user.id).maybeSingle();
+        if (profileError) throw profileError;
+        if (!profile || !['agent', 'manager', 'admin', 'founder'].includes(profile.role)) {
+            return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+        }
+
         const assigneeId = agent_id || user.id;
+        if (assigneeId !== user.id && !canManageMarket(profile.role)) {
+            return NextResponse.json({ error: 'You cannot assign leads to another user' }, { status: 403 });
+        }
+        const { data: assignee, error: assigneeError } = await serviceClient
+            .from('profiles').select('id, role, sales_role, market_id')
+            .eq('id', assigneeId).maybeSingle();
+        if (assigneeError) throw assigneeError;
+        if (!assignee || assignee.role !== 'agent' || assignee.sales_role !== 'sdr') {
+            return NextResponse.json({ error: 'Manual leads must be assigned to an SDR' }, { status: 400 });
+        }
+        if (!assignee.market_id || !canAccessMarket(profile, assignee.market_id)) {
+            return NextResponse.json({ error: 'Assignee market is missing or forbidden' }, { status: 403 });
+        }
 
         const newLead = {
             business_name,
@@ -36,19 +57,11 @@ export async function POST(req: Request) {
             rating: null,
             status: 'pending',
             potential_level: 'not_assessed',
-            assigned_to: assigneeId,     // Assign to the agent
-            current_agent_id: assigneeId, // Lock it immediately to this agent? 
-            // Setting current_agent_id assigns "ownership" / "working on it" status.
-            // But LeadCard logic sets 'current_agent_id' when locking a lead.
-            // If we set it here, LeadCard might see it as "already locked" which is good.
-            // However, LeadCard logic for 'loadNextLead' looks for leads where `current_agent_id` is null or specific.
-            // Actually, if we set it here, LeadCard *won't* pick it up via `loadNextLead`'s default query 
-            // `is('current_agent_id', null)`.
-            // BUT, if we use the localStorage ID trick, LeadCard loads by ID directly!
-            // Line 54: .eq('id', savedLeadId) .eq('assigned_to', agentId)
-            // It doesn't check 'current_agent_id' explicitly there, assuming if ID is known it's okay.
-            // Wait, line 60: "Re-lock the lead". It updates current_agent_id.
-            // So if I set current_agent_id here, it's fine. It's pre-locked.
+            assigned_to: assigneeId,
+            sdr_id: assigneeId,
+            market_id: assignee.market_id,
+            current_agent_id: assigneeId === user.id ? user.id : null,
+            locked_at: assigneeId === user.id ? new Date().toISOString() : null,
 
             raw_data: {
                 source: 'manual_entry',
@@ -56,8 +69,6 @@ export async function POST(req: Request) {
                 initial_note: note || ''
             }
         };
-
-        const serviceClient = createServiceRoleClient();
 
         const { data, error } = await serviceClient
             .from('leads')
@@ -84,10 +95,10 @@ export async function POST(req: Request) {
 
         return NextResponse.json({ success: true, lead: data });
 
-    } catch (err: any) {
+    } catch (err: unknown) {
         console.error('Error creating manual lead:', err);
         return NextResponse.json(
-            { error: 'Sunucu hatası: ' + (err.message || 'Bilinmeyen hata') },
+            { error: 'Sunucu hatası: ' + (err instanceof Error ? err.message : 'Bilinmeyen hata') },
             { status: 500 }
         );
     }

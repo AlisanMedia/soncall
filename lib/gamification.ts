@@ -1,21 +1,19 @@
 
-import { createClient } from '@supabase/supabase-js';
+import { createAdminClient } from '@/lib/supabase/admin';
 
 // Export client-safe utilities
 export { getRankInfo, type RankInfo } from './gamification-utils';
 
 // Use Service Role to bypass RLS and ensure we can update agent_progress
 // THIS FILE SHOULD ONLY BE IMPORTED IN SERVER-SIDE CODE (API routes, server components)
-const supabaseAdmin = createClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.SUPABASE_SERVICE_ROLE_KEY!
-);
+
 
 
 export async function awardXP(agentId: string, amount: number, reason: string) {
     console.log(`[Gamification] Awarding ${amount} XP to ${agentId} for: ${reason}`);
 
     try {
+        const supabaseAdmin = createAdminClient();
         // 1. Fetch current progress
         const { data: progress, error: fetchError } = await supabaseAdmin
             .from('agent_progress')

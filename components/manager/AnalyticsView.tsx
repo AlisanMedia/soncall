@@ -36,8 +36,11 @@ const COLORS = ['#8b5cf6', '#06b6d4', '#10b981', '#f59e0b', '#ef4444', '#ec4899'
 export default function AnalyticsView({ selectedMarketId }: { selectedMarketId?: string | null }) {
     const [data, setData] = useState<AnalyticsData | null>(null);
     const [loading, setLoading] = useState(true);
+    const [error, setError] = useState<string | null>(null);
 
     useEffect(() => {
+        setData(null);
+        setLoading(true);
         loadAnalytics();
         // Refresh every 30 seconds
         const interval = setInterval(loadAnalytics, 30000);
@@ -52,9 +55,13 @@ export default function AnalyticsView({ selectedMarketId }: { selectedMarketId?:
 
             if (response.ok) {
                 setData(result);
+                setError(null);
+            } else {
+                setError(result.message || result.error || 'Analitik verileri yüklenemedi.');
             }
         } catch (err) {
             console.error('Analytics load error:', err);
+            setError('Sunucuya bağlanılamadı. Lütfen tekrar deneyin.');
         } finally {
             setLoading(false);
         }
@@ -71,7 +78,8 @@ export default function AnalyticsView({ selectedMarketId }: { selectedMarketId?:
     if (!data) {
         return (
             <div className="text-center py-32 text-purple-300">
-                Analitik verileri yüklenemedi
+                <p>{error || 'Analitik verileri yüklenemedi'}</p>
+                <button type="button" className="mt-4 underline" onClick={loadAnalytics}>Tekrar dene</button>
             </div>
         );
     }
@@ -83,6 +91,7 @@ export default function AnalyticsView({ selectedMarketId }: { selectedMarketId?:
 
     return (
         <div className="space-y-6">
+            {error && <p role="alert" className="text-amber-300">{error} Son başarılı sonuçlar gösteriliyor.</p>}
             {/* Summary Cards */}
             <div className="grid grid-cols-2 md:grid-cols-4 gap-3 sm:gap-4">
                 <div className="bg-gradient-to-br from-purple-600 to-indigo-600 rounded-xl p-4 sm:p-6 border border-white/20">

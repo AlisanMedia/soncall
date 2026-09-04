@@ -1,5 +1,4 @@
 
-import { createClient } from '@supabase/supabase-js';
 import { NextResponse } from 'next/server';
 import { createClient as createCookieClient } from '@/lib/supabase/server';
 
@@ -16,23 +15,19 @@ export async function POST(request: Request) {
         const body = await request.json();
         const { lead_id, action, metadata } = body;
 
-        if (!lead_id || !action) {
+        if (typeof lead_id !== 'string' || !['viewed', 'call_recording'].includes(action)) {
             return NextResponse.json({ message: 'Missing required fields' }, { status: 400 });
         }
 
-        // 2. Use Admin Client for Insert (Bypass RLS)
-        const adminClient = createClient(
-            process.env.NEXT_PUBLIC_SUPABASE_URL!,
-            process.env.SUPABASE_SERVICE_ROLE_KEY!,
-            {
-                auth: {
-                    autoRefreshToken: false,
-                    persistSession: false
-                }
-            }
-        );
+        // Verify assignment before appending an event; never bypass row policies.
+        const { data: lead, error: leadError } = await cookieSupabase
+            .from('leads').select('assigned_to, sdr_id, closer_id').eq('id', lead_id).maybeSingle();
+        if (leadError) return NextResponse.json({ message: 'Failed to verify lead access' }, { status: 500 });
+        if (!lead || ![lead.assigned_to, lead.sdr_id, lead.closer_id].includes(user.id)) {
+            return NextResponse.json({ message: 'Forbidden' }, { status: 403 });
+        }
 
-        const { error: insertError } = await adminClient
+        const { error: insertError } = await cookieSupabase
             .from('lead_activity_log')
             .insert({
                 agent_id: user.id, // Ensure we use the authenticated user's ID

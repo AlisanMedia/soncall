@@ -15,11 +15,6 @@ type SocialLink = {
     url: string;
 };
 
-// Initialize OpenAI
-const openai = new OpenAI({
-    apiKey: process.env.OPENAI_API_KEY,
-});
-
 // Helper to extract social links from HTML
 const extractSocials = (html: string) => {
     const socials: SocialLink[] = [];
@@ -49,6 +44,11 @@ export async function POST(request: NextRequest) {
     try {
         const auth = await requireManagerAccess();
         if (!auth.ok) return auth.response;
+
+        if (!process.env.OPENAI_API_KEY) {
+            return NextResponse.json({ error: 'AI service is not configured' }, { status: 503 });
+        }
+        const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 
         const { businessName, location } = await request.json();
 

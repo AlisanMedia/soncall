@@ -7,11 +7,10 @@ export const dynamic = 'force-dynamic'; // Prevent caching
 export const maxDuration = 300; // Allow 5 minutes processing time
 
 export async function GET(request: NextRequest) {
-    // Vercel Cron authentication (optional but recommended)
-    // const authHeader = request.headers.get('authorization');
-    // if (authHeader !== `Bearer ${process.env.CRON_SECRET}`) {
-    //     return new Response('Unauthorized', { status: 401 });
-    // }
+    const secret = process.env.CRON_SECRET;
+    if (!secret || request.headers.get('authorization') !== `Bearer ${secret}`) {
+        return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
 
     try {
         const supabase = createServiceRoleClient();
@@ -34,8 +33,7 @@ export async function GET(request: NextRequest) {
 
         // 3. Update last_sent_at for successful reports
         const successIds = results
-            .filter(r => r.success && r.executionId)
-            .map((r, i) => reports[i].id); // This mapping depends on order preservation
+            .flatMap((result, index) => result.success && result.executionId ? [reports[index].id] : []);
 
         if (successIds.length > 0) {
             await supabase

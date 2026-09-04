@@ -1,7 +1,7 @@
 
 'use client';
 
-import { useState, useRef } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { Square, Play, Pause, UploadCloud, FileAudio } from 'lucide-react';
 import { createClient } from '@/lib/supabase/client';
 import { toast } from 'sonner';
@@ -26,6 +26,22 @@ export default function VoiceRecorder({ leadId, onRecordingComplete, isProcessin
     const audioChunksRef = useRef<Blob[]>([]);
     const timerRef = useRef<NodeJS.Timeout | null>(null);
     const audioPlayerRef = useRef<HTMLAudioElement | null>(null);
+    const uploadedUrlRef = useRef<string | null>(null);
+
+    useEffect(() => () => {
+        const recorder = mediaRecorderRef.current;
+        if (recorder) {
+            recorder.onstop = null;
+            recorder.ondataavailable = null;
+            if (recorder.state !== 'inactive') recorder.stop();
+            recorder.stream.getTracks().forEach(track => track.stop());
+        }
+        if (timerRef.current) clearInterval(timerRef.current);
+    }, []);
+
+    useEffect(() => () => {
+        if (audioUrl) URL.revokeObjectURL(audioUrl);
+    }, [audioUrl]);
 
     const getErrorMessage = (error: unknown) => error instanceof Error ? error.message : 'Bilinmeyen hata';
 
@@ -74,6 +90,7 @@ export default function VoiceRecorder({ leadId, onRecordingComplete, isProcessin
             const mediaRecorder = new MediaRecorder(stream, options);
             mediaRecorderRef.current = mediaRecorder;
             audioChunksRef.current = [];
+            uploadedUrlRef.current = null;
 
             // Enhanced event handlers
             mediaRecorder.onstart = () => {
@@ -202,7 +219,15 @@ export default function VoiceRecorder({ leadId, onRecordingComplete, isProcessin
     };
 
     const handleUpload = async () => {
-        if (!audioBlob) return;
+        if (!audioBlob || isUploading || isProcessing) return;
+        if (audioBlob.size > 25 * 1024 * 1024) {
+            toast.error('Ses kaydı 25 MB sınırını aşıyor. Daha kısa bir kayıt alın.');
+            return;
+        }
+        if (uploadedUrlRef.current) {
+            onRecordingComplete(uploadedUrlRef.current, audioBlob, recordingTime);
+            return;
+        }
         setIsUploading(true);
 
         try {
@@ -231,6 +256,7 @@ export default function VoiceRecorder({ leadId, onRecordingComplete, isProcessin
                 .from('call-recordings')
                 .getPublicUrl(filename);
 
+            uploadedUrlRef.current = publicUrl;
             onRecordingComplete(publicUrl, audioBlob, recordingTime);
         } catch (error: unknown) {
             console.error('Upload failed:', error);
