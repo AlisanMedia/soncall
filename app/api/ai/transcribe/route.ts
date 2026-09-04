@@ -69,6 +69,29 @@ export async function POST(request: NextRequest) {
             throw new Error(`Audio fetch failed: ${audioResponse.statusText}`);
         }
 
+
+        console.log('🤖 [AI Analysis] Starting for lead:', leadId);
+
+        // Check API key
+        if (!process.env.OPENAI_API_KEY) {
+            console.error('❌ [AI Analysis] OPENAI_API_KEY not found in environment!');
+            return NextResponse.json({
+                error: 'OpenAI API key not configured',
+                fallback: {
+                    summary: '⚠️ AI analizi yapılamadı: API key eksik',
+                    potential_level: 'not_assessed'
+                }
+            }, { status: 500 });
+        }
+
+        // 3. Fetch Audio
+        console.log('📥 [AI Analysis] Fetching audio from:', audioUrl);
+        const audioResponse = await fetch(audioUrl);
+        if (!audioResponse.ok) {
+            console.error('❌ [AI Analysis] Audio fetch failed:', audioResponse.statusText);
+            throw new Error(`Audio fetch failed: ${audioResponse.statusText}`);
+        }
+
         const audioBlob = await audioResponse.blob();
         const audioSeconds = Number.isFinite(Number(durationSeconds)) && Number(durationSeconds) > 0
             ? Math.round(Number(durationSeconds))
@@ -81,16 +104,16 @@ export async function POST(request: NextRequest) {
             .eq('id', leadId)
             .maybeSingle();
 
-        // CRITICAL FIX: Force MP3 format for better Whisper compatibility
-        // WebM codec often causes transcription failures
-        const fileName = 'recording.mp3';
-        const mimeType = 'audio/mp3';
-
-        console.log('🔄 [AI Analysis] Converting to MP3 for Whisper compatibility');
-
-        // 4. Transcription (Whisper)
-        console.log('🎤 [AI Analysis] Starting Whisper transcription...');
-        let transcriptText = '';
+        // Determine MIME type from the fetched audio response
+        const contentType = audioResponse.headers.get('content-type') || 'audio/webm';
+        const extension = contentType.includes('mp4') ? 'mp4' :
+            contentType.includes('ogg') ? 'ogg' :
+            contentType.includes('wav') ? 'wav' : 'webm';
+        const fileName = `recording.${extension}`;
+        const mimeType = contentType;
+        console.log('🔄 [AI Analysis] Using MIME type for Whisper:', mimeType);
+        
+        let transcriptText = "";
         try {
             const file = new File([audioBlob], fileName, { type: mimeType });
             const transcriptionModel = process.env.OPENAI_TRANSCRIBE_MODEL || 'gpt-4o-mini-transcribe';
