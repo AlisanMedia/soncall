@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
-import { getRecordingPath, parseCallDate } from '../lib/call-analysis.ts';
+import { getAudioMimeType, getRecordingPath, parseCallDate } from '../lib/call-analysis.ts';
 
 const lead = '12345678-1234-1234-1234-123456789abc';
 const origin = 'https://example.supabase.co';
@@ -27,4 +27,11 @@ test('rejects foreign origins, other leads, buckets, redirects and path tricks',
 test('Istanbul callback times are converted consistently to UTC', () => {
     assert.equal(parseCallDate('2026-09-05 14:00').toISOString(), '2026-09-05T11:00:00.000Z');
     assert.equal(Number.isNaN(parseCallDate('tomorrow afternoon').getTime()), true);
+});
+
+test('audio MIME is normalized from the trusted storage extension', () => {
+    assert.equal(getAudioMimeType('lead-1.webm', 'application/octet-stream'), 'audio/webm');
+    assert.equal(getAudioMimeType('lead-1.mp4', 'audio/webm;codecs=opus'), 'audio/mp4');
+    assert.equal(getAudioMimeType('lead-1.ogg', null), 'audio/ogg');
+    assert.equal(getAudioMimeType('lead-1.mp3', 'application/octet-stream'), 'audio/mpeg');
 });
