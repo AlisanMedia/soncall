@@ -279,6 +279,12 @@ button,
   transition: border-color 140ms ease, box-shadow 140ms ease, background-color 140ms ease;
 }
 
+/* Icon-led fields need a stable inset; the base input padding must not win
+ * over the icon spacing when utility classes are reordered by Tailwind. */
+.ui-input-with-icon {
+  padding-left: 3rem;
+}
+
 .ui-input::placeholder { color: var(--color-text-subtle); }
 .ui-input:hover:not(:disabled) { border-color: var(--color-border-strong); }
 .ui-input:focus { border-color: var(--color-accent); box-shadow: 0 0 0 3px var(--color-accent-soft); outline: none; }
