@@ -20,8 +20,8 @@ export const viewport: Viewport = {
   maximumScale: 5,
   userScalable: true,
   themeColor: [
-    { media: '(prefers-color-scheme: light)', color: '#0B0E11' },
-    { media: '(prefers-color-scheme: dark)', color: '#0B0E11' },
+    { media: '(prefers-color-scheme: light)', color: '#0D1117' },
+    { media: '(prefers-color-scheme: dark)', color: '#0D1117' },
   ],
 };
 
@@ -46,10 +46,22 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body
-        className={`${geistSans.variable} ${geistMono.variable} antialiased`}
+        className={`${geistSans.variable} ${geistMono.variable} antialiased app-body`}
       >
         {children}
-        <Toaster richColors position="top-center" theme="dark" />
+        <Toaster
+          richColors
+          position="top-center"
+          theme="dark"
+          toastOptions={{
+            className: 'app-toast',
+            style: {
+              background: 'var(--color-bg-elevated)',
+              border: '1px solid var(--color-border-medium)',
+              color: 'var(--color-text-primary)',
+            },
+          }}
+        />
         <ErrorToast />
       </body>
     </html>

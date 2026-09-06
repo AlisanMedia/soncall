@@ -1,0 +1,51 @@
+.shell {
+  min-width: 0;
+  max-width: 100%;
+  min-height: 100dvh;
+  overflow-x: hidden;
+}
+
+.shell :global(main),
+.shell :global(aside),
+.shell :global(nav) {
+  min-width: 0;
+}
+
+.shell :global(button),
+.shell :global(a),
+.shell :global(select),
+.shell :global(input),
+.shell :global(textarea) {
+  touch-action: manipulation;
+}
+
+.shell :global(button),
+.shell :global(a),
+.shell :global(select),
+.shell :global(input),
+.shell :global(textarea) {
+  min-height: 44px;
+}
+
+.shell :global(button:focus-visible),
+.shell :global(a:focus-visible),
+.shell :global(select:focus-visible),
+.shell :global(input:focus-visible),
+.shell :global(textarea:focus-visible) {
+  outline: 3px solid #67e8f9;
+  outline-offset: 3px;
+}
+
+.shell :global(nav) {
+  scrollbar-width: none;
+}
+
+.shell :global(nav)::-webkit-scrollbar {
+  display: none;
+}
+
+@media (max-width: 767px) {
+  .shell :global(main) {
+    width: 100%;
+  }
+}

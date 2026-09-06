@@ -56,7 +56,11 @@ export function ExpandableTabs({
     onChange,
     defaultIndex = null,
 }: ExpandableTabsProps) {
-    const [selected, setSelected] = React.useState<number | null>(defaultIndex);
+    const [internalSelected, setInternalSelected] = React.useState<number | null>(defaultIndex);
+    // A supplied defaultIndex + onChange is the controlled navigation mode used
+    // by the dashboard. Without both props, tabs retain their local selection.
+    const isExternallyControlled = defaultIndex !== null && onChange !== undefined;
+    const selected = isExternallyControlled ? defaultIndex : internalSelected;
     const outsideClickRef = React.useRef<HTMLDivElement>(null);
 
     useOnClickOutside(outsideClickRef as React.RefObject<HTMLDivElement>, () => {
@@ -71,28 +75,20 @@ export function ExpandableTabs({
     });
 
     const handleSelect = (index: number) => {
-        setSelected(index);
+        if (!isExternallyControlled) {
+            setInternalSelected(index);
+        }
         onChange?.(index);
     };
 
-    // Sync with external prop if needed (not in original code but good practice)
-    React.useEffect(() => {
-        if (defaultIndex !== null && defaultIndex !== selected) {
-            setSelected(defaultIndex);
-        }
-    }, [defaultIndex]);
-
     const Separator = () => (
-        <div className="mx-1 h-[24px] w-[1.2px] bg-white/20" aria-hidden="true" />
+        <div className="ui-tabs-separator" aria-hidden="true" />
     );
 
     return (
         <div
             ref={outsideClickRef}
-            className={cn(
-                "flex flex-wrap items-center gap-2 rounded-2xl border bg-background p-1 shadow-sm",
-                className
-            )}
+            className={cn("ui-tabs", className)}
         >
             {tabs.map((tab, index) => {
                 if (tab.type === "separator") {
@@ -112,10 +108,10 @@ export function ExpandableTabs({
                         onClick={() => handleSelect(index)}
                         transition={transition}
                         className={cn(
-                            "relative flex items-center rounded-xl px-4 py-2 text-sm font-medium transition-colors duration-300",
+                            "ui-tab",
                             selected === index
-                                ? cn("bg-muted", activeColor)
-                                : "text-muted-foreground hover:bg-muted hover:text-foreground"
+                                ? cn("ui-tab-active", activeColor)
+                                : ""
                         )}
                     >
                         <Icon size={20} />

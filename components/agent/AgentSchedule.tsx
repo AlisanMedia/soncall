@@ -34,6 +34,7 @@ interface AgentScheduleProps {
 export default function AgentSchedule({ agentId, salesRole, onStartMission }: AgentScheduleProps) {
     const [appointments, setAppointments] = useState<Appointment[]>([]);
     const [loading, setLoading] = useState(true);
+    const [loadError, setLoadError] = useState(false);
     const [nextMission, setNextMission] = useState<Appointment | null>(null);
     const [timeLeft, setTimeLeft] = useState<string>('');
     const [urgencyLevel, setUrgencyLevel] = useState<'normal' | 'warning' | 'critical'>('normal');
@@ -79,11 +80,12 @@ export default function AgentSchedule({ agentId, salesRole, onStartMission }: Ag
         return () => clearInterval(timer);
     }, [nextMission]);
 
-    const fetchAppointments = async () => {
+    async function fetchAppointments() {
         try {
             const res = await fetch('/api/agent/appointments');
             const data = await res.json();
             if (data.success) {
+                setLoadError(false);
                 setAppointments(data.appointments);
 
                 // Find next mission: 
@@ -100,10 +102,11 @@ export default function AgentSchedule({ agentId, salesRole, onStartMission }: Ag
             }
         } catch (error) {
             console.error('Failed to load schedule:', error);
+            setLoadError(true);
         } finally {
             setLoading(false);
         }
-    };
+    }
 
     const handleLockAndLoad = (appointment: MissionAppointment) => {
         const leadId = appointment.lead_id || appointment.id;
@@ -117,7 +120,31 @@ export default function AgentSchedule({ agentId, salesRole, onStartMission }: Ag
         setIsModalOpen(true);
     };
 
-    if (loading) return <div className="p-8 text-center text-purple-300 animate-pulse">Operasyon verileri yükleniyor...</div>;
+    if (loading) {
+        return (
+            <div role="status" aria-live="polite" className="rounded-2xl border border-white/10 bg-white/5 p-8 text-center text-purple-200">
+                <div className="mx-auto mb-3 h-8 w-8 animate-spin rounded-full border-2 border-purple-300/30 border-t-purple-300" />
+                <p className="animate-pulse">Operasyon verileri yükleniyor…</p>
+            </div>
+        );
+    }
+
+    if (loadError && appointments.length === 0) {
+        return (
+            <div role="alert" className="rounded-2xl border border-red-400/30 bg-red-500/10 p-8 text-center">
+                <AlertTriangle className="mx-auto mb-3 h-10 w-10 text-red-300" aria-hidden="true" />
+                <h3 className="text-lg font-bold text-white">Randevular yüklenemedi</h3>
+                <p className="mt-2 text-sm text-red-100/80">Bağlantıyı kontrol edip tekrar deneyin.</p>
+                <button
+                    type="button"
+                    onClick={fetchAppointments}
+                    className="mt-5 inline-flex min-h-11 items-center justify-center rounded-lg border border-red-300/40 bg-red-500/20 px-4 py-2 text-sm font-semibold text-red-50 transition-colors hover:bg-red-500/30 focus:outline-none focus:ring-2 focus:ring-red-300/70"
+                >
+                    Tekrar dene
+                </button>
+            </div>
+        );
+    }
 
     return (
         <div className="space-y-6">
@@ -151,9 +178,11 @@ export default function AgentSchedule({ agentId, salesRole, onStartMission }: Ag
                         </div>
 
                         {/* Mission Details */}
-                        <div
+                        <button
+                            type="button"
                             onClick={() => openMissionDetail(nextMission)}
-                            className="flex-1 bg-black/40 rounded-xl p-4 border border-white/10 backdrop-blur-sm w-full md:w-auto cursor-pointer hover:bg-white/5 transition-colors"
+                            aria-label={`${nextMission.business_name || 'Lead'} görev detaylarını aç`}
+                            className="flex-1 w-full cursor-pointer rounded-xl border border-white/10 bg-black/40 p-4 text-left backdrop-blur-sm transition-colors hover:bg-white/5 focus:outline-none focus:ring-2 focus:ring-purple-300/70 md:w-auto"
                         >
                             <h3 className="text-2xl font-bold text-white mb-2">{nextMission.business_name}</h3>
                             <div className="space-y-2">
@@ -172,7 +201,7 @@ export default function AgentSchedule({ agentId, salesRole, onStartMission }: Ag
                                     📝 "{nextMission.notes}"
                                 </div>
                             </div>
-                        </div>
+                        </button>
 
                         {/* Action Button */}
                         <div className="w-full md:w-auto">
@@ -213,7 +242,16 @@ export default function AgentSchedule({ agentId, salesRole, onStartMission }: Ag
                             animate={{ opacity: 1, x: 0 }}
                             transition={{ delay: index * 0.05 }}
                             onClick={() => openMissionDetail(apt)}
-                            className={`group relative flex items-center gap-4 p-4 rounded-xl border transition-all cursor-pointer ${apt.status === 'won' ? 'bg-green-500/10 border-green-500/30' :
+                            role="button"
+                            tabIndex={0}
+                            onKeyDown={(event) => {
+                                if (event.key === 'Enter' || event.key === ' ') {
+                                    event.preventDefault();
+                                    openMissionDetail(apt);
+                                }
+                            }}
+                            aria-label={`${apt.business_name} randevu detaylarını aç`}
+                            className={`group relative flex w-full items-center gap-3 rounded-xl border p-3 text-left transition-all cursor-pointer focus:outline-none focus:ring-2 focus:ring-purple-300/70 sm:gap-4 sm:p-4 ${apt.status === 'won' ? 'bg-green-500/10 border-green-500/30' :
                                 apt.status === 'lost' || apt.status === 'no_show' ? 'bg-red-500/10 border-red-500/30' :
                                     apt.status === 'completed' ? 'bg-blue-500/10 border-blue-500/30' :
                                 apt.status === 'missed' ? 'bg-red-500/10 border-red-500/30' :
@@ -223,8 +261,11 @@ export default function AgentSchedule({ agentId, salesRole, onStartMission }: Ag
                                 }`}
                         >
                             {/* Time Column */}
-                            <div className="flex flex-col items-center min-w-[60px]">
-                                <span className={`text-lg font-bold ${apt.status === 'missed' ? 'text-red-400' : 'text-white'}`}>
+                            <div className="flex w-[58px] shrink-0 flex-col items-center sm:w-[68px]">
+                                <span className="text-[10px] font-medium text-purple-300/80 sm:text-xs">
+                                    {new Date(apt.appointment_date).toLocaleDateString('tr-TR', { day: '2-digit', month: 'short' })}
+                                </span>
+                                <span className={`text-base font-bold tabular-nums sm:text-lg ${apt.status === 'missed' ? 'text-red-400' : 'text-white'}`}>
                                     {new Date(apt.appointment_date).toLocaleTimeString('tr-TR', { hour: '2-digit', minute: '2-digit' })}
                                 </span>
                                 <span className={`text-[10px] uppercase font-bold tracking-wider ${apt.status === 'won' ? 'text-green-400' :
@@ -263,7 +304,12 @@ export default function AgentSchedule({ agentId, salesRole, onStartMission }: Ag
                                         </span>
                                     )}
                                 </div>
-                                <p className="text-sm text-purple-300/60 line-clamp-1">{apt.notes}</p>
+                                <p className="line-clamp-1 text-sm text-purple-300/60">{apt.notes || 'Not bulunmuyor.'}</p>
+                                {typeof apt.call_count === 'number' && apt.call_count > 0 && (
+                                    <span className="mt-1 inline-flex items-center text-xs text-blue-200/80">
+                                        {apt.call_count} arama geçmişi
+                                    </span>
+                                )}
                             </div>
 
                             {/* Status Icon */}
@@ -283,6 +329,11 @@ export default function AgentSchedule({ agentId, salesRole, onStartMission }: Ag
                         </motion.div>
                     ))}
                 </div>
+                {appointments.length === 0 && (
+                    <div className="rounded-xl border border-dashed border-white/15 bg-white/[0.03] p-6 text-center text-sm text-purple-200/75">
+                        Görüntülenecek randevu günlüğü bulunmuyor.
+                    </div>
+                )}
             </div>
 
             <MissionDetailModal

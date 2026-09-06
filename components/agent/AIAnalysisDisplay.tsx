@@ -26,6 +26,15 @@ interface AIAnalysisDisplayProps {
     className?: string;
 }
 
+function NotAssessedBadge() {
+    return (
+        <div className="inline-flex items-center gap-1.5 rounded-lg border border-gray-500/20 bg-gray-500/10 px-2 py-1">
+            <AlertCircle className="h-3 w-3 text-gray-400" aria-hidden="true" />
+            <span className="text-xs text-gray-400">Analiz yapılmadı</span>
+        </div>
+    );
+}
+
 export default function AIAnalysisDisplay({ analysis, className = '' }: AIAnalysisDisplayProps) {
     const getPotentialConfig = (level?: string | null) => {
         switch (level?.toLowerCase()) {
@@ -69,25 +78,18 @@ export default function AIAnalysisDisplay({ analysis, className = '' }: AIAnalys
     };
 
     const potentialConfig = getPotentialConfig(analysis.potential_level);
-    const hasAnalysis = analysis.summary && analysis.summary !== 'Analiz yapılamadı';
-
-    const NotAssessedBadge = () => (
-        <div className="inline-flex items-center gap-1.5 px-2 py-1 bg-gray-500/10 rounded-lg border border-gray-500/20">
-            <AlertCircle className="w-3 h-3 text-gray-400" />
-            <span className="text-xs text-gray-400">Analiz yapılmadı</span>
-        </div>
-    );
+    const hasAnalysis = Boolean(analysis.summary && analysis.summary !== 'Analiz yapılamadı');
 
     return (
-        <div className={`bg-gradient-to-br from-purple-500/5 to-indigo-500/5 backdrop-blur-sm rounded-xl border border-white/10 overflow-hidden ${className}`}>
+        <section aria-labelledby="ai-analysis-title" className={`overflow-hidden rounded-xl border border-white/10 bg-gradient-to-br from-purple-500/5 to-indigo-500/5 backdrop-blur-sm ${className}`}>
             {/* Header */}
-            <div className="px-4 py-3 bg-white/5 border-b border-white/10">
+            <div className="border-b border-white/10 bg-white/5 px-4 py-3">
                 <div className="flex items-center gap-2">
-                    <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-purple-500 to-indigo-600 flex items-center justify-center">
-                        <span className="text-sm">🤖</span>
+                    <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-gradient-to-br from-purple-500 to-indigo-600">
+                        <span className="text-sm" aria-hidden="true">🤖</span>
                     </div>
                     <div className="flex-1">
-                        <h3 className="text-sm font-bold text-white">AI SATIŞ ANALİZİ</h3>
+                        <h3 id="ai-analysis-title" className="text-sm font-bold text-white">AI SATIŞ ANALİZİ</h3>
                         <p className="text-xs text-purple-300">ArtificAgent</p>
                     </div>
                     {analysis.sales_completed && (
@@ -99,11 +101,17 @@ export default function AIAnalysisDisplay({ analysis, className = '' }: AIAnalys
                 </div>
             </div>
 
-            <div className="p-4 space-y-4">
+            <div className="space-y-4 p-4">
+                {!hasAnalysis && (
+                    <div role="status" className="flex flex-wrap items-center gap-2 rounded-lg border border-gray-500/20 bg-gray-500/10 p-3">
+                        <NotAssessedBadge />
+                        <p className="text-xs leading-relaxed text-gray-300">Bu kayıtta özet üretilemedi; aşağıdaki alanlar doğrulanmayı bekliyor.</p>
+                    </div>
+                )}
                 {/* Summary moved to notes field - hidden here */}
 
                 {/* Metrics Row */}
-                <div className="space-y-3">
+                <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
                     {/* Potential Level */}
                     <div className={`p-3 rounded-lg border ${potentialConfig.borderColor} ${potentialConfig.bgColor}`}>
                         <div className="flex items-center gap-1.5 mb-1">
@@ -226,6 +234,6 @@ export default function AIAnalysisDisplay({ analysis, className = '' }: AIAnalys
                 {/* Call Coaching Tips */}
                 <CallCoachingTips analysis={analysis} />
             </div>
-        </div>
+        </section>
     );
 }

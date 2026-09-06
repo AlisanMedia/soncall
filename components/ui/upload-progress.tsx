@@ -1,7 +1,7 @@
 'use client';
 
 import { motion } from 'framer-motion';
-import { CheckCircle2, Loader2, Circle } from 'lucide-react';
+import { CheckCircle2, Loader2 } from 'lucide-react';
 
 interface ProgressStep {
     label: string;
@@ -24,7 +24,7 @@ export default function UploadProgress({ steps, className = '' }: UploadProgress
                         {index < steps.length - 1 && (
                             <div className="absolute top-5 left-1/2 w-full h-0.5 bg-white/10">
                                 <motion.div
-                                    className="h-full bg-gradient-to-r from-purple-500 to-indigo-500"
+                                    className="h-full bg-[var(--color-accent)]"
                                     initial={{ width: 0 }}
                                     animate={{
                                         width: step.status === 'complete' ? '100%' : '0%'
@@ -36,11 +36,11 @@ export default function UploadProgress({ steps, className = '' }: UploadProgress
 
                         {/* Icon Circle */}
                         <motion.div
-                            className={`relative z-10 w-10 h-10 rounded-full flex items-center justify-center border-2 transition-all duration-300 ${step.status === 'complete'
-                                    ? 'bg-gradient-to-br from-green-500 to-emerald-600 border-green-400 shadow-lg shadow-green-500/50'
+                            className={`relative z-10 flex h-10 w-10 items-center justify-center rounded-full border-2 transition-all duration-300 ${step.status === 'complete'
+                                    ? 'border-emerald-400/60 bg-emerald-500/20'
                                     : step.status === 'active'
-                                        ? 'bg-gradient-to-br from-purple-500 to-indigo-600 border-purple-400 shadow-lg shadow-purple-500/50'
-                                        : 'bg-white/5 border-white/20'
+                                        ? 'border-[var(--color-accent)] bg-[var(--color-accent-soft)]'
+                                        : 'border-white/20 bg-white/5'
                                 }`}
                             initial={{ scale: 0 }}
                             animate={{ scale: 1 }}
@@ -69,10 +69,10 @@ export default function UploadProgress({ steps, className = '' }: UploadProgress
                         {/* Label */}
                         <motion.p
                             className={`text-xs mt-2 text-center font-medium transition-colors ${step.status === 'complete'
-                                    ? 'text-green-400'
+                                    ? 'text-emerald-300'
                                     : step.status === 'active'
-                                        ? 'text-purple-300'
-                                        : 'text-gray-500'
+                                        ? 'text-blue-200'
+                                        : 'text-slate-500'
                                 }`}
                             initial={{ opacity: 0, y: 10 }}
                             animate={{ opacity: 1, y: 0 }}
@@ -84,7 +84,7 @@ export default function UploadProgress({ steps, className = '' }: UploadProgress
                         {/* Active pulse */}
                         {step.status === 'active' && (
                             <motion.div
-                                className="absolute top-0 left-1/2 -translate-x-1/2 w-10 h-10 rounded-full bg-purple-500/30"
+                                className="absolute left-1/2 top-0 h-10 w-10 -translate-x-1/2 rounded-full bg-blue-400/20"
                                 animate={{
                                     scale: [1, 1.5, 1],
                                     opacity: [0.5, 0, 0.5]

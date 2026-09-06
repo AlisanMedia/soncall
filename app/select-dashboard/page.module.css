@@ -1,0 +1,24 @@
+.shell {
+  min-width: 0;
+  max-width: 100%;
+  overflow-x: hidden;
+}
+
+.shell :global(a),
+.shell :global(button) {
+  touch-action: manipulation;
+}
+
+.shell :global(a:focus-visible),
+.shell :global(button:focus-visible) {
+  outline: 3px solid #67e8f9;
+  outline-offset: 4px;
+}
+
+@media (max-width: 639px) {
+  .shell :global(h1),
+  .shell :global(h2),
+  .shell :global(p) {
+    overflow-wrap: anywhere;
+  }
+}
