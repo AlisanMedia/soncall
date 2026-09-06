@@ -1,5 +1,7 @@
 import { SupabaseClient } from '@supabase/supabase-js';
 import { getRankInfo } from './gamification-utils';
+import { formatAppDate, getAppDayStart } from './timezone';
+import { formatInTimeZone } from 'date-fns-tz';
 
 // PostgREST caps a response at 1,000 rows. Read every page so charts do not
 // silently stop counting once a market grows beyond that default.
@@ -23,7 +25,7 @@ export async function fetchManagerAnalytics(supabase: SupabaseClient, marketId?:
     const now = new Date();
     const last24Hours = new Date(now.getTime() - 24 * 60 * 60 * 1000);
     const last7Days = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
-    const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    const todayStart = getAppDayStart(now);
 
     // 1. HOURLY DATA (last 24 hours)
     let hourlyQuery = supabase
@@ -42,7 +44,7 @@ export async function fetchManagerAnalytics(supabase: SupabaseClient, marketId?:
     }
 
     hourlyActivity?.forEach((activity) => {
-        const hour = new Date(activity.created_at).getHours();
+        const hour = Number(formatInTimeZone(new Date(activity.created_at), 'Europe/Istanbul', 'H'));
         hourlyBuckets[hour]++;
     });
 
@@ -66,12 +68,12 @@ export async function fetchManagerAnalytics(supabase: SupabaseClient, marketId?:
     const dailyBuckets: Record<string, number> = {};
     for (let i = 6; i >= 0; i--) {
         const date = new Date(now.getTime() - i * 24 * 60 * 60 * 1000);
-        const dateKey = date.toISOString().split('T')[0];
+        const dateKey = formatAppDate(date);
         dailyBuckets[dateKey] = 0;
     }
 
     dailyActivity?.forEach((activity) => {
-        const dateKey = activity.created_at.split('T')[0];
+        const dateKey = formatAppDate(activity.created_at);
         if (dailyBuckets[dateKey] !== undefined) {
             dailyBuckets[dateKey]++;
         }
@@ -91,21 +93,24 @@ export async function fetchManagerAnalytics(supabase: SupabaseClient, marketId?:
         .from('leads')
         .select('*', { count: 'exact', head: true });
     if (marketId) totalLeadsQuery = totalLeadsQuery.eq('market_id', marketId);
-    const { count: totalLeads } = await totalLeadsQuery;
+    const { count: totalLeads, error: totalLeadsError } = await totalLeadsQuery;
+    if (totalLeadsError) throw totalLeadsError;
 
     let contactedLeadsQuery = supabase
         .from('leads')
         .select('*', { count: 'exact', head: true })
         .in('status', ['contacted', 'appointment', 'callback']);
     if (marketId) contactedLeadsQuery = contactedLeadsQuery.eq('market_id', marketId);
-    const { count: contactedLeads } = await contactedLeadsQuery;
+    const { count: contactedLeads, error: contactedLeadsError } = await contactedLeadsQuery;
+    if (contactedLeadsError) throw contactedLeadsError;
 
     let appointmentLeadsQuery = supabase
         .from('leads')
         .select('*', { count: 'exact', head: true })
         .eq('status', 'appointment');
     if (marketId) appointmentLeadsQuery = appointmentLeadsQuery.eq('market_id', marketId);
-    const { count: appointmentLeads } = await appointmentLeadsQuery;
+    const { count: appointmentLeads, error: appointmentLeadsError } = await appointmentLeadsQuery;
+    if (appointmentLeadsError) throw appointmentLeadsError;
 
     const conversionFunnel = [
         { stage: 'Total Lead', count: totalLeads || 0, percentage: 100 },
@@ -170,7 +175,8 @@ export async function fetchManagerAnalytics(supabase: SupabaseClient, marketId?:
         .eq('status', 'appointment')
         .gte('processed_at', todayStart.toISOString());
     if (marketId) todayAppointmentsQuery = todayAppointmentsQuery.eq('market_id', marketId);
-    const { count: todayAppointments } = await todayAppointmentsQuery;
+    const { count: todayAppointments, error: todayAppointmentsError } = await todayAppointmentsQuery;
+    if (todayAppointmentsError) throw todayAppointmentsError;
 
     // 7. AGENT PERFORMANCE COMPARISON
     let agentsQuery = supabase
@@ -183,9 +189,11 @@ export async function fetchManagerAnalytics(supabase: SupabaseClient, marketId?:
     if (agentsError) throw agentsError;
 
     // Fetch Level Data for ALL agents in one go
-    const { data: agentProgress } = await supabase
+    const { data: agentProgress, error: agentProgressError } = await supabase
         .from('agent_progress')
-        .select('agent_id, total_xp, current_level');
+        .select('agent_id, total_xp, current_level')
+        .in('agent_id', (agents || []).map(agent => agent.id));
+    if (agentProgressError) throw agentProgressError;
 
     const progressMap = new Map();
     agentProgress?.forEach((p) => progressMap.set(p.agent_id, p));
@@ -196,27 +204,43 @@ export async function fetchManagerAnalytics(supabase: SupabaseClient, marketId?:
             const isCloser = agent.sales_role === 'closer';
 
             // Today's role count
-            const { data: todayLogs } = await supabase
+            let todayLogsQuery = supabase
                 .from('lead_activity_log')
-                .select('metadata')
+                .select('metadata, lead_id, leads:lead_id!inner(status, market_id)')
                 .eq('agent_id', agent.id)
                 .eq('action', 'completed')
-                .gte('created_at', todayStart.toISOString());
+                .gte('created_at', todayStart.toISOString())
+                .order('id');
+            if (marketId) todayLogsQuery = todayLogsQuery.eq('leads.market_id', marketId);
+            const todayLogs = await readAllRows(todayLogsQuery);
 
             // Yesterday's count for comparison
             const yesterdayStart = new Date(todayStart.getTime() - 24 * 60 * 60 * 1000);
-            const { data: yesterdayLogs } = await supabase
+            let yesterdayLogsQuery = supabase
                 .from('lead_activity_log')
-                .select('metadata')
+                .select('metadata, lead_id, leads:lead_id!inner(status, market_id)')
                 .eq('agent_id', agent.id)
                 .eq('action', 'completed')
                 .gte('created_at', yesterdayStart.toISOString())
-                .lt('created_at', todayStart.toISOString());
+                .lt('created_at', todayStart.toISOString())
+                .order('id');
+            if (marketId) yesterdayLogsQuery = yesterdayLogsQuery.eq('leads.market_id', marketId);
+            const yesterdayLogs = await readAllRows(yesterdayLogsQuery);
 
-            const countRoleActions = (logs?: Array<{ metadata: unknown }> | null) => (logs || []).filter((log) => {
+            const countRoleActions = (logs?: Array<{ metadata: unknown; lead_id?: string; leads?: { status?: string } | Array<{ status?: string }> }> | null) => {
+                const counted = new Set<string>();
+                return (logs || []).filter((log) => {
                 const metadata = log.metadata as { action_taken?: string; meeting_outcome?: string | null } | null;
-                return isCloser ? Boolean(metadata?.meeting_outcome) : metadata?.action_taken === 'appointment_scheduled';
+                const lead = Array.isArray(log.leads) ? log.leads[0] : log.leads;
+                const isAppointment = metadata?.action_taken === 'appointment_scheduled' || lead?.status === 'appointment';
+                const qualifies = isCloser ? Boolean(metadata?.meeting_outcome) : isAppointment;
+                if (!qualifies) return false;
+                const key = log.lead_id || `activity:${counted.size}`;
+                if (counted.has(key)) return false;
+                counted.add(key);
+                return true;
             }).length;
+            };
 
             const todayCount = countRoleActions(todayLogs);
             const yesterdayCount = countRoleActions(yesterdayLogs);
@@ -233,21 +257,28 @@ export async function fetchManagerAnalytics(supabase: SupabaseClient, marketId?:
                     .eq('status', 'appointment')
                     .or(`assigned_to.eq.${agent.id},sdr_id.eq.${agent.id}`);
 
-            const { count: appointments } = await appointmentsQuery;
+            const { count: appointments, error: appointmentsError } = await appointmentsQuery;
+            if (appointmentsError) throw appointmentsError;
 
             // Total Sales (Approved)
-            const { count: sales } = await supabase
+            let salesQuery = supabase
                 .from('sales')
                 .select('*', { count: 'exact', head: true })
                 .eq('agent_id', agent.id)
                 .eq('status', 'approved');
+            if (marketId) salesQuery = salesQuery.eq('market_id', marketId);
+            const { count: sales, error: salesError } = await salesQuery;
+            if (salesError) throw salesError;
 
             // Total processed (Lifetime) - Used for XP/Level
-            const { count: totalProcessed } = await supabase
+            let totalProcessedQuery = supabase
                 .from('lead_activity_log')
-                .select('*', { count: 'exact', head: true })
+                .select('id, leads:lead_id!inner(market_id)', { count: 'exact', head: true })
                 .eq('agent_id', agent.id)
                 .eq('action', 'completed');
+            if (marketId) totalProcessedQuery = totalProcessedQuery.eq('leads.market_id', marketId);
+            const { count: totalProcessed, error: totalProcessedError } = await totalProcessedQuery;
+            if (totalProcessedError) throw totalProcessedError;
 
             // Calculate growth
             const growth = yesterdayCount
