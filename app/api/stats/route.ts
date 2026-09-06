@@ -1,13 +1,27 @@
 import { createClient } from '@/lib/supabase/server';
 import { NextRequest, NextResponse } from 'next/server';
 import { isGlobalRole } from '@/lib/market-access';
+import { createAdminClient } from '@/lib/supabase/admin';
+import { formatInTimeZone, fromZonedTime } from 'date-fns-tz';
+
+async function readAllRows<T>(query: {
+    range: (from: number, to: number) => PromiseLike<{ data: T[] | null; error: unknown }>;
+}): Promise<T[]> {
+    const rows: T[] = [];
+    for (let offset = 0; ; offset += 1000) {
+        const { data, error } = await query.range(offset, offset + 999);
+        if (error) throw error;
+        rows.push(...(data || []));
+        if (!data || data.length < 1000) return rows;
+    }
+}
 
 export async function GET(request: NextRequest) {
     try {
-        const supabase = await createClient();
+        const sessionClient = await createClient();
 
         // Verify authentication
-        const { data: { user } } = await supabase.auth.getUser();
+        const { data: { user } } = await sessionClient.auth.getUser();
         if (!user) {
             return NextResponse.json({ message: 'Unauthorized' }, { status: 401 });
         }
@@ -15,34 +29,50 @@ export async function GET(request: NextRequest) {
         const { searchParams } = new URL(request.url);
         const agentId = searchParams.get('agentId');
 
-        const { data: profile } = await supabase
+        const { data: profile, error: profileError } = await sessionClient
             .from('profiles')
             .select('id, role, market_id')
             .eq('id', user.id)
             .maybeSingle();
 
+        if (profileError) throw profileError;
+        if (!profile || !['agent', 'manager', 'admin', 'founder'].includes(profile.role || '') ||
+            (!isGlobalRole(profile.role) && !profile.market_id)) {
+            return NextResponse.json({ message: 'Forbidden' }, { status: 403 });
+        }
+        if (profile.role === 'agent' && agentId && agentId !== user.id) {
+            return NextResponse.json({ message: 'Forbidden' }, { status: 403 });
+        }
+
+        // Team aggregates need teammates' records, which the caller's RLS correctly hides.
+        // Authorize first; every aggregate query is scoped to the caller's market below.
+        // Raw lead/activity rows are never returned to the browser.
+        const supabase = createAdminClient();
+        const marketId = isGlobalRole(profile.role) ? null : profile.market_id;
+
         // Get today's start
-        const today = new Date();
-        today.setHours(0, 0, 0, 0);
+        const today = fromZonedTime(
+            `${formatInTimeZone(new Date(), 'Europe/Istanbul', 'yyyy-MM-dd')}T00:00:00`,
+            'Europe/Istanbul'
+        );
 
         // Get 5 minutes ago
         const fiveMinutesAgo = new Date(Date.now() - 5 * 60 * 1000);
 
         // Get leaderboard - agents with their processed count today
-        const { data: leaderboardData, error: leaderboardError } = await supabase
+        let activityQuery = supabase
             .from('lead_activity_log')
             .select(`
         agent_id,
         created_at,
         metadata,
-        profiles!lead_activity_log_agent_id_fkey (
-          full_name
-        )
+        leads:lead_id!inner (market_id)
       `)
             .eq('action', 'completed')
-            .gte('created_at', today.toISOString());
-
-        if (leaderboardError) throw leaderboardError;
+            .gte('created_at', today.toISOString())
+            .order('id');
+        if (marketId) activityQuery = activityQuery.eq('leads.market_id', marketId);
+        const leaderboardData = await readAllRows(activityQuery);
 
         // Get all agents and their remaining leads
         let hasPipelineColumns = true;
@@ -89,7 +119,8 @@ export async function GET(request: NextRequest) {
         // Fetch XP levels first
         const { data: progressData } = await supabase
             .from('agent_progress')
-            .select('agent_id, current_level');
+            .select('agent_id, current_level')
+            .in('agent_id', (allAgents || []).map(agent => agent.id));
 
         const levelMap = new Map();
         progressData?.forEach((p) => levelMap.set(p.agent_id, p.current_level));
@@ -132,22 +163,6 @@ export async function GET(request: NextRequest) {
             }
         });
 
-        // Get lifetime processed count for level calculation
-        // Optimization: We could do a separate query or GroupBy, but for now let's query raw counts
-        // To be performant, let's just use a separate aggregate query
-        const { data: lifetimeData, error: lifetimeError } = await supabase
-            .from('lead_activity_log')
-            .select('agent_id')
-            .eq('action', 'completed');
-
-        if (!lifetimeError && lifetimeData) {
-            lifetimeData.forEach((log) => {
-                if (agentStats[log.agent_id]) {
-                    agentStats[log.agent_id].total_lifetime_count++;
-                }
-            });
-        }
-
         // Get remaining leads for each agent
         let remainingLeadsQuery = hasPipelineColumns
             ? supabase
@@ -162,9 +177,7 @@ export async function GET(request: NextRequest) {
             remainingLeadsQuery = remainingLeadsQuery.eq('market_id', profile.market_id);
         }
 
-        const { data: remainingLeads, error: remainingError } = await remainingLeadsQuery;
-
-        if (remainingError) throw remainingError;
+        const remainingLeads = await readAllRows(remainingLeadsQuery.order('id'));
 
         const remainingCounts: Record<string, number> = {};
         remainingLeads?.forEach((lead) => {
@@ -309,6 +322,17 @@ export async function GET(request: NextRequest) {
                 metric_label: userEntry?.metric_label || 'toplantı organize',
             };
         }
+
+        const sdrAppointments = leaderboard
+            .filter((entry) => entry.sales_role !== 'closer')
+            .reduce((total, entry) => total + entry.processed_count, 0);
+        const closerOutcomes = leaderboard
+            .filter((entry) => entry.sales_role === 'closer')
+            .reduce((total, entry) => total + entry.processed_count, 0);
+        console.info(
+            `[StatsAPI] Success: agents=${leaderboard.length} sdrAppointments=${sdrAppointments} ` +
+            `closerOutcomes=${closerOutcomes} marketScoped=${Boolean(marketId)}`
+        );
 
         return NextResponse.json({
             leaderboard,
