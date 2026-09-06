@@ -1,6 +1,7 @@
 import { createClient } from '@/lib/supabase/server';
 import { NextResponse } from 'next/server';
 import { resolveRequestedMarketId } from '@/lib/market-access';
+import { createAdminClient } from '@/lib/supabase/admin';
 
 export const dynamic = 'force-dynamic';
 
@@ -24,6 +25,8 @@ type RawActivity = {
     profiles?: unknown;
     leads?: unknown;
 };
+
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 
 export async function GET(request: Request) {
     console.log('[ActivityAPI] ========== REQUEST START ==========');
@@ -60,11 +63,20 @@ export async function GET(request: Request) {
         }
         const search = searchParams.get('search') || '';
         const effectiveMarketId = resolveRequestedMarketId(profile, searchParams.get('marketId'));
+        if (effectiveMarketId && !UUID_RE.test(effectiveMarketId)) {
+            return NextResponse.json({ message: 'Invalid market filter' }, { status: 400 });
+        }
+
+        // The session client is used for authentication only. After the manager's
+        // role and market are verified, the admin client prevents nested joins from
+        // being silently removed by child-table RLS policies. Every query remains
+        // scoped to the authorized market below.
+        const dataClient = createAdminClient();
 
         console.log(`[ActivityAPI] Fetching limit=${limit} offset=${offset} search=${search}`);
 
         // 4. Build Query
-        let query = supabase
+        let query = dataClient
             .from('lead_activity_log')
             .select(`
                 id,
@@ -91,16 +103,23 @@ export async function GET(request: Request) {
             const cleanSearch = search.replace(/^(sc-?|#)/i, '');
             const isNumberSearch = /^\d+$/.test(cleanSearch);
 
-            let agentSearchQuery = supabase.from('profiles').select('id').ilike('full_name', `%${search}%`);
+            const safeSearch = search
+                .slice(0, 100)
+                .replace(/[^0-9A-Za-zğüşöçıİĞÜŞÖÇ @+._-]/g, ' ')
+                .trim();
+            if (!safeSearch) return NextResponse.json({ activities: [] });
+            let agentSearchQuery = dataClient.from('profiles').select('id').ilike('full_name', `%${safeSearch}%`).limit(50);
             if (effectiveMarketId) agentSearchQuery = agentSearchQuery.eq('market_id', effectiveMarketId);
-            const { data: agentIdsData } = await agentSearchQuery;
-            let leadSearchQuery = supabase.from('leads').select('id').or(`business_name.ilike.%${search}%,phone_number.ilike.%${search}%`);
+            const { data: agentIdsData, error: agentSearchError } = await agentSearchQuery;
+            if (agentSearchError) throw agentSearchError;
+            let leadSearchQuery = dataClient.from('leads').select('id').or(`business_name.ilike.%${safeSearch}%,phone_number.ilike.%${safeSearch}%`).limit(50);
             if (effectiveMarketId) leadSearchQuery = leadSearchQuery.eq('market_id', effectiveMarketId);
-            const { data: leadIdsData } = await leadSearchQuery;
+            const { data: leadIdsData, error: leadSearchError } = await leadSearchQuery;
+            if (leadSearchError) throw leadSearchError;
 
             let targetLeadIds = leadIdsData?.map(l => l.id) || [];
             if (isNumberSearch) {
-                let leadNumberQuery = supabase.from('leads').select('id').eq('lead_number', parseInt(cleanSearch));
+                let leadNumberQuery = dataClient.from('leads').select('id').eq('lead_number', parseInt(cleanSearch)).limit(50);
                 if (effectiveMarketId) leadNumberQuery = leadNumberQuery.eq('market_id', effectiveMarketId);
                 const { data: leadsByNum } = await leadNumberQuery;
                 if (leadsByNum) targetLeadIds.push(...leadsByNum.map(l => l.id));
@@ -136,12 +155,13 @@ export async function GET(request: Request) {
         const leadIds = rawActivities.map(a => a.lead_id).filter(Boolean);
         let notesData: ActivityNote[] = [];
         if (leadIds.length > 0) {
-            const { data: notes } = await supabase
+            const { data: notes, error: notesError } = await dataClient
                 .from('lead_notes')
                 .select('lead_id, note, action_taken, created_at, agent_id')
                 .in('lead_id', leadIds)
                 .order('created_at', { ascending: false })
                 .limit(200);
+            if (notesError) throw notesError;
             if (notes) notesData = notes;
         }
 

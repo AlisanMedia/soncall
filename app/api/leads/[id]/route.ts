@@ -132,7 +132,8 @@ export async function PATCH(
             updateData.appointment_date = null;
             updateData.closer_id = null;
             updateData.meeting_url = null;
-            updateData.meeting_status = 'scheduled';
+            // Callbacks are not meetings and must not enter the closer queue.
+            updateData.meeting_status = null;
         }
 
         const { error: updateError } = await supabase
