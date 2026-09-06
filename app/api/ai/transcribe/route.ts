@@ -3,7 +3,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 import OpenAI from 'openai';
 import { logAiUsage } from '@/lib/ai-usage';
-import { getRecordingPath, parseCallDate } from '@/lib/call-analysis';
+import { getAudioMimeType, getRecordingPath, parseCallDate } from '@/lib/call-analysis';
 
 // Audio transcription and analysis can exceed the default function duration.
 export const runtime = 'nodejs';
@@ -83,7 +83,7 @@ export async function POST(request: NextRequest) {
             ? Math.round(Number(durationSeconds))
             : Math.max(1, Math.round(audioBlob.size / 4000));
         const fileName = recordingPath;
-        const mimeType = audioBlob.type || 'audio/webm';
+        const mimeType = getAudioMimeType(recordingPath, audioBlob.type);
 
         let transcriptText = "";
         try {
