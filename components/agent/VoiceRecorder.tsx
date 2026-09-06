@@ -82,12 +82,15 @@ export default function VoiceRecorder({ leadId, onRecordingComplete, isProcessin
             }).filter(t => t.supported);
 
             const selectedMimeType = supportedTypes[0]?.type || '';
-            setAudioMimeType(selectedMimeType || 'audio/webm');
 
             console.log('[VoiceRecorder] Selected MIME type:', selectedMimeType || '(browser default)');
 
             const options = selectedMimeType ? { mimeType: selectedMimeType } : undefined;
             const mediaRecorder = new MediaRecorder(stream, options);
+            // Read the browser's actual encoder choice; it can differ from the
+            // requested type when the browser silently falls back.
+            const actualMimeType = mediaRecorder.mimeType || selectedMimeType || 'audio/webm';
+            setAudioMimeType(actualMimeType);
             mediaRecorderRef.current = mediaRecorder;
             audioChunksRef.current = [];
             uploadedUrlRef.current = null;
@@ -143,7 +146,7 @@ export default function VoiceRecorder({ leadId, onRecordingComplete, isProcessin
                 }
 
                 // Create blob
-                const blobType = selectedMimeType || 'audio/webm';
+                const blobType = mediaRecorder.mimeType || actualMimeType;
                 const blob = new Blob(audioChunksRef.current, { type: blobType });
 
                 console.log('[VoiceRecorder] Blob created:', {
@@ -232,12 +235,15 @@ export default function VoiceRecorder({ leadId, onRecordingComplete, isProcessin
 
         try {
             const supabase = createClient();
+            // Storage allow-lists use the base MIME value; MediaRecorder often
+            // appends codec parameters (for example `audio/webm;codecs=opus`).
+            const uploadMimeType = audioMimeType.split(';', 1)[0] || 'audio/webm';
 
             // Determine extension based on mime type
             let ext = 'webm';
-            if (audioMimeType.includes('mp4')) ext = 'mp4';
-            else if (audioMimeType.includes('ogg')) ext = 'ogg';
-            else if (audioMimeType.includes('wav')) ext = 'wav';
+            if (uploadMimeType.includes('mp4')) ext = 'mp4';
+            else if (uploadMimeType.includes('ogg')) ext = 'ogg';
+            else if (uploadMimeType.includes('wav')) ext = 'wav';
 
             const filename = `${leadId}-${Date.now()}.${ext}`;
 
@@ -245,9 +251,9 @@ export default function VoiceRecorder({ leadId, onRecordingComplete, isProcessin
             const { error } = await supabase.storage
                 .from('call-recordings')
                 .upload(filename, audioBlob, {
-                    contentType: audioMimeType,
-                    upsert: false
-                });
+                contentType: uploadMimeType,
+                upsert: false
+            });
 
             if (error) throw error;
 
