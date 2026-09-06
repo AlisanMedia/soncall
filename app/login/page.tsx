@@ -146,7 +146,7 @@ export default function LoginPage() {
                                         onChange={(e) => handleEmailChange(e.target.value)}
                                         required
                                         autoComplete="email"
-                                        className="pl-12"
+                                        className="ui-input-with-icon"
                                         placeholder="ornek@email.com"
                                         disabled={loading}
                                     />
@@ -206,7 +206,7 @@ export default function LoginPage() {
                                         onChange={(e) => setPassword(e.target.value)}
                                         required
                                         autoComplete="current-password"
-                                        className="pl-12"
+                                        className="ui-input-with-icon"
                                         placeholder="••••••••"
                                         disabled={loading}
                                     />
