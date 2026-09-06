@@ -20,12 +20,10 @@ export default function LoginPage() {
 
     const router = useRouter();
 
-    // Keep dashboard-selector accounts in deployment configuration instead of
-    // shipping private addresses in the client bundle. Values are comma-separated.
-    const specialSelectionEmails = (process.env.NEXT_PUBLIC_DASHBOARD_SELECTOR_EMAILS || '')
-        .split(',')
-        .map(value => value.trim().toLowerCase())
-        .filter(Boolean);
+    const specialSelectionEmails = [
+        'alisangul123@gmail.com',
+        'efebusinessonlybusiness@gmail.com'
+    ];
 
     const showDashboardSelector = specialSelectionEmails.includes(email.trim().toLowerCase());
 
