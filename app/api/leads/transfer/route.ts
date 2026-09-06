@@ -57,7 +57,7 @@ export async function POST(request: NextRequest) {
             appointment_date: null,
             closer_id: null,
             meeting_url: null,
-            meeting_status: 'scheduled',
+            meeting_status: null,
         };
 
         if (targetAgentId === 'pool') {
