@@ -27,7 +27,11 @@ async function run({ providerFails = false, saveFails = false, assigned = true }
     const mocks = {
         'next/server': { NextResponse: { json: (body, options) => ({ body, status: options?.status || 200 }) } },
         '@/lib/supabase/server': { createClient: async () => client },
-        '@/lib/call-analysis': { getRecordingPath: () => `${leadId}-123.webm`, parseCallDate: value => new Date(value) },
+        '@/lib/call-analysis': {
+            getRecordingPath: () => `${leadId}-123.webm`,
+            getAudioMimeType: () => 'audio/webm',
+            parseCallDate: value => new Date(value)
+        },
         '@/lib/ai-usage': { logAiUsage: async () => {} },
         openai: class {
             audio = { transcriptions: { create: async () => 'Müşteri demo istedi.' } };
