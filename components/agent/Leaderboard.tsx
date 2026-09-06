@@ -33,6 +33,7 @@ export default function Leaderboard({ agentId, refreshKey }: LeaderboardProps) {
         metric_label: 'toplantı organize',
     });
     const [loading, setLoading] = useState(true);
+    const [error, setError] = useState<string | null>(null);
     const [activityPulse, setActivityPulse] = useState<Record<string, boolean>>({});
 
     const loadLeaderboard = useCallback(async () => {
@@ -47,10 +48,11 @@ export default function Leaderboard({ agentId, refreshKey }: LeaderboardProps) {
             const data = await response.json();
 
             if (!response.ok) {
-                throw new Error(data?.error || 'Stats API request failed');
+                throw new Error(data?.message || data?.error || 'Stats API request failed');
             }
 
             const newLeaderboard = data.leaderboard || [];
+            setError(null);
 
             setLeaderboard((previousLeaderboard) => {
                 // Check for activity changes
@@ -78,6 +80,7 @@ export default function Leaderboard({ agentId, refreshKey }: LeaderboardProps) {
             });
         } catch (err) {
             console.error('Leaderboard load error:', err);
+            setError('Takım performansı yüklenemedi. Veriler güncel olmayabilir.');
         } finally {
             setLoading(false);
         }
@@ -124,6 +127,12 @@ export default function Leaderboard({ agentId, refreshKey }: LeaderboardProps) {
             </div>
 
             {/* User Stats Grid */}
+            {error && (
+                <div role="alert" className="rounded-lg bg-red-500/10 p-3 text-sm text-red-200">
+                    {error}
+                    <button onClick={loadLeaderboard} className="ml-3 underline">Tekrar dene</button>
+                </div>
+            )}
             <div className="grid grid-cols-2 gap-2">
                 <div className="bg-purple-500/20 rounded-lg p-3 border border-purple-500/30 col-span-2">
                     <div className="flex items-center justify-between">
