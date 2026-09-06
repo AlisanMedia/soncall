@@ -45,6 +45,15 @@ const calculateLevelAndRank = (processedCount: number) => {
     return { level, rank };
 };
 
+const getInitials = (name?: string | null) =>
+    (name || 'A')
+        .trim()
+        .split(/\s+/)
+        .slice(0, 2)
+        .map(part => part[0])
+        .join('')
+        .toUpperCase();
+
 interface AgentDashboardProps {
     profile: Profile;
 }
@@ -324,6 +333,7 @@ export default function AgentDashboard({ profile: initialProfile }: AgentDashboa
                         {/* Manual Lead Button */}
                         {!isCloser && (
                             <button
+                                type="button"
                                 onClick={() => setManualLeadOpen(true)}
                                 aria-label={t('agent.manual.add')}
                                 className="hidden sm:flex items-center gap-2 px-4 py-2 btn-primary-gradient rounded-xl text-white text-sm font-semibold hover:scale-105 active:scale-95 transition-smooth"
@@ -334,56 +344,73 @@ export default function AgentDashboard({ profile: initialProfile }: AgentDashboa
                             </button>
                         )}
                         {/* Mobile Fallback - Simplified */}
-                        <nav className="order-3 flex w-full items-center gap-1 overflow-x-auto rounded-lg border border-white/5 bg-black/20 p-1 sm:hidden">
+                        <nav aria-label="Agent dashboard navigation" className="order-3 flex w-full items-stretch gap-1 overflow-x-auto rounded-lg border border-white/5 bg-black/20 p-1 sm:hidden">
                             <button
+                                type="button"
                                 onClick={() => setActiveTab('work')}
                                 aria-label={isCloser ? t('agent.nav.meeting') : t('agent.nav.call')}
                                 title={isCloser ? t('agent.nav.meeting') : t('agent.nav.call')}
-                                className={`min-h-10 min-w-10 rounded-md p-2 transition-all ${activeTab === 'work' ? 'bg-purple-600 text-white' : 'text-gray-300'}`}
+                                aria-current={activeTab === 'work' ? 'page' : undefined}
+                                className={`min-h-11 min-w-[58px] rounded-md px-2 py-1.5 transition-all ${activeTab === 'work' ? 'bg-purple-600 text-white' : 'text-gray-300'}`}
                             >
-                                <Phone className="w-5 h-5" />
+                                <Phone className="mx-auto h-5 w-5" aria-hidden="true" />
+                                <span className="mt-1 block text-[10px] leading-none">{isCloser ? 'Toplantı' : 'Ara'}</span>
                             </button>
                             <button
+                                type="button"
                                 onClick={() => setActiveTab('appointments')}
                                 aria-label={t('agent.nav.appointments')}
                                 title={t('agent.nav.appointments')}
-                                className={`min-h-10 min-w-10 rounded-md p-2 transition-all ${activeTab === 'appointments' ? 'bg-purple-600 text-white' : 'text-gray-300'}`}
+                                aria-current={activeTab === 'appointments' ? 'page' : undefined}
+                                className={`min-h-11 min-w-[58px] rounded-md px-2 py-1.5 transition-all ${activeTab === 'appointments' ? 'bg-purple-600 text-white' : 'text-gray-300'}`}
                             >
-                                <Calendar className="w-5 h-5" />
+                                <Calendar className="mx-auto h-5 w-5" aria-hidden="true" />
+                                <span className="mt-1 block text-[10px] leading-none">Randevu</span>
                             </button>
                             {!isCloser && (
                                 <button
+                                    type="button"
                                     onClick={() => setManualLeadOpen(true)}
                                     aria-label={t('agent.manual.add')}
                                     title={t('agent.manual.add')}
-                                    className="min-h-10 min-w-10 rounded-md p-2 text-purple-400 transition-all hover:bg-white/5 active:scale-95"
+                                    className="min-h-11 min-w-[58px] rounded-md px-2 py-1.5 text-purple-400 transition-all hover:bg-white/5 active:scale-95"
                                 >
-                                    <UserPlus className="w-5 h-5" />
+                                    <UserPlus className="mx-auto h-5 w-5" aria-hidden="true" />
+                                    <span className="mt-1 block text-[10px] leading-none">Ekle</span>
                                 </button>
                             )}
                             <button
+                                type="button"
                                 onClick={() => setActiveTab('history')}
                                 aria-label={t('agent.nav.leadSearch')}
                                 title={t('agent.nav.leadSearch')}
-                                className={`min-h-10 min-w-10 rounded-md p-2 transition-all ${activeTab === 'history' ? 'bg-purple-600 text-white' : 'text-gray-300'}`}
+                                aria-current={activeTab === 'history' ? 'page' : undefined}
+                                className={`min-h-11 min-w-[58px] rounded-md px-2 py-1.5 transition-all ${activeTab === 'history' ? 'bg-purple-600 text-white' : 'text-gray-300'}`}
                             >
-                                <List className="w-5 h-5" />
+                                <List className="mx-auto h-5 w-5" aria-hidden="true" />
+                                <span className="mt-1 block text-[10px] leading-none">Leadler</span>
                             </button>
                             <button
+                                type="button"
                                 onClick={() => setActiveTab('sales')}
                                 aria-label={t('agent.nav.mySales')}
                                 title={t('agent.nav.mySales')}
-                                className={`min-h-10 min-w-10 rounded-md p-2 transition-all ${activeTab === 'sales' ? 'bg-purple-600 text-white' : 'text-gray-300'}`}
+                                aria-current={activeTab === 'sales' ? 'page' : undefined}
+                                className={`min-h-11 min-w-[58px] rounded-md px-2 py-1.5 transition-all ${activeTab === 'sales' ? 'bg-purple-600 text-white' : 'text-gray-300'}`}
                             >
-                                <DollarSign className="w-5 h-5" />
+                                <DollarSign className="mx-auto h-5 w-5" aria-hidden="true" />
+                                <span className="mt-1 block text-[10px] leading-none">Satış</span>
                             </button>
                             <button
+                                type="button"
                                 onClick={() => setActiveTab('settings')}
                                 aria-label={t('agent.nav.settings')}
                                 title={t('agent.nav.settings')}
-                                className={`min-h-10 min-w-10 rounded-md p-2 transition-all ${activeTab === 'settings' ? 'bg-purple-600 text-white' : 'text-gray-300'}`}
+                                aria-current={activeTab === 'settings' ? 'page' : undefined}
+                                className={`min-h-11 min-w-[58px] rounded-md px-2 py-1.5 transition-all ${activeTab === 'settings' ? 'bg-purple-600 text-white' : 'text-gray-300'}`}
                             >
-                                <Settings className="w-5 h-5" />
+                                <Settings className="mx-auto h-5 w-5" aria-hidden="true" />
+                                <span className="mt-1 block text-[10px] leading-none">Ayarlar</span>
                             </button>
                         </nav>
 
@@ -399,11 +426,17 @@ export default function AgentDashboard({ profile: initialProfile }: AgentDashboa
                                 </div>
                                 <div className="relative">
                                     <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-full bg-purple-500/20 border border-purple-500/50 overflow-hidden">
-                                        <img
-                                            src={profile.avatar_url || `https://api.dicebear.com/7.x/avataaars/svg?seed=${profile.email}`}
-                                            alt="Avatar"
-                                            className="w-full h-full object-cover"
-                                        />
+                                        {profile.avatar_url ? (
+                                            <img
+                                                src={profile.avatar_url}
+                                                alt="Avatar"
+                                                className="w-full h-full object-cover"
+                                            />
+                                        ) : (
+                                            <span className="flex h-full w-full items-center justify-center text-xs font-semibold text-purple-100" aria-label="Avatar">
+                                                {getInitials(profile.nickname || profile.full_name)}
+                                            </span>
+                                        )}
                                     </div>
                                     <div className="absolute -bottom-1 -right-1 bg-black/80 text-white text-[10px] px-1.5 py-0.5 rounded-full border border-white/20 font-mono z-10 whitespace-nowrap">
                                         {t('agent.profile.level')} {stats.level}
@@ -411,9 +444,11 @@ export default function AgentDashboard({ profile: initialProfile }: AgentDashboa
                                 </div>
                             </div>
                             <button
+                                type="button"
                                 onClick={handleLogout}
                                 className="min-h-10 min-w-10 rounded-lg bg-white/10 p-2 text-white transition-colors hover:bg-white/20"
                                 title={t('common.logout')}
+                                aria-label={t('common.logout')}
                             >
                                 <LogOut className="w-5 h-5" />
                             </button>
@@ -500,10 +535,12 @@ export default function AgentDashboard({ profile: initialProfile }: AgentDashboa
             {
                 (activeTab === 'work' || activeTab === 'history' || activeTab === 'appointments') && (
                     <button
+                        type="button"
                         onClick={() => setChatOpen(!chatOpen)}
                         className="fixed bottom-4 right-4 z-40 flex h-14 w-14 items-center justify-center rounded-full bg-gradient-to-r from-purple-600 to-indigo-600 text-white shadow-2xl transition-all hover:scale-110 hover:from-purple-700 hover:to-indigo-700 active:scale-95 safe-bottom safe-right touch-target-large md:bottom-6 md:right-6 md:h-16 md:w-16"
                         title="Open Chat"
                         aria-label="Open Chat"
+                        aria-expanded={chatOpen}
                     >
                         <MessageCircle className="w-6 h-6 md:w-7 md:h-7" />
                         <ChatNotificationBadge userId={profile.id} />

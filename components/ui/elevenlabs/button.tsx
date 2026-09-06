@@ -8,21 +8,21 @@ export interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElemen
 const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
     ({ className = '', variant = 'primary', size = 'md', ...props }, ref) => {
         const variantClasses = {
-            primary: 'btn-primary-gradient text-white hover:shadow-lg',
-            secondary: 'btn-ghost hover:bg-white/10',
-            outline: 'border border-white/20 bg-transparent hover:bg-white/5 text-white',
-            ghost: 'hover:bg-white/5 text-white',
-            danger: 'bg-red-600 text-white hover:bg-red-700',
+            primary: 'ui-button-primary',
+            secondary: 'ui-button-secondary',
+            outline: 'ui-button-outline',
+            ghost: 'ui-button-ghost',
+            danger: 'ui-button-danger',
         };
 
         const sizeClasses = {
-            sm: 'h-9 px-4 text-sm rounded-lg',
-            md: 'h-11 px-6 text-base rounded-xl',
-            lg: 'h-14 px-8 text-lg rounded-xl',
-            icon: 'h-10 w-10 rounded-lg',
+            sm: 'ui-button-sm',
+            md: 'ui-button-md',
+            lg: 'ui-button-lg',
+            icon: 'ui-button-icon',
         };
 
-        const baseClasses = 'inline-flex items-center justify-center font-semibold transition-smooth focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50';
+        const baseClasses = 'ui-button disabled:pointer-events-none disabled:opacity-50';
 
         return (
             <button

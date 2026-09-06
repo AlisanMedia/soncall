@@ -2,7 +2,7 @@
 'use client';
 
 import { useState, useRef, useEffect } from 'react';
-import { Square, Play, Pause, UploadCloud, FileAudio } from 'lucide-react';
+import { Play, Pause, UploadCloud, FileAudio, AlertCircle, CheckCircle2, Loader2, Trash2 } from 'lucide-react';
 import { createClient } from '@/lib/supabase/client';
 import { toast } from 'sonner';
 import { PulseVoiceRecorder } from '@/components/ui/voice-recording';
@@ -21,6 +21,8 @@ export default function VoiceRecorder({ leadId, onRecordingComplete, isProcessin
     const [isPlaying, setIsPlaying] = useState(false);
     const [isUploading, setIsUploading] = useState(false);
     const [audioMimeType, setAudioMimeType] = useState<string>('audio/webm');
+    const [uploadError, setUploadError] = useState<string | null>(null);
+    const [hasUploadedRecording, setHasUploadedRecording] = useState(false);
 
     const mediaRecorderRef = useRef<MediaRecorder | null>(null);
     const audioChunksRef = useRef<Blob[]>([]);
@@ -51,6 +53,7 @@ export default function VoiceRecorder({ leadId, onRecordingComplete, isProcessin
     // ... Inside component
     const startRecording = async () => {
         try {
+            setUploadError(null);
             if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
                 toast.error('Tarayıcınız ses kaydını desteklemiyor. Chrome veya Firefox kullanın.');
                 return;
@@ -128,6 +131,7 @@ export default function VoiceRecorder({ leadId, onRecordingComplete, isProcessin
                 // Ensure we have data
                 if (audioChunksRef.current.length === 0) {
                     console.error('[VoiceRecorder] No chunks received!');
+                    setUploadError('Ses verisi alınamadı. Mikrofonunuzu kontrol edin ve tekrar deneyin.');
                     toast.error("Ses verisi alınamadı. Mikrofonunuzu kontrol edin.");
                     stream.getTracks().forEach(track => track.stop());
                     return;
@@ -140,6 +144,7 @@ export default function VoiceRecorder({ leadId, onRecordingComplete, isProcessin
                 // Stronger validation (1KB minimum)
                 if (totalSize < 1000) {
                     console.error('[VoiceRecorder] Audio data too small:', totalSize, 'bytes');
+                    setUploadError('Ses kaydı çok kısa. Daha uzun bir kayıt alın ve tekrar deneyin.');
                     toast.error("Ses kaydı çok kısa (minimum 1KB gerekli).");
                     stream.getTracks().forEach(track => track.stop());
                     return;
@@ -184,12 +189,16 @@ export default function VoiceRecorder({ leadId, onRecordingComplete, isProcessin
             });
 
             if (mediaError.name === 'NotAllowedError' || mediaError.name === 'PermissionDeniedError') {
+                setUploadError('Mikrofon erişimi reddedildi. Tarayıcı ayarlarını kontrol edin.');
                 toast.error('Mikrofon erişimi reddedildi. Tarayıcı ayarlarını kontrol edin.');
             } else if (mediaError.name === 'NotFoundError') {
+                setUploadError('Mikrofon bulunamadı. Cihazınızı kontrol edin.');
                 toast.error('Mikrofon bulunamadı. Cihazınızı kontrol edin.');
             } else if (mediaError.name === 'NotSupportedError') {
+                setUploadError('Tarayıcınız ses kaydını desteklemiyor. Chrome/Firefox kullanın.');
                 toast.error('Tarayıcınız ses kaydını desteklemiyor. Chrome/Firefox kullanın.');
             } else {
+                setUploadError('Ses kaydı başlatılamadı. Lütfen tekrar deneyin.');
                 toast.error('Ses kaydı başlatılamadı: ' + getErrorMessage(error));
             }
         }
@@ -223,11 +232,14 @@ export default function VoiceRecorder({ leadId, onRecordingComplete, isProcessin
 
     const handleUpload = async () => {
         if (!audioBlob || isUploading || isProcessing) return;
+        setUploadError(null);
         if (audioBlob.size > 25 * 1024 * 1024) {
+            setUploadError('Ses kaydı 25 MB sınırını aşıyor. Daha kısa bir kayıt alın.');
             toast.error('Ses kaydı 25 MB sınırını aşıyor. Daha kısa bir kayıt alın.');
             return;
         }
         if (uploadedUrlRef.current) {
+            setHasUploadedRecording(true);
             onRecordingComplete(uploadedUrlRef.current, audioBlob, recordingTime);
             return;
         }
@@ -263,29 +275,78 @@ export default function VoiceRecorder({ leadId, onRecordingComplete, isProcessin
                 .getPublicUrl(filename);
 
             uploadedUrlRef.current = publicUrl;
+            setHasUploadedRecording(true);
             onRecordingComplete(publicUrl, audioBlob, recordingTime);
         } catch (error: unknown) {
             console.error('Upload failed:', error);
-            alert('Yükleme başarısız: ' + getErrorMessage(error));
+            const message = 'Yükleme başarısız: ' + getErrorMessage(error);
+            setUploadError(message);
+            toast.error(message);
         } finally {
             setIsUploading(false);
         }
     };
 
+    const discardRecording = () => {
+        audioPlayerRef.current?.pause();
+        setAudioUrl(null);
+        setAudioBlob(null);
+        setIsPlaying(false);
+        setRecordingTime(0);
+        setUploadError(null);
+        setHasUploadedRecording(false);
+        uploadedUrlRef.current = null;
+    };
+
     // ... existing logic functions ...
 
     return (
-        <div className="bg-white/5 border border-white/10 rounded-xl p-6 flex flex-col items-center gap-6">
-            <h4 className="text-sm font-bold text-white flex items-center gap-2 self-start w-full border-b border-white/10 pb-2 mb-2">
+        <div className="bg-white/5 border border-white/10 rounded-xl p-4 sm:p-6 flex flex-col items-center gap-4 sm:gap-6">
+            <div className="flex w-full items-center justify-between gap-3 border-b border-white/10 pb-3">
+                <h4 className="text-sm font-bold text-white flex items-center gap-2">
                 <FileAudio className="w-4 h-4 text-purple-400" />
                 Görüşme Kaydı
-            </h4>
+                </h4>
+                <span className="rounded-full border border-purple-400/20 bg-purple-500/10 px-2 py-1 text-[10px] font-semibold uppercase tracking-wide text-purple-200">
+                    İsteğe bağlı
+                </span>
+            </div>
+
+            <div className="w-full" aria-live="polite">
+                {isRecording ? (
+                    <div className="flex items-center justify-center gap-2 rounded-lg border border-red-400/30 bg-red-500/10 px-3 py-2 text-xs font-medium text-red-100">
+                        <span className="h-2 w-2 animate-pulse rounded-full bg-red-400" />
+                        Kayıt devam ediyor — bitirmek için mikrofona dokunun
+                    </div>
+                ) : isUploading ? (
+                    <div className="flex items-center justify-center gap-2 rounded-lg border border-purple-400/30 bg-purple-500/10 px-3 py-2 text-xs font-medium text-purple-100">
+                        <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                        Kayıt güvenli şekilde yükleniyor…
+                    </div>
+                ) : isProcessing ? (
+                    <div className="flex items-center justify-center gap-2 rounded-lg border border-cyan-400/30 bg-cyan-500/10 px-3 py-2 text-xs font-medium text-cyan-100">
+                        <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                        AI görüşmeyi analiz ediyor…
+                    </div>
+                ) : uploadError ? (
+                    <div role="alert" className="flex items-start gap-2 rounded-lg border border-red-400/30 bg-red-500/10 px-3 py-2 text-xs text-red-100">
+                        <AlertCircle className="mt-0.5 h-3.5 w-3.5 shrink-0 text-red-300" />
+                        <span className="min-w-0">{uploadError}</span>
+                    </div>
+                ) : hasUploadedRecording ? (
+                    <div className="flex items-center justify-center gap-2 rounded-lg border border-emerald-400/30 bg-emerald-500/10 px-3 py-2 text-xs font-medium text-emerald-100">
+                        <CheckCircle2 className="h-3.5 w-3.5" />
+                        Kayıt yüklendi. Analiz başarısızsa aşağıdan tekrar deneyebilirsiniz.
+                    </div>
+                ) : null}
+            </div>
 
             {/* Audio Player Logic */}
             <audio
                 ref={audioPlayerRef}
                 src={audioUrl || undefined}
                 onEnded={() => setIsPlaying(false)}
+                aria-label="Görüşme kaydı oynatıcı"
             />
 
             {/* Main Recorder UI */}
@@ -321,22 +382,22 @@ export default function VoiceRecorder({ leadId, onRecordingComplete, isProcessin
                         <div className="flex items-center gap-2">
                             <button
                                 onClick={togglePlayback}
-                                className="p-2 sm:p-3 hover:bg-white/10 active:scale-95 rounded-full text-white transition-all touch-target"
+                                type="button"
+                                className="min-h-11 min-w-11 p-2 sm:p-3 hover:bg-white/10 active:scale-95 rounded-full text-white transition-all touch-target"
                                 title={isPlaying ? "Duraklat" : "Dinle"}
                                 aria-label={isPlaying ? "Duraklat" : "Dinle"}
+                                aria-pressed={isPlaying}
                             >
                                 {isPlaying ? <Pause className="w-5 h-5 sm:w-6 sm:h-6" /> : <Play className="w-5 h-5 sm:w-6 sm:h-6" />}
                             </button>
                             <button
-                                onClick={() => {
-                                    setAudioUrl(null);
-                                    setAudioBlob(null);
-                                }}
-                                className="p-2 sm:p-3 hover:bg-red-500/20 active:scale-95 rounded-full text-red-400 transition-all touch-target"
+                                onClick={discardRecording}
+                                type="button"
+                                className="min-h-11 min-w-11 p-2 sm:p-3 hover:bg-red-500/20 active:scale-95 rounded-full text-red-400 transition-all touch-target"
                                 title="Sil ve Yeniden Kaydet"
                                 aria-label="Sil ve Yeniden Kaydet"
                             >
-                                <Square className="w-4 h-4 sm:w-5 sm:h-5" />
+                                <Trash2 className="w-4 h-4 sm:w-5 sm:h-5" />
                             </button>
                         </div>
                     </div>
@@ -348,13 +409,13 @@ export default function VoiceRecorder({ leadId, onRecordingComplete, isProcessin
                     >
                         {isUploading || isProcessing ? (
                             <>
-                                <img src="/loading-logo.png" alt="Loading" className="w-5 h-5 animate-pulse object-contain" />
+                                <Loader2 className="h-5 w-5 animate-spin" aria-hidden="true" />
                                 <span className="text-sm sm:text-base">{isUploading ? 'Yükleniyor...' : 'Analiz Ediliyor...'}</span>
                             </>
                         ) : (
                             <>
                                 <UploadCloud className="w-5 h-5" />
-                                <span className="text-sm sm:text-base">Analiz Et ve Kaydet</span>
+                                <span className="text-sm sm:text-base">{hasUploadedRecording ? 'Analizi Tekrarla' : 'Analiz Et ve Kaydet'}</span>
                             </>
                         )}
                     </button>

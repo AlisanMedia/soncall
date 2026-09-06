@@ -1,0 +1,24 @@
+.shell {
+  min-width: 0;
+  max-width: 100%;
+  overflow-x: hidden;
+}
+
+.shell :global(button),
+.shell :global(input) {
+  touch-action: manipulation;
+}
+
+.shell :global(button) {
+  min-height: 44px;
+}
+
+.shell :global(button:focus-visible),
+.shell :global(input:focus-visible) {
+  outline: 3px solid #67e8f9;
+  outline-offset: 3px;
+}
+
+.shell :global(.glass-button) {
+  min-height: 48px;
+}

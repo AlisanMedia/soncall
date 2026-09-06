@@ -1,7 +1,6 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import Image from 'next/image';
 import { Search, Eye, Loader2, Calendar, Phone, Building2, X, Edit2, Save, XCircle, Plus, DollarSign, Trophy, Hash, FileAudio, Activity, Clock3, MessageSquare, User } from 'lucide-react';
 import { createClient } from '@/lib/supabase/client';
 import { toast } from 'sonner';
@@ -282,10 +281,12 @@ export default function LeadHistoryView() {
     const [leads, setLeads] = useState<Lead[]>([]);
     const [loading, setLoading] = useState(true);
     const [loadingMore, setLoadingMore] = useState(false);
+    const [loadError, setLoadError] = useState<string | null>(null);
     const [totalLeads, setTotalLeads] = useState(0);
     const [selectedLead, setSelectedLead] = useState<Lead | null>(null);
     const [selectedLeadDetail, setSelectedLeadDetail] = useState<LeadDetail | null>(null);
     const [detailLoading, setDetailLoading] = useState(false);
+    const [detailError, setDetailError] = useState<string | null>(null);
     const [searchTerm, setSearchTerm] = useState('');
     const [debouncedSearchTerm, setDebouncedSearchTerm] = useState('');
     const [statusFilter, setStatusFilter] = useState('all');
@@ -318,13 +319,14 @@ export default function LeadHistoryView() {
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [statusFilter, potentialFilter, dateFilter, debouncedSearchTerm]);
 
-    const loadLeads = async (reset = true) => {
+    async function loadLeads(reset = true) {
         try {
             if (reset) {
                 setLoading(true);
             } else {
                 setLoadingMore(true);
             }
+            if (reset) setLoadError(null);
 
             const params = new URLSearchParams();
             const offset = reset ? 0 : leads.length;
@@ -368,12 +370,13 @@ export default function LeadHistoryView() {
             }
         } catch (error) {
             console.error('Error loading leads:', error);
+            if (reset) setLoadError('Lead geçmişi yüklenemedi. Lütfen tekrar deneyin.');
             toast.error('Leadler yüklenirken hata oluştu');
         } finally {
             setLoading(false);
             setLoadingMore(false);
         }
-    };
+    }
 
     const handleEditClick = () => {
         if (selectedLead) {
@@ -388,6 +391,7 @@ export default function LeadHistoryView() {
     const openLeadDetail = async (lead: Lead) => {
         setSelectedLead(lead);
         setSelectedLeadDetail(null);
+        setDetailError(null);
         setDetailLoading(true);
 
         try {
@@ -402,6 +406,7 @@ export default function LeadHistoryView() {
             setSelectedLead((data as LeadDetail).lead);
         } catch (error: unknown) {
             console.error('Lead detail error:', error);
+            setDetailError('Lead detayı yüklenemedi. Tekrar deneyin.');
             toast.error('Lead detayı yüklenemedi: ' + getErrorMessage(error));
         } finally {
             setDetailLoading(false);
@@ -411,6 +416,7 @@ export default function LeadHistoryView() {
     const closeLeadDetail = () => {
         setSelectedLead(null);
         setSelectedLeadDetail(null);
+        setDetailError(null);
         setDetailLoading(false);
     };
 
@@ -602,8 +608,8 @@ export default function LeadHistoryView() {
     return (
         <div className="space-y-6">
             {/* Filters */}
-            <div className="bg-white/5 border border-white/10 rounded-xl p-6">
-                <h2 className="text-2xl font-bold text-white mb-4">Lead Arama ve Geçmiş</h2>
+            <div className="rounded-xl border border-white/10 bg-white/5 p-4 sm:p-6">
+                <h2 className="mb-2 text-xl font-bold text-white sm:mb-4 sm:text-2xl">Lead Arama ve Geçmiş</h2>
                 {!loading && (
                     <p className="text-sm text-purple-200/70 mb-4">
                         {totalLeads > 0
@@ -616,7 +622,9 @@ export default function LeadHistoryView() {
                     {/* Search */}
                     <div className="relative">
                         <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-purple-300/50" />
+                        <label htmlFor="lead-history-search" className="sr-only">Lead ara</label>
                         <input
+                            id="lead-history-search"
                             type="text"
                             placeholder="#0042, işletme adı veya telefon ara..."
                             value={searchTerm}
@@ -626,7 +634,9 @@ export default function LeadHistoryView() {
                     </div>
 
                     {/* Status Filter */}
+                    <label className="sr-only" htmlFor="lead-history-status">Durum filtresi</label>
                     <select
+                        id="lead-history-status"
                         value={statusFilter}
                         onChange={(e) => setStatusFilter(e.target.value)}
                         className="bg-black/20 border border-white/10 rounded-lg px-4 py-2.5 text-white focus:outline-none focus:border-purple-500/50"
@@ -640,7 +650,9 @@ export default function LeadHistoryView() {
                     </select>
 
                     {/* Potential Filter */}
+                    <label className="sr-only" htmlFor="lead-history-potential">Potansiyel filtresi</label>
                     <select
+                        id="lead-history-potential"
                         value={potentialFilter}
                         onChange={(e) => setPotentialFilter(e.target.value)}
                         className="bg-black/20 border border-white/10 rounded-lg px-4 py-2.5 text-white focus:outline-none focus:border-purple-500/50"
@@ -652,7 +664,9 @@ export default function LeadHistoryView() {
                     </select>
 
                     {/* Date Filter */}
+                    <label className="sr-only" htmlFor="lead-history-date">Tarih filtresi</label>
                     <select
+                        id="lead-history-date"
                         value={dateFilter}
                         onChange={(e) => setDateFilter(e.target.value)}
                         className="bg-black/20 border border-white/10 rounded-lg px-4 py-2.5 text-white focus:outline-none focus:border-purple-500/50"
@@ -666,29 +680,81 @@ export default function LeadHistoryView() {
             </div>
 
             {/* Results */}
-            <div className="bg-white/5 border border-white/10 rounded-xl overflow-hidden">
+            <div className="overflow-hidden rounded-xl border border-white/10 bg-white/5">
                 {loading ? (
-                    <div className="flex items-center justify-center py-12">
-                        <Image src="/loading-logo.png" alt="Loading" width={64} height={32} className="animate-pulse object-contain" />
+                    <div role="status" aria-live="polite" className="flex items-center justify-center gap-3 py-12 text-sm text-purple-200">
+                        <span className="h-5 w-5 animate-spin rounded-full border-2 border-purple-300/30 border-t-purple-300" />
+                        Lead geçmişi yükleniyor…
+                    </div>
+                ) : loadError ? (
+                    <div role="alert" className="p-8 text-center">
+                        <Building2 className="mx-auto mb-3 h-10 w-10 text-red-300/70" aria-hidden="true" />
+                        <p className="text-sm text-red-100">{loadError}</p>
+                        <button
+                            type="button"
+                            onClick={() => loadLeads(true)}
+                            className="mt-4 inline-flex min-h-11 items-center justify-center rounded-lg border border-purple-300/30 bg-purple-500/10 px-4 py-2 text-sm font-semibold text-purple-100 transition-colors hover:bg-purple-500/20 focus:outline-none focus:ring-2 focus:ring-purple-300/70"
+                        >
+                            Tekrar dene
+                        </button>
                     </div>
                 ) : leads.length === 0 ? (
-                    <div className="text-center py-12 text-purple-300">
-                        <Building2 className="w-12 h-12 mx-auto mb-4 opacity-50" />
-                        <p>Kayıt bulunamadı.</p>
+                    <div role="status" className="p-8 text-center text-purple-300 sm:py-12">
+                        <Building2 className="mx-auto mb-4 h-12 w-12 opacity-50" aria-hidden="true" />
+                        <p className="font-medium">Filtrelere uygun kayıt bulunamadı.</p>
+                        <p className="mt-1 text-sm text-purple-200/60">Arama veya filtreleri değiştirerek tekrar deneyin.</p>
                     </div>
                 ) : (
-                    <div className="overflow-x-auto">
-                        <table className="w-full text-left">
+                    <div>
+                        <div className="border-b border-white/10 bg-black/10 px-4 py-2 text-xs text-purple-200/60 sm:hidden">
+                            Lead kartlarını açmak için ilgili kayda dokunun.
+                        </div>
+                        <div className="space-y-3 p-3 sm:hidden">
+                            {leads.map(lead => (
+                                <article key={lead.id} className="rounded-xl border border-white/10 bg-black/20 p-4">
+                                    <div className="flex items-start justify-between gap-3">
+                                        <div className="min-w-0">
+                                            <span className="inline-flex items-center gap-1 rounded-lg border border-cyan-500/20 bg-cyan-500/10 px-2 py-1 text-xs font-bold text-cyan-200">
+                                                <Hash className="h-3 w-3" aria-hidden="true" />
+                                                {formatLeadCode(lead.lead_number).slice(1)}
+                                            </span>
+                                            <h3 className="mt-2 truncate text-base font-semibold text-white">{lead.business_name}</h3>
+                                            <p className="mt-1 flex items-center gap-1 text-sm text-purple-200">
+                                                <Phone className="h-3.5 w-3.5" aria-hidden="true" />
+                                                {lead.phone_number}
+                                            </p>
+                                        </div>
+                                        <button
+                                            type="button"
+                                            onClick={() => openLeadDetail(lead)}
+                                            className="inline-flex min-h-11 min-w-11 shrink-0 items-center justify-center rounded-lg border border-purple-300/20 bg-purple-500/10 text-purple-100 transition-colors hover:bg-purple-500/20 focus:outline-none focus:ring-2 focus:ring-purple-300/70"
+                                            aria-label={`${lead.business_name} lead dosyasını aç`}
+                                        >
+                                            <Eye className="h-4 w-4" aria-hidden="true" />
+                                        </button>
+                                    </div>
+                                    <div className="mt-4 flex flex-wrap items-center gap-2">
+                                        <span className={`rounded border px-2 py-1 text-xs font-medium ${getStatusColor(lead.status)}`}>{getStatusLabel(lead.status)}</span>
+                                        <span className={`rounded px-2 py-1 text-xs font-medium ${getPotentialColor(lead.potential_level)}`}>{getPotentialLabel(lead.potential_level)}</span>
+                                        {lead.lead_notes?.length > 0 && <span className="inline-flex items-center gap-1 rounded border border-purple-500/20 bg-purple-500/10 px-2 py-1 text-xs text-purple-100"><MessageSquare className="h-3 w-3" aria-hidden="true" /> Not var</span>}
+                                        {lead.status === 'callback' && <span className="inline-flex items-center gap-1 rounded border border-amber-500/20 bg-amber-500/10 px-2 py-1 text-xs text-amber-100"><Clock3 className="h-3 w-3" aria-hidden="true" /> Tekrar arama</span>}
+                                    </div>
+                                    <p className="mt-3 text-xs text-gray-400">İşlenme: {formatDateTime(lead.processed_at)}</p>
+                                </article>
+                            ))}
+                        </div>
+                        <div className="hidden overflow-x-auto sm:block">
+                        <table className="w-full min-w-[860px] text-left">
                             <thead className="bg-white/5 text-purple-200 text-sm">
                                 <tr>
-                                    <th className="p-4">Kod</th>
-                                    <th className="p-4">İşletme</th>
-                                    <th className="p-4">Telefon</th>
-                                    <th className="p-4">Durum</th>
-                                    <th className="p-4">Potansiyel</th>
-                                    <th className="p-4">Geçmiş</th>
-                                    <th className="p-4">İşlenme Tarihi</th>
-                                    <th className="p-4 text-right">Detay</th>
+                                    <th scope="col" className="p-4">Kod</th>
+                                    <th scope="col" className="p-4">İşletme</th>
+                                    <th scope="col" className="p-4">Telefon</th>
+                                    <th scope="col" className="p-4">Durum</th>
+                                    <th scope="col" className="p-4">Potansiyel</th>
+                                    <th scope="col" className="p-4">Geçmiş</th>
+                                    <th scope="col" className="p-4">İşlenme Tarihi</th>
+                                    <th scope="col" className="p-4 text-right">Detay</th>
                                 </tr>
                             </thead>
                             <tbody className="divide-y divide-white/5">
@@ -731,17 +797,20 @@ export default function LeadHistoryView() {
                                         </td>
                                         <td className="p-4 text-right">
                                             <button
+                                                type="button"
                                                 onClick={() => openLeadDetail(lead)}
-                                                className="p-1 hover:bg-white/10 rounded text-purple-300 hover:text-white transition-colors"
+                                                className="inline-flex min-h-11 min-w-11 items-center justify-center rounded-lg text-purple-300 transition-colors hover:bg-white/10 hover:text-white focus:outline-none focus:ring-2 focus:ring-purple-300/70"
                                                 title="Lead dosyasını aç"
+                                                aria-label={`${lead.business_name} lead dosyasını aç`}
                                             >
-                                                <Eye className="w-4 h-4" />
+                                                <Eye className="h-4 w-4" aria-hidden="true" />
                                             </button>
                                         </td>
                                     </tr>
                                 ))}
                             </tbody>
                         </table>
+                        </div>
                         {hasMoreLeads && (
                             <div className="flex items-center justify-center border-t border-white/10 bg-black/10 p-4">
                                 <button
@@ -760,12 +829,12 @@ export default function LeadHistoryView() {
 
             {/* Lead Detail & Edit Modal */}
             {selectedLead && (
-                <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4 overflow-hidden" onClick={closeLeadDetail}>
-                    <div className="bg-[#1a1a2e] border border-white/10 w-full max-w-2xl rounded-2xl shadow-2xl overflow-hidden flex flex-col max-h-[90vh]" onClick={e => e.stopPropagation()}>
+                <div className="fixed inset-0 z-50 flex items-end justify-center overflow-hidden bg-black/80 p-3 backdrop-blur-sm sm:items-center sm:p-4" onClick={closeLeadDetail}>
+                    <div role="dialog" aria-modal="true" aria-labelledby="lead-detail-title" className="flex max-h-[calc(100dvh-1.5rem)] w-full max-w-2xl flex-col overflow-hidden rounded-2xl border border-white/10 bg-[#1a1a2e] shadow-2xl sm:max-h-[90vh]" onClick={e => e.stopPropagation()}>
                         {/* Modal Header */}
-                        <div className="p-6 border-b border-white/10 flex justify-between items-start bg-white/5 shrink-0">
-                            <div>
-                                <h3 className="text-xl font-bold text-white flex items-center gap-2">
+                        <div className="flex shrink-0 items-start justify-between gap-3 border-b border-white/10 bg-white/5 p-4 sm:p-6">
+                            <div className="min-w-0">
+                                <h3 id="lead-detail-title" className="flex flex-wrap items-center gap-2 text-lg font-bold text-white sm:text-xl">
                                     {selectedLead.business_name}
                                     <span className="inline-flex items-center gap-1 rounded-lg border border-cyan-500/20 bg-cyan-500/10 px-2 py-1 text-xs font-bold text-cyan-200">
                                         <Hash className="w-3 h-3" />
@@ -778,21 +847,25 @@ export default function LeadHistoryView() {
                                     {selectedLead.phone_number}
                                 </p>
                             </div>
-                            <div className="flex items-center gap-2">
+                            <div className="flex shrink-0 items-center gap-1 sm:gap-2">
                                 {!isEditing ? (
                                     <>
                                         <button
+                                            type="button"
                                             onClick={() => setShowSaleModal(true)}
-                                            className="bg-green-600 hover:bg-green-700 text-white p-2 rounded-lg flex items-center gap-2 transition-all shadow-[0_0_15px_rgba(34,197,94,0.3)] hover:shadow-[0_0_20px_rgba(34,197,94,0.5)] border border-green-500/50"
+                                            className="flex min-h-11 min-w-11 items-center justify-center gap-2 rounded-lg border border-green-500/50 bg-green-600 p-2 text-white transition-all shadow-[0_0_15px_rgba(34,197,94,0.3)] hover:bg-green-700 hover:shadow-[0_0_20px_rgba(34,197,94,0.5)]"
                                             title="Satış Bildir"
+                                            aria-label="Satış bildir"
                                         >
                                             <Trophy className="w-5 h-5" />
                                             <span className="hidden sm:inline font-bold">Satış Yapıldı</span>
                                         </button>
                                         <button
+                                            type="button"
                                             onClick={handleEditClick}
-                                            className="bg-white/5 hover:bg-white/10 text-white p-2 rounded-lg transition-colors border border-white/10"
+                                            className="flex min-h-11 min-w-11 items-center justify-center rounded-lg border border-white/10 bg-white/5 text-white transition-colors hover:bg-white/10"
                                             title="Düzenle"
+                                            aria-label="Lead bilgilerini düzenle"
                                         >
                                             <Edit2 className="w-5 h-5" />
                                         </button>
@@ -800,28 +873,34 @@ export default function LeadHistoryView() {
                                 ) : (
                                     <>
                                         <button
+                                            type="button"
                                             onClick={handleSaveLead}
                                             disabled={isSaving}
-                                            className="bg-purple-600 hover:bg-purple-700 text-white p-2 rounded-lg transition-colors border border-purple-500"
+                                            className="flex min-h-11 min-w-11 items-center justify-center rounded-lg border border-purple-500 bg-purple-600 p-2 text-white transition-colors hover:bg-purple-700 disabled:cursor-not-allowed disabled:opacity-50"
                                             title="Kaydet"
+                                            aria-label="Lead değişikliklerini kaydet"
                                         >
                                             {isSaving ? <Loader2 className="w-5 h-5 animate-spin" /> : <Save className="w-5 h-5" />}
                                         </button>
                                         <button
+                                            type="button"
                                             onClick={handleCancelEdit}
                                             disabled={isSaving}
-                                            className="bg-red-500/10 hover:bg-red-500/20 text-red-500 p-2 rounded-lg transition-colors border border-red-500/30"
+                                            className="flex min-h-11 min-w-11 items-center justify-center rounded-lg border border-red-500/30 bg-red-500/10 p-2 text-red-500 transition-colors hover:bg-red-500/20 disabled:cursor-not-allowed disabled:opacity-50"
                                             title="İptal"
+                                            aria-label="Düzenlemeyi iptal et"
                                         >
                                             <XCircle className="w-5 h-5" />
                                         </button>
                                     </>
                                 )}
                                 <button
+                                    type="button"
                                     onClick={closeLeadDetail}
-                                    className="text-gray-400 hover:text-white transition-colors ml-2"
+                                    className="ml-1 flex min-h-11 min-w-11 items-center justify-center rounded-lg text-gray-400 transition-colors hover:bg-white/10 hover:text-white focus:outline-none focus:ring-2 focus:ring-purple-300/70 sm:ml-2"
+                                    aria-label="Lead detaylarını kapat"
                                 >
-                                    <X className="w-5 h-5" />
+                                    <X className="h-5 w-5" aria-hidden="true" />
                                 </button>
                             </div>
                         </div>
@@ -832,6 +911,19 @@ export default function LeadHistoryView() {
                                 <div className="rounded-xl border border-white/10 bg-white/5 p-4 text-sm text-purple-200 flex items-center gap-2">
                                     <Loader2 className="w-4 h-4 animate-spin" />
                                     Lead dosyası yükleniyor...
+                                </div>
+                            )}
+
+                            {detailError && (
+                                <div role="alert" className="flex items-center justify-between gap-3 rounded-xl border border-red-400/30 bg-red-500/10 p-4 text-sm text-red-100">
+                                    <span>{detailError}</span>
+                                    <button
+                                        type="button"
+                                        onClick={() => openLeadDetail(selectedLead)}
+                                        className="min-h-11 shrink-0 rounded-lg border border-red-300/30 px-3 py-2 font-semibold text-red-50 transition-colors hover:bg-red-500/20 focus:outline-none focus:ring-2 focus:ring-red-300/70"
+                                    >
+                                        Tekrar dene
+                                    </button>
                                 </div>
                             )}
 
@@ -857,7 +949,7 @@ export default function LeadHistoryView() {
                             )}
 
                             {/* Lead Details Grid */}
-                            <div className="grid grid-cols-2 gap-4">
+                            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                                 <div className="bg-white/5 p-4 rounded-xl border border-white/5">
                                     <div className="text-xs text-purple-300/50 uppercase mb-1">Kategori</div>
                                     <div className="text-white">{selectedLead.category || '-'}</div>
@@ -1026,10 +1118,12 @@ export default function LeadHistoryView() {
                                         className="flex-1 bg-black/20 border border-white/10 rounded-lg p-3 text-white text-sm placeholder-gray-500 focus:border-purple-500/50 focus:ring-1 focus:ring-purple-500/20 outline-none transition-all resize-none min-h-[60px]"
                                     />
                                     <button
+                                        type="button"
                                         onClick={handleAddNote}
                                         disabled={!newNote.trim() || isSaving}
-                                        className="p-3 bg-purple-600/20 hover:bg-purple-600 hover:text-white text-purple-400 rounded-lg border border-purple-500/30 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                                        className="min-h-11 min-w-11 rounded-lg border border-purple-500/30 bg-purple-600/20 p-3 text-purple-400 transition-all hover:bg-purple-600 hover:text-white disabled:cursor-not-allowed disabled:opacity-50"
                                         title="Notu Kaydet"
+                                        aria-label="Notu kaydet"
                                     >
                                         {isSaving ? <Loader2 className="w-5 h-5 animate-spin" /> : <Plus className="w-5 h-5" />}
                                     </button>
@@ -1063,8 +1157,9 @@ export default function LeadHistoryView() {
 
                         <div className="p-4 border-t border-white/10 bg-black/20 text-right shrink-0">
                             <button
+                                type="button"
                                 onClick={closeLeadDetail}
-                                className="px-4 py-2 bg-white/10 hover:bg-white/20 text-white rounded-lg transition-colors text-sm font-medium"
+                                className="min-h-11 rounded-lg bg-white/10 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-white/20"
                             >
                                 Kapat
                             </button>
@@ -1076,19 +1171,21 @@ export default function LeadHistoryView() {
             {/* Sale Report Modal */}
             {showSaleModal && (
                 <div className="fixed inset-0 bg-black/90 backdrop-blur-md z-[60] flex items-center justify-center p-4">
-                    <div className="bg-gradient-to-br from-purple-900 to-slate-900 border border-purple-500/30 w-full max-w-sm rounded-2xl shadow-[0_0_50px_rgba(168,85,247,0.2)] overflow-hidden">
+                    <div role="dialog" aria-modal="true" aria-labelledby="sale-dialog-title" className="w-full max-w-sm overflow-hidden rounded-2xl border border-purple-500/30 bg-gradient-to-br from-purple-900 to-slate-900 shadow-[0_0_50px_rgba(168,85,247,0.2)]">
                         <div className="p-6 text-center">
                             <div className="w-16 h-16 bg-gradient-to-br from-yellow-400 to-orange-500 rounded-full mx-auto mb-4 flex items-center justify-center shadow-lg animate-bounce">
                                 <DollarSign className="w-8 h-8 text-white" />
                             </div>
-                            <h3 className="text-2xl font-bold text-white mb-2">Tebrikler! 🎉</h3>
+                            <h3 id="sale-dialog-title" className="mb-2 text-2xl font-bold text-white">Tebrikler! 🎉</h3>
                             <p className="text-purple-200 text-sm mb-6">
                                 Harika bir haber! Bu satışın tutarı nedir?
                             </p>
 
                             <div className="relative mb-6">
                                 <DollarSign className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-green-400" />
+                                <label htmlFor="sale-amount" className="sr-only">Satış tutarı</label>
                                 <input
+                                    id="sale-amount"
                                     type="number"
                                     value={saleAmount}
                                     onChange={e => setSaleAmount(e.target.value)}
@@ -1099,6 +1196,7 @@ export default function LeadHistoryView() {
                             </div>
 
                             <button
+                                type="button"
                                 onClick={handleReportSale}
                                 disabled={isSubmittingSale || !saleAmount}
                                 className="w-full py-3 bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-500 hover:to-emerald-500 text-white rounded-xl font-bold shadow-lg transition-all transform hover:scale-[1.02] active:scale-[0.98] disabled:opacity-50"
@@ -1113,6 +1211,7 @@ export default function LeadHistoryView() {
                             </button>
 
                             <button
+                                type="button"
                                 onClick={() => setShowSaleModal(false)}
                                 disabled={isSubmittingSale}
                                 className="mt-4 text-sm text-gray-400 hover:text-white underline-offset-4 hover:underline"

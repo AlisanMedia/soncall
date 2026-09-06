@@ -87,7 +87,9 @@ export default function Leaderboard({ agentId, refreshKey }: LeaderboardProps) {
     }, [agentId]);
 
     useEffect(() => {
-        loadLeaderboard();
+        const initialLoad = window.setTimeout(() => {
+            void loadLeaderboard();
+        }, 0);
 
         // Silent auto-refresh without spending requests while the tab is hidden.
         const interval = setInterval(() => {
@@ -95,34 +97,40 @@ export default function Leaderboard({ agentId, refreshKey }: LeaderboardProps) {
             loadLeaderboard();
         }, 15000);
 
-        return () => clearInterval(interval);
+        return () => {
+            window.clearTimeout(initialLoad);
+            clearInterval(interval);
+        };
     }, [loadLeaderboard, refreshKey]);
 
     if (loading) {
         return (
-            <div className="bg-white/10 backdrop-blur-lg rounded-2xl shadow-2xl p-6 border border-white/20">
+            <div role="status" aria-live="polite" className="rounded-2xl border border-white/20 bg-white/10 p-6 shadow-2xl backdrop-blur-lg">
                 <div className="flex items-center justify-center py-12">
-                    <img src="/loading-logo.png" alt="Loading" className="w-16 h-8 animate-pulse object-contain" />
+                    <div className="flex items-center gap-3 text-sm text-purple-200">
+                        <span className="h-5 w-5 animate-spin rounded-full border-2 border-purple-300/30 border-t-purple-300" />
+                        Takım performansı yükleniyor…
+                    </div>
                 </div>
             </div>
         );
     }
 
     return (
-        <div className="bg-white/10 backdrop-blur-lg rounded-2xl shadow-2xl p-6 border border-white/20 space-y-6 relative overflow-hidden">
+        <section aria-labelledby="team-performance-title" className="relative space-y-6 overflow-hidden rounded-2xl border border-white/20 bg-white/10 p-4 shadow-2xl backdrop-blur-lg sm:p-6">
             <GlowingEffect spread={40} glow={true} disabled={false} proximity={64} borderWidth={3} />
             {/* Header with Online Status */}
             <div className="flex items-center justify-between border-b border-white/20 pb-4">
                 <div className="flex items-center gap-2">
-                    <BarChart3 className="w-6 h-6 text-purple-400" />
-                    <h3 className="text-xl font-bold text-white">Takım Performansı</h3>
+                    <BarChart3 className="h-6 w-6 shrink-0 text-purple-400" aria-hidden="true" />
+                    <h3 id="team-performance-title" className="text-lg font-bold text-white sm:text-xl">Takım Performansı</h3>
                 </div>
-                <div className="flex items-center gap-2">
+                <div className={`flex items-center gap-2 text-xs font-medium ${error ? 'text-amber-200' : 'text-green-300'}`} aria-live="polite">
                     <div className="relative">
-                        <div className="w-2 h-2 bg-green-400 rounded-full animate-pulse"></div>
-                        <div className="absolute inset-0 w-2 h-2 bg-green-400 rounded-full animate-ping"></div>
+                        <div className={`h-2 w-2 rounded-full ${error ? 'bg-amber-400' : 'bg-green-400 animate-pulse'}`} />
+                        {!error && <div className="absolute inset-0 h-2 w-2 animate-ping rounded-full bg-green-400" />}
                     </div>
-                    <span className="text-xs text-green-300 font-medium">Canlı</span>
+                    <span>{error ? 'Güncellenemedi' : 'Canlı'}</span>
                 </div>
             </div>
 
@@ -130,14 +138,14 @@ export default function Leaderboard({ agentId, refreshKey }: LeaderboardProps) {
             {error && (
                 <div role="alert" className="rounded-lg bg-red-500/10 p-3 text-sm text-red-200">
                     {error}
-                    <button onClick={loadLeaderboard} className="ml-3 underline">Tekrar dene</button>
+                    <button type="button" onClick={loadLeaderboard} className="ml-3 inline-flex min-h-11 items-center rounded px-2 underline underline-offset-2 focus:outline-none focus:ring-2 focus:ring-red-200/70">Tekrar dene</button>
                 </div>
             )}
             <div className="grid grid-cols-2 gap-2">
                 <div className="bg-purple-500/20 rounded-lg p-3 border border-purple-500/30 col-span-2">
                     <div className="flex items-center justify-between">
                         <div>
-                            <div className="text-purple-200 text-xs mb-1">Bugünkü Rol Hedefi</div>
+                            <div className="mb-1 text-xs text-purple-200">Bugünkü Rol Hedefi</div>
                             <div className="text-2xl sm:text-3xl font-bold text-white">{userStats.processed_today}</div>
                             <div className="text-xs text-purple-300 mt-1">{userStats.metric_label}</div>
                         </div>
@@ -174,7 +182,7 @@ export default function Leaderboard({ agentId, refreshKey }: LeaderboardProps) {
             </div>
 
             {/* Leaderboard */}
-            <div>
+            <div aria-live="polite">
                 <div className="flex items-center gap-2 text-purple-200 text-sm mb-3">
                     <TrendingUp className="w-4 h-4" />
                     <span>Bugünkü İlerleme</span>
@@ -266,12 +274,13 @@ export default function Leaderboard({ agentId, refreshKey }: LeaderboardProps) {
                     })}
 
                     {leaderboard.length === 0 && (
-                        <div className="text-center py-6 text-purple-300 text-sm">
-                            Henüz veri yok
+                        <div className="rounded-xl border border-dashed border-white/15 bg-white/[0.03] py-8 text-center text-sm text-purple-200/80">
+                            <BarChart3 className="mx-auto mb-2 h-8 w-8 text-purple-300/50" aria-hidden="true" />
+                            Henüz takım performansı verisi yok.
                         </div>
                     )}
                 </div>
             </div>
-        </div>
+        </section>
     );
 }

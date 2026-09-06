@@ -48,6 +48,10 @@ export default function LeadCard({ agentId, profile, onLeadProcessed, refreshKey
     const [appointmentCloserId, setAppointmentCloserId] = useState('');
     const [meetingUrl, setMeetingUrl] = useState('');
     const [meetingOutcome, setMeetingOutcome] = useState<MeetingOutcome>('');
+    const [showAppointmentModal, setShowAppointmentModal] = useState(false);
+    const [showCallbackModal, setShowCallbackModal] = useState(false);
+    const [appointmentDate, setAppointmentDate] = useState('');
+    const [callbackDate, setCallbackDate] = useState('');
 
     const supabase = createClient();
     const lastPlayedLeadId = useRef<string | null>(null);
@@ -68,8 +72,6 @@ export default function LeadCard({ agentId, profile, onLeadProcessed, refreshKey
 
     // Clear AI analysis when lead changes
     useEffect(() => {
-        setAiAnalysis(null);
-        setSavedAudioUrl(null);
         if (currentLead?.id) {
             // Fetch call count
             supabase
@@ -143,6 +145,7 @@ export default function LeadCard({ agentId, profile, onLeadProcessed, refreshKey
                         setPotentialLevel(savedLead.potential_level || 'not_assessed');
                         setNote('');
                         setActionTaken('');
+                        setAiAnalysis(null);
                         setSavedAudioUrl(null);
                         setAppointmentCloserId('');
                         setMeetingUrl(savedLead.meeting_url || '');
@@ -163,7 +166,7 @@ export default function LeadCard({ agentId, profile, onLeadProcessed, refreshKey
         restoreFromStorage();
     }, [refreshKey]);
 
-    const loadNextLead = async () => {
+    async function loadNextLead() {
         setLoading(true);
         setError(null);
 
@@ -200,6 +203,8 @@ export default function LeadCard({ agentId, profile, onLeadProcessed, refreshKey
                 localStorage.removeItem(currentLeadSourceKey);
 
                 setCurrentLead(null);
+                setAiAnalysis(null);
+                setSavedAudioUrl(null);
                 setLoading(false);
                 // Play victory sound when all leads are completed!
                 playVictory();
@@ -240,6 +245,8 @@ export default function LeadCard({ agentId, profile, onLeadProcessed, refreshKey
             });
 
             setCurrentLead(lockedLead);
+            setAiAnalysis(null);
+            setSavedAudioUrl(null);
 
             // Save to localStorage for persistence across page refreshes
             localStorage.setItem(currentLeadStorageKey, lockedLead.id);
@@ -267,12 +274,7 @@ export default function LeadCard({ agentId, profile, onLeadProcessed, refreshKey
         } finally {
             setLoading(false);
         }
-    };
-
-    const [showAppointmentModal, setShowAppointmentModal] = useState(false);
-    const [showCallbackModal, setShowCallbackModal] = useState(false);
-    const [appointmentDate, setAppointmentDate] = useState('');
-    const [callbackDate, setCallbackDate] = useState('');
+    }
 
     const handleWhatsApp = () => {
         if (!currentLead) return;
@@ -530,13 +532,13 @@ export default function LeadCard({ agentId, profile, onLeadProcessed, refreshKey
 
     if (!currentLead) {
         return (
-            <div className="glass-card p-12 flex items-center justify-center min-h-[500px] animate-scale-in">
+            <div className="glass-card flex min-h-[360px] items-center justify-center p-8 text-center animate-scale-in sm:min-h-[500px] sm:p-12">
                 <div className="text-center">
-                    <CheckCircle2 className="w-16 h-16 text-green-400 mx-auto mb-4" />
-                    <h3 className="text-2xl font-bold text-white mb-2">
+                    <CheckCircle2 className="mx-auto mb-4 h-14 w-14 text-green-400 sm:h-16 sm:w-16" aria-hidden="true" />
+                    <h3 className="mb-2 text-xl font-bold text-white sm:text-2xl">
                         {isCloser ? 'Bekleyen Toplantı Yok' : 'Tebrikler!'}
                     </h3>
-                    <p className="text-zinc-400">
+                    <p className="mx-auto max-w-md text-sm leading-relaxed text-zinc-400 sm:text-base">
                         {isCloser ? 'Size atanmış sonuçlanmamış toplantı görünmüyor.' : 'Tüm lead&apos;lerinizi tamamladınız.'}
                     </p>
                 </div>
@@ -585,9 +587,9 @@ export default function LeadCard({ agentId, profile, onLeadProcessed, refreshKey
             </div>
 
             {error && (
-                <div className="bg-red-500/20 border border-red-500/50 text-red-100 px-4 py-3 rounded-lg flex items-center gap-2">
-                    <AlertCircle className="w-5 h-5" />
-                    {error}
+                <div role="alert" aria-live="assertive" className="flex items-start gap-2 rounded-lg border border-red-500/50 bg-red-500/20 px-4 py-3 text-sm leading-relaxed text-red-100 sm:text-base">
+                    <AlertCircle className="mt-0.5 h-5 w-5 shrink-0" aria-hidden="true" />
+                    <span className="min-w-0 break-words">{error}</span>
                 </div>
             )}
 
@@ -722,9 +724,9 @@ export default function LeadCard({ agentId, profile, onLeadProcessed, refreshKey
                         isProcessing={isAiProcessing}
                     />
                     {isAiProcessing && (
-                        <div className="mt-2 text-xs text-purple-300 flex items-center gap-2 animate-pulse">
-                            <Wand2 className="w-3 h-3" />
-                            Yapay zeka analiz ediyor...
+                        <div role="status" aria-live="polite" className="mt-2 flex items-center gap-2 rounded-lg border border-cyan-400/20 bg-cyan-500/5 px-3 py-2 text-xs text-cyan-200">
+                            <Loader2 className="h-3.5 w-3.5 animate-spin" aria-hidden="true" />
+                            Yapay zeka analiz ediyor. Bu işlem birkaç saniye sürebilir…
                         </div>
                     )}
                 </div>
@@ -779,19 +781,21 @@ export default function LeadCard({ agentId, profile, onLeadProcessed, refreshKey
                 <label htmlFor="note" className="block text-sm font-medium text-purple-200 mb-2">
                     Not <span className="text-red-400">* (Min. 10 karakter)</span>
                 </label>
-                <textarea
-                    id="note"
-                    value={note}
-                    onChange={(e) => setNote(e.target.value)}
-                    placeholder="Görüşme notlarınızı buraya yazın..."
-                    rows={4}
-                    className={`w-full px-4 py-3 bg-white/10 border rounded-lg text-white placeholder-purple-300/50 focus:outline-none focus:ring-2 focus:ring-purple-500 resize-none ${note.trim().length > 0 && note.trim().length < 10
+                        <textarea
+                            id="note"
+                            value={note}
+                            onChange={(e) => setNote(e.target.value)}
+                            placeholder="Görüşme notlarınızı buraya yazın..."
+                            rows={4}
+                            aria-describedby="note-hint"
+                            aria-invalid={note.trim().length > 0 && note.trim().length < 10}
+                            className={`w-full px-4 py-3 bg-white/10 border rounded-lg text-white placeholder-purple-300/50 focus:outline-none focus:ring-2 focus:ring-purple-500 resize-none ${note.trim().length > 0 && note.trim().length < 10
                         ? 'border-red-500'
                         : 'border-white/20'
                         }`}
                     disabled={processing}
                 />
-                <p className="text-sm text-purple-300 mt-1">
+                <p id="note-hint" className="mt-1 text-sm text-purple-300">
                     {note.length} / 10 karakter
                 </p>
             </div>
@@ -861,16 +865,18 @@ export default function LeadCard({ agentId, profile, onLeadProcessed, refreshKey
             </GlassButton>
             {/* Appointment Modal */}
             {showAppointmentModal && (
-                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
-                    <div className="bg-slate-900 border border-purple-500/50 rounded-2xl p-6 w-full max-w-md shadow-2xl relative">
+                <div className="fixed inset-0 z-50 flex items-end justify-center overflow-y-auto bg-black/60 p-4 backdrop-blur-sm sm:items-center">
+                    <div role="dialog" aria-modal="true" aria-labelledby="appointment-dialog-title" className="relative my-auto max-h-[calc(100dvh-2rem)] w-full max-w-md overflow-y-auto rounded-2xl border border-purple-500/50 bg-slate-900 p-5 shadow-2xl sm:p-6">
                         <button
                             onClick={() => setShowAppointmentModal(false)}
-                            className="absolute top-4 right-4 text-gray-400 hover:text-white"
+                            type="button"
+                            aria-label="Randevu penceresini kapat"
+                            className="absolute right-3 top-3 flex h-11 w-11 items-center justify-center rounded-full text-gray-400 transition-colors hover:bg-white/10 hover:text-white sm:right-4 sm:top-4"
                         >
                             <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M18 6 6 18" /><path d="m6 6 12 12" /></svg>
                         </button>
 
-                        <h3 className="text-xl font-bold text-white mb-4 flex items-center gap-2">
+                        <h3 id="appointment-dialog-title" className="mb-4 flex items-center gap-2 pr-10 text-xl font-bold text-white">
                             <Calendar className="w-6 h-6 text-purple-400" />
                             Randevu Planla
                         </h3>
@@ -880,8 +886,9 @@ export default function LeadCard({ agentId, profile, onLeadProcessed, refreshKey
                         </p>
 
                         <div className="mb-6 space-y-2">
-                            <label className="text-sm font-medium text-purple-200">Tarih ve Saat</label>
+                            <label htmlFor="appointment-date" className="text-sm font-medium text-purple-200">Tarih ve Saat</label>
                             <input
+                                id="appointment-date"
                                 type="datetime-local"
                                 value={appointmentDate}
                                 onChange={(e) => setAppointmentDate(e.target.value)}
@@ -890,8 +897,9 @@ export default function LeadCard({ agentId, profile, onLeadProcessed, refreshKey
                         </div>
 
                         <div className="mb-6 space-y-2">
-                            <label className="text-sm font-medium text-purple-200">Closer</label>
+                            <label htmlFor="appointment-closer" className="text-sm font-medium text-purple-200">Closer</label>
                             <select
+                                id="appointment-closer"
                                 value={appointmentCloserId}
                                 onChange={(e) => setAppointmentCloserId(e.target.value)}
                                 className="w-full bg-white/10 border border-white/20 rounded-lg px-4 py-3 text-white focus:outline-none focus:ring-2 focus:ring-purple-500"
@@ -906,8 +914,9 @@ export default function LeadCard({ agentId, profile, onLeadProcessed, refreshKey
                         </div>
 
                         <div className="mb-6 space-y-2">
-                            <label className="text-sm font-medium text-purple-200">Google Meet Linki</label>
+                            <label htmlFor="meeting-url" className="text-sm font-medium text-purple-200">Google Meet Linki</label>
                             <input
+                                id="meeting-url"
                                 type="url"
                                 value={meetingUrl}
                                 onChange={(e) => setMeetingUrl(e.target.value)}
@@ -939,17 +948,18 @@ export default function LeadCard({ agentId, profile, onLeadProcessed, refreshKey
 
             {/* Callback Modal */}
             {showCallbackModal && (
-                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
-                    <div className="bg-slate-900 border border-amber-500/50 rounded-2xl p-6 w-full max-w-md shadow-2xl relative">
+                <div className="fixed inset-0 z-50 flex items-end justify-center overflow-y-auto bg-black/60 p-4 backdrop-blur-sm sm:items-center">
+                    <div role="dialog" aria-modal="true" aria-labelledby="callback-dialog-title" className="relative my-auto max-h-[calc(100dvh-2rem)] w-full max-w-md overflow-y-auto rounded-2xl border border-amber-500/50 bg-slate-900 p-5 shadow-2xl sm:p-6">
                         <button
                             onClick={() => setShowCallbackModal(false)}
+                            type="button"
                             className="absolute top-4 right-4 text-gray-400 hover:text-white"
                             aria-label="Kapat"
                         >
                             <XCircle className="w-5 h-5" />
                         </button>
 
-                        <h3 className="text-xl font-bold text-white mb-4 flex items-center gap-2">
+                        <h3 id="callback-dialog-title" className="mb-4 flex items-center gap-2 pr-10 text-xl font-bold text-white">
                             <Clock3 className="w-6 h-6 text-amber-400" />
                             Tekrar Arama Planla
                         </h3>
@@ -959,8 +969,9 @@ export default function LeadCard({ agentId, profile, onLeadProcessed, refreshKey
                         </p>
 
                         <div className="mb-6 space-y-2">
-                            <label className="text-sm font-medium text-amber-100">Tekrar Arama Zamanı</label>
+                            <label htmlFor="callback-date" className="text-sm font-medium text-amber-100">Tekrar Arama Zamanı</label>
                             <input
+                                id="callback-date"
                                 type="datetime-local"
                                 value={callbackDate}
                                 onChange={(e) => setCallbackDate(e.target.value)}

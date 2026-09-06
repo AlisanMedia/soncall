@@ -1,14 +1,15 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { createClient } from '@/lib/supabase/client';
 import { useRouter } from 'next/navigation';
-import { Mail, Lock, LogIn, LayoutDashboard, User, Sparkles, Loader2 } from 'lucide-react';
-import { Button } from '@/components/ui/elevenlabs/button';
+import Image from 'next/image';
+import { Mail, Lock, LogIn, LayoutDashboard, User, Loader2 } from 'lucide-react';
 import { Input } from '@/components/ui/elevenlabs/input';
 import { Card } from '@/components/ui/elevenlabs/card';
 import { GlowingEffect } from '@/components/ui/glowing-effect';
 import { GlassButton } from '@/components/ui/glass-button';
+import styles from './page.module.css';
 
 export default function LoginPage() {
     const [email, setEmail] = useState('');
@@ -16,26 +17,25 @@ export default function LoginPage() {
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
     const [targetDashboard, setTargetDashboard] = useState<'manager' | 'agent' | null>(null);
-    const [showDashboardSelector, setShowDashboardSelector] = useState(false);
 
     const router = useRouter();
 
-    const specialSelectionEmails = [
-        'alisangul123@gmail.com',
-        'efebusinessonlybusiness@gmail.com'
-    ];
+    // Keep dashboard-selector accounts in deployment configuration instead of
+    // shipping private addresses in the client bundle. Values are comma-separated.
+    const specialSelectionEmails = (process.env.NEXT_PUBLIC_DASHBOARD_SELECTOR_EMAILS || '')
+        .split(',')
+        .map(value => value.trim().toLowerCase())
+        .filter(Boolean);
 
-    // Check email for special dashboard selection privileges
-    useEffect(() => {
-        if (specialSelectionEmails.includes(email.trim().toLowerCase())) {
-            setShowDashboardSelector(true);
-            // Default select manager if not selected
-            if (!targetDashboard) setTargetDashboard('manager');
-        } else {
-            setShowDashboardSelector(false);
-            setTargetDashboard(null);
-        }
-    }, [email, targetDashboard]);
+    const showDashboardSelector = specialSelectionEmails.includes(email.trim().toLowerCase());
+
+    const handleEmailChange = (nextEmail: string) => {
+        setEmail(nextEmail);
+        const isSpecialSelectionEmail = specialSelectionEmails.includes(nextEmail.trim().toLowerCase());
+        setTargetDashboard((currentDashboard) => (
+            isSpecialSelectionEmail ? currentDashboard || 'manager' : null
+        ));
+    };
 
     const handleLogin = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -80,15 +80,15 @@ export default function LoginPage() {
 
                 router.refresh();
             }
-        } catch (err: any) {
-            setError(err.message || 'Giriş yapılırken bir hata oluştu');
+        } catch (err: unknown) {
+            setError(err instanceof Error ? err.message : 'Giriş yapılırken bir hata oluştu');
         } finally {
             setLoading(false);
         }
     };
 
     return (
-        <div className="min-h-screen flex items-center justify-center px-4 animate-fade-in" style={{ background: '#000000' }}>
+        <div className={`${styles.shell} min-h-[100dvh] flex items-start justify-center px-4 py-8 sm:items-center sm:py-12 animate-fade-in`} style={{ background: '#000000' }}>
             {/* Animated Background Grid */}
             <div className="fixed inset-0 -z-10 bg-black">
                 {/* Subtle spotlight to make grid pop */}
@@ -102,36 +102,38 @@ export default function LoginPage() {
                 }} />
             </div>
 
-            <div className="w-full max-w-md animate-fade-in-up">
+            <div className="w-full max-w-md min-w-0 animate-fade-in-up">
                 {/* Logo/Brand */}
                 <div className="text-center mb-8 animate-scale-in">
                     {/* Logo Image */}
                     <div className="flex justify-center mb-3">
-                        <img
+                        <Image
                             src="/logo-dark.png"
                             alt="ArtificAgent Logo"
-                            className="h-24 w-auto object-contain brightness-0 invert"
+                            width={96}
+                            height={96}
+                            className="h-20 w-auto object-contain brightness-0 invert sm:h-24"
                         />
                     </div>
-                    <h1 className="text-4xl font-black text-white mb-2 tracking-tight">
+                    <h1 className="mb-2 break-words text-3xl font-black tracking-tight text-white sm:text-4xl">
                         ArtificAgent
                     </h1>
-                    <p className="text-zinc-400 text-lg">Cold Calling Management System</p>
+                    <p className="break-words text-base text-zinc-400 sm:text-lg">Cold Calling Management System</p>
                 </div>
 
                 {/* Login Card */}
                 <div className="relative">
                     <GlowingEffect spread={40} glow={true} disabled={false} proximity={64} borderWidth={3} />
-                    <Card className="p-8 animate-scale-in relative !bg-transparent !border-none !shadow-none !backdrop-filter-none">
-                        <h2 className="text-3xl font-bold text-white mb-8 text-center">Giriş Yap</h2>
+                    <Card className="relative !border-none !bg-transparent !shadow-none !backdrop-filter-none p-5 animate-scale-in sm:p-8">
+                        <h2 className="mb-6 text-center text-2xl font-bold text-white sm:mb-8 sm:text-3xl">Giriş Yap</h2>
 
                         {error && (
-                            <div className="bg-red-500/10 border border-red-500/30 text-red-200 px-4 py-3 rounded-xl mb-6 backdrop-blur-sm animate-fade-in">
+                            <div role="alert" aria-live="assertive" className="mb-6 break-words rounded-xl border border-red-500/30 bg-red-500/10 px-4 py-3 text-red-200 backdrop-blur-sm animate-fade-in">
                                 {error}
                             </div>
                         )}
 
-                        <form onSubmit={handleLogin} className="space-y-6">
+                        <form onSubmit={handleLogin} aria-busy={loading} className="space-y-6">
                             {/* Email Input */}
                             <div>
                                 <label htmlFor="email" className="block text-sm font-semibold text-zinc-300 mb-2">
@@ -143,8 +145,9 @@ export default function LoginPage() {
                                         id="email"
                                         type="email"
                                         value={email}
-                                        onChange={(e) => setEmail(e.target.value)}
+                                        onChange={(e) => handleEmailChange(e.target.value)}
                                         required
+                                        autoComplete="email"
                                         className="pl-12"
                                         placeholder="ornek@email.com"
                                         disabled={loading}
@@ -163,7 +166,7 @@ export default function LoginPage() {
                                         <button
                                             type="button"
                                             onClick={() => setTargetDashboard('manager')}
-                                            className={`flex flex-col items-center justify-center p-4 rounded-xl border transition-smooth ${targetDashboard === 'manager'
+                                            className={`flex min-h-11 flex-col items-center justify-center rounded-xl border p-4 transition-smooth ${targetDashboard === 'manager'
                                                 ? 'glass-card border-purple-500/50 shadow-[0_0_20px_rgba(168,85,247,0.4)] scale-105'
                                                 : 'glass-card border-white/10 hover:border-white/20'
                                                 }`}
@@ -177,7 +180,7 @@ export default function LoginPage() {
                                         <button
                                             type="button"
                                             onClick={() => setTargetDashboard('agent')}
-                                            className={`flex flex-col items-center justify-center p-4 rounded-xl border transition-smooth ${targetDashboard === 'agent'
+                                            className={`flex min-h-11 flex-col items-center justify-center rounded-xl border p-4 transition-smooth ${targetDashboard === 'agent'
                                                 ? 'glass-card border-cyan-500/50 shadow-[0_0_20px_rgba(6,182,212,0.4)] scale-105'
                                                 : 'glass-card border-white/10 hover:border-white/20'
                                                 }`}
@@ -204,6 +207,7 @@ export default function LoginPage() {
                                         value={password}
                                         onChange={(e) => setPassword(e.target.value)}
                                         required
+                                        autoComplete="current-password"
                                         className="pl-12"
                                         placeholder="••••••••"
                                         disabled={loading}
@@ -215,7 +219,8 @@ export default function LoginPage() {
                             <GlassButton
                                 type="submit"
                                 disabled={loading}
-                                className="w-full py-6 text-lg whitespace-nowrap"
+                                aria-live="polite"
+                                className="w-full min-h-12 py-2 text-base whitespace-normal leading-tight sm:text-lg sm:whitespace-nowrap"
                             >
                                 {loading ? (
                                     <>

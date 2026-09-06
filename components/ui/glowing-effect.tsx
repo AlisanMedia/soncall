@@ -78,7 +78,7 @@ const GlowingEffect = memo(
 
                     const currentAngle =
                         parseFloat(element.style.getPropertyValue("--start")) || 0;
-                    let targetAngle =
+                    const targetAngle =
                         (180 * Math.atan2(mouseY - center[1], mouseX - center[0])) /
                         Math.PI +
                         90;
@@ -142,20 +142,17 @@ const GlowingEffect = memo(
                                 variant === "white"
                                     ? `repeating-conic-gradient(
                   from 236.84deg at 50% 50%,
-                  var(--black),
-                  var(--black) calc(25% / var(--repeating-conic-gradient-times))
+                  var(--color-bg-primary),
+                  var(--color-bg-primary) calc(25% / var(--repeating-conic-gradient-times))
                 )`
-                                    : `radial-gradient(circle, #A855F7 10%, #A855F700 20%),
-                radial-gradient(circle at 40% 40%, #06B6D4 5%, #06B6D400 15%),
-                radial-gradient(circle at 60% 60%, #3B82F6 10%, #3B82F600 20%), 
-                radial-gradient(circle at 40% 60%, #D946EF 10%, #D946EF00 20%),
+                                    : `radial-gradient(circle at 50% 0%, rgba(120,164,255,0.65), transparent 42%),
                 repeating-conic-gradient(
                   from 236.84deg at 50% 50%,
-                  #A855F7 0%,
-                  #06B6D4 calc(25% / var(--repeating-conic-gradient-times)),
-                  #3B82F6 calc(50% / var(--repeating-conic-gradient-times)), 
-                  #D946EF calc(75% / var(--repeating-conic-gradient-times)),
-                  #A855F7 calc(100% / var(--repeating-conic-gradient-times))
+                  rgba(91,141,246,0.8) 0%,
+                  rgba(102,169,232,0.55) calc(25% / var(--repeating-conic-gradient-times)),
+                  rgba(91,141,246,0.65) calc(50% / var(--repeating-conic-gradient-times)),
+                  rgba(124,143,232,0.6) calc(75% / var(--repeating-conic-gradient-times)),
+                  rgba(91,141,246,0.8) calc(100% / var(--repeating-conic-gradient-times))
                 )`,
                         } as React.CSSProperties
                     }

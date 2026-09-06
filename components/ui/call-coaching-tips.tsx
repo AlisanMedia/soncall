@@ -34,9 +34,9 @@ export default function CallCoachingTips({ analysis, className = '' }: CallCoach
             icon: <Sparkles className="w-4 h-4" />,
             title: 'Mükemmel İş!',
             message: 'Satışı başarıyla tamamladınız. Bu yaklaşımınızı gelecek görüşmelerde de uygulayın.',
-            color: 'text-green-400',
-            bgColor: 'bg-green-500/10',
-            borderColor: 'border-green-500/30'
+            color: 'ui-tone-success',
+            bgColor: 'ui-status-success',
+            borderColor: ''
         });
     } else if ((analysis.sentiment_score || 0) >= 8) {
         tips.push({
@@ -44,9 +44,9 @@ export default function CallCoachingTips({ analysis, className = '' }: CallCoach
             icon: <TrendingUp className="w-4 h-4" />,
             title: 'Harika Duygu Skoru',
             message: 'Müşteri çok olumlu! Şimdi randevu almak için doğru zaman. Somut bir sonraki adım önerin.',
-            color: 'text-emerald-400',
-            bgColor: 'bg-emerald-500/10',
-            borderColor: 'border-emerald-500/30'
+            color: 'ui-tone-success',
+            bgColor: 'ui-status-success',
+            borderColor: ''
         });
     }
 
@@ -57,9 +57,9 @@ export default function CallCoachingTips({ analysis, className = '' }: CallCoach
             icon: <Target className="w-4 h-4" />,
             title: 'Duygu Durumu Orta',
             message: 'Müşterinin ilgisini artırmak için somut faydalardan bahsedin. Case study veya başarı hikayeleri paylaşın.',
-            color: 'text-yellow-400',
-            bgColor: 'bg-yellow-500/10',
-            borderColor: 'border-yellow-500/30'
+            color: 'ui-tone-warning',
+            bgColor: 'ui-status-warning',
+            borderColor: ''
         });
     }
 
@@ -81,9 +81,9 @@ export default function CallCoachingTips({ analysis, className = '' }: CallCoach
                         icon: <Lightbulb className="w-4 h-4" />,
                         title: `İtiraz: "${objection}"`,
                         message: tip,
-                        color: 'text-purple-400',
-                        bgColor: 'bg-purple-500/10',
-                        borderColor: 'border-purple-500/30'
+                        color: 'ui-tone-accent',
+                        bgColor: 'ui-status-info',
+                        borderColor: ''
                     });
                     break;
                 }
@@ -98,9 +98,9 @@ export default function CallCoachingTips({ analysis, className = '' }: CallCoach
             icon: <AlertTriangle className="w-4 h-4" />,
             title: 'Düşük Potansiyel',
             message: 'Bu lead şu an hazır değil. Nurturing listesine ekleyin, 1-2 ay sonra tekrar ulaşın. Email kampanyası başlatın.',
-            color: 'text-orange-400',
-            bgColor: 'bg-orange-500/10',
-            borderColor: 'border-orange-500/30'
+            color: 'ui-tone-warning',
+            bgColor: 'ui-status-warning',
+            borderColor: ''
         });
     }
 
@@ -111,9 +111,9 @@ export default function CallCoachingTips({ analysis, className = '' }: CallCoach
             icon: <Target className="w-4 h-4" />,
             title: 'Çoklu Sorun Noktası',
             message: `${analysis.pain_points.length} farklı sorun tespit edildi. Her birine özel çözüm sunarak değer katın.`,
-            color: 'text-blue-400',
-            bgColor: 'bg-blue-500/10',
-            borderColor: 'border-blue-500/30'
+            color: 'ui-tone-info',
+            bgColor: 'ui-status-info',
+            borderColor: ''
         });
     }
 
@@ -124,24 +124,24 @@ export default function CallCoachingTips({ analysis, className = '' }: CallCoach
             icon: <Lightbulb className="w-4 h-4" />,
             title: 'Genel İpucu',
             message: 'Sonraki görüşmede müşterinin sorunlarını daha derinlemesine keşfedin. "Neden?" sorusunu 3 kez sorun.',
-            color: 'text-gray-400',
-            bgColor: 'bg-gray-500/10',
-            borderColor: 'border-gray-500/30'
+            color: 'ui-tone-muted',
+            bgColor: 'ui-surface-raised',
+            borderColor: ''
         });
     }
 
     return (
         <div className={`space-y-3 ${className}`}>
-            <div className="flex items-center gap-2 mb-2">
-                <Lightbulb className="w-4 h-4 text-yellow-400" />
-                <span className="text-xs text-gray-400 uppercase tracking-wider font-semibold">Coaching İpuçları</span>
+            <div className="mb-2 flex items-center gap-2">
+                <Lightbulb className="w-4 h-4 ui-tone-warning" />
+                <span className="text-xs font-semibold uppercase tracking-wider text-slate-400">Koçluk ipuçları</span>
             </div>
 
             <div className="space-y-2">
                 {tips.map((tip, index) => (
                     <motion.div
                         key={index}
-                        className={`p-3 rounded-lg border ${tip.borderColor} ${tip.bgColor}`}
+                        className={`rounded-lg border p-3 ${tip.borderColor} ${tip.bgColor}`}
                         initial={{ opacity: 0, x: -20 }}
                         animate={{ opacity: 1, x: 0 }}
                         transition={{ delay: index * 0.1 }}
@@ -154,7 +154,7 @@ export default function CallCoachingTips({ analysis, className = '' }: CallCoach
                                 <p className={`text-xs font-semibold mb-1 ${tip.color}`}>
                                     {tip.title}
                                 </p>
-                                <p className="text-xs text-gray-300 leading-relaxed">
+                                <p className="text-xs leading-relaxed text-slate-300">
                                     {tip.message}
                                 </p>
                             </div>

@@ -11,45 +11,36 @@ interface PulseVoiceRecorderProps {
     duration?: number; // Accept duration from parent if controlled, or manage internally if simple
 }
 
-export const PulseVoiceRecorder = ({ isRecording = false, onToggle, duration: externalDuration }: PulseVoiceRecorderProps) => {
+export const PulseVoiceRecorder = ({ isRecording, onToggle, duration: externalDuration }: PulseVoiceRecorderProps) => {
     // If controlled, use props; otherwise (for demo), use internal state.
     // Actually, for integration, we likely want controlled mode.
     // But let's keep the internal logic for the 'animation' part or just rely on props.
     // I will make it accept 'isRecording' prop primarily.
 
-    const [internalRecording, setInternalRecording] = useState(false);
+    const isControlled = isRecording !== undefined || onToggle !== undefined;
+    const [uncontrolledRecording, setUncontrolledRecording] = useState(false);
     const [timer, setTimer] = useState(0);
-
-    // Sync prop if provided
-    useEffect(() => {
-        if (isRecording !== undefined) {
-            setInternalRecording(isRecording);
-        }
-    }, [isRecording]);
+    const internalRecording = isControlled ? Boolean(isRecording) : uncontrolledRecording;
 
     useEffect(() => {
-        if (!internalRecording) {
-            setTimer(0);
-            return;
-        }
+        if (!internalRecording || externalDuration !== undefined) return;
 
         // If not controlled duration, use internal timer
-        if (externalDuration === undefined) {
-            const interval = setInterval(() => {
-                setTimer(prev => prev + 1);
-            }, 1000);
-            return () => clearInterval(interval);
-        }
+        const interval = setInterval(() => {
+            setTimer(prev => prev + 1);
+        }, 1000);
+        return () => clearInterval(interval);
     }, [internalRecording, externalDuration]);
 
-    const currentDuration = externalDuration !== undefined ? externalDuration : timer;
+    const currentDuration = externalDuration !== undefined ? externalDuration : internalRecording ? timer : 0;
 
     const handleClick = () => {
         // If onToggle provided, call it. Otherwise toggle internal (demo mode).
         if (onToggle) {
             onToggle();
         } else {
-            setInternalRecording(prev => !prev);
+            setTimer(0);
+            setUncontrolledRecording(prev => !prev);
         }
     };
 
@@ -69,7 +60,7 @@ export const PulseVoiceRecorder = ({ isRecording = false, onToggle, duration: ex
                             <div
                                 key={index}
                                 className={cn(
-                                    "absolute inset-0 rounded-full border border-red-500/30",
+                                    "absolute inset-0 rounded-full border border-red-400/30",
                                     "animate-ping"
                                 )}
                                 style={{
@@ -90,8 +81,8 @@ export const PulseVoiceRecorder = ({ isRecording = false, onToggle, duration: ex
                         "relative z-10 w-16 h-16 rounded-full transition-all duration-300",
                         "flex items-center justify-center",
                         internalRecording
-                            ? "bg-red-500 hover:bg-red-600 shadow-[0_0_20px_rgba(239,68,68,0.5)] scale-110"
-                            : "bg-gradient-to-br from-purple-600 to-blue-600 hover:from-purple-500 hover:to-blue-500 shadow-lg shadow-purple-500/30"
+                            ? "bg-red-500 hover:bg-red-400 shadow-md scale-105"
+                            : "bg-[var(--color-accent)] hover:bg-[var(--color-accent-hover)] shadow-md"
                     )}
                 >
                     {internalRecording ? (
@@ -105,7 +96,7 @@ export const PulseVoiceRecorder = ({ isRecording = false, onToggle, duration: ex
             {/* Duration display */}
             <div className={cn(
                 "text-xl font-mono font-bold transition-all duration-300",
-                internalRecording ? "text-red-400 opacity-100" : "text-gray-500 opacity-50"
+                internalRecording ? "text-red-300 opacity-100" : "text-slate-500 opacity-70"
             )}>
                 {formatTime(currentDuration)}
             </div>

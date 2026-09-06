@@ -17,9 +17,9 @@ export default function SentimentMeter({ score, className = '' }: SentimentMeter
             return {
                 emoji: '❓',
                 label: 'Belirlenemedi',
-                color: 'from-gray-400 to-gray-500',
-                bgColor: 'bg-gray-500/10',
-                textColor: 'text-gray-400'
+                color: 'ui-meter-fill-neutral',
+                bgColor: 'ui-surface-raised',
+                textColor: 'ui-tone-muted'
             };
         }
 
@@ -27,33 +27,33 @@ export default function SentimentMeter({ score, className = '' }: SentimentMeter
             return {
                 emoji: '🎉',
                 label: 'Çok Olumlu',
-                color: 'from-green-400 via-emerald-500 to-green-600',
-                bgColor: 'bg-green-500/10',
-                textColor: 'text-green-400'
+                color: 'ui-meter-fill-positive',
+                bgColor: 'ui-status-success',
+                textColor: 'ui-tone-success'
             };
         } else if (normalizedScore >= 6) {
             return {
                 emoji: '😊',
                 label: 'Olumlu',
-                color: 'from-lime-400 via-green-500 to-emerald-500',
-                bgColor: 'bg-lime-500/10',
-                textColor: 'text-lime-400'
+                color: 'ui-meter-fill-positive',
+                bgColor: 'ui-status-success',
+                textColor: 'ui-tone-success'
             };
         } else if (normalizedScore >= 4) {
             return {
                 emoji: '😐',
                 label: 'Nötr',
-                color: 'from-yellow-400 via-amber-500 to-orange-500',
-                bgColor: 'bg-yellow-500/10',
-                textColor: 'text-yellow-400'
+                color: 'ui-meter-fill-warning',
+                bgColor: 'ui-status-warning',
+                textColor: 'ui-tone-warning'
             };
         } else {
             return {
                 emoji: '😞',
                 label: 'Olumsuz',
-                color: 'from-orange-400 via-red-500 to-red-600',
-                bgColor: 'bg-red-500/10',
-                textColor: 'text-red-400'
+                color: 'ui-meter-fill-negative',
+                bgColor: 'ui-status-danger',
+                textColor: 'ui-tone-danger'
             };
         }
     }, [score, normalizedScore]);
@@ -98,18 +98,11 @@ export default function SentimentMeter({ score, className = '' }: SentimentMeter
             </div>
 
             {/* Progress Bar */}
-            <div className="relative h-3 bg-white/5 rounded-full overflow-hidden border border-white/10">
-                {/* Background gradient markers */}
-                <div className="absolute inset-0 flex">
-                    <div className="flex-1 bg-gradient-to-r from-red-500/10 to-orange-500/10" />
-                    <div className="flex-1 bg-gradient-to-r from-orange-500/10 to-yellow-500/10" />
-                    <div className="flex-1 bg-gradient-to-r from-yellow-500/10 to-lime-500/10" />
-                    <div className="flex-1 bg-gradient-to-r from-lime-500/10 to-green-500/10" />
-                </div>
+            <div className="ui-meter-track">
 
                 {/* Animated fill */}
                 <motion.div
-                    className={`absolute top-0 left-0 h-full bg-gradient-to-r ${config.color} shadow-lg`}
+                    className={`ui-meter-fill absolute left-0 top-0 ${config.color}`}
                     initial={{ width: 0 }}
                     animate={{ width: `${percentage}%` }}
                     transition={{
@@ -120,7 +113,7 @@ export default function SentimentMeter({ score, className = '' }: SentimentMeter
                 >
                     {/* Shine effect */}
                     <motion.div
-                        className="absolute inset-0 bg-gradient-to-r from-transparent via-white/30 to-transparent"
+                        className="absolute inset-0 bg-white/10"
                         initial={{ x: '-100%' }}
                         animate={{ x: '200%' }}
                         transition={{

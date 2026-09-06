@@ -16,7 +16,7 @@ const DottedBackground = () => (
                 id="dottedGrid"
             >
                 <circle
-                    fill="rgba(168, 85, 247, 0.3)"
+                    fill="rgba(120, 164, 255, 0.28)"
                     r="1"
                     cy="2"
                     cx="2"

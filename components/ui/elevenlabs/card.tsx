@@ -7,11 +7,11 @@ interface CardProps extends React.HTMLAttributes<HTMLDivElement> {
 
 export const Card = React.forwardRef<HTMLDivElement, CardProps>(
     ({ variant = 'default', className = '', children, ...props }, ref) => {
-        const baseClasses = 'glass-card rounded-2xl p-6';
+        const baseClasses = 'glass-card ui-card rounded-2xl p-6';
         const variantClasses = {
             default: '',
-            interactive: 'glass-card-hover cursor-pointer',
-            highlighted: 'border-purple-500/30 glow-on-hover',
+            interactive: 'glass-card-hover ui-card-interactive',
+            highlighted: 'ui-card-highlighted glow-on-hover',
         };
 
         return (
@@ -34,7 +34,7 @@ export const CardHeader = React.forwardRef<
 >(({ className = '', ...props }, ref) => (
     <div
         ref={ref}
-        className={`flex flex-col space-y-1.5 ${className}`}
+        className={`ui-card-header ${className}`}
         {...props}
     />
 ));
@@ -46,7 +46,7 @@ export const CardTitle = React.forwardRef<
 >(({ className = '', ...props }, ref) => (
     <h3
         ref={ref}
-        className={`text-2xl font-bold tracking-tight text-white ${className}`}
+        className={`ui-card-title ${className}`}
         {...props}
     />
 ));
@@ -58,7 +58,7 @@ export const CardDescription = React.forwardRef<
 >(({ className = '', ...props }, ref) => (
     <p
         ref={ref}
-        className={`text-sm text-zinc-400 ${className}`}
+        className={`ui-card-description ${className}`}
         {...props}
     />
 ));
@@ -68,7 +68,7 @@ export const CardContent = React.forwardRef<
     HTMLDivElement,
     React.HTMLAttributes<HTMLDivElement>
 >(({ className = '', ...props }, ref) => (
-    <div ref={ref} className={`pt-4 ${className}`} {...props} />
+    <div ref={ref} className={`ui-card-content ${className}`} {...props} />
 ));
 CardContent.displayName = 'CardContent';
 
@@ -78,7 +78,7 @@ export const CardFooter = React.forwardRef<
 >(({ className = '', ...props }, ref) => (
     <div
         ref={ref}
-        className={`flex items-center pt-4 ${className}`}
+        className={`ui-card-footer ${className}`}
         {...props}
     />
 ));

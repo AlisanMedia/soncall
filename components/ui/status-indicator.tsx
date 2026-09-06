@@ -13,12 +13,12 @@ export function StatusIndicator({ isOnline, size = 'sm' }: StatusIndicatorProps)
     };
 
     return (
-        <div className="absolute top-0 right-0 flex items-center justify-center">
+        <div className="absolute right-0 top-0 flex items-center justify-center" role="status" aria-label="Çevrimiçi">
             <div className="relative">
                 {/* Pulsing outer ring */}
-                <div className={`absolute inset-0 bg-green-500 rounded-full animate-ping opacity-75 ${sizeClasses[size]}`} />
+                <div className={`absolute inset-0 rounded-full bg-emerald-400/50 animate-ping opacity-75 ${sizeClasses[size]}`} aria-hidden="true" />
                 {/* Solid inner dot */}
-                <div className={`relative bg-green-500 rounded-full border-2 border-white shadow-lg ${sizeClasses[size]}`} />
+                <div className={`relative rounded-full border-2 border-[#151d27] bg-emerald-400 shadow-sm ${sizeClasses[size]}`} aria-hidden="true" />
             </div>
         </div>
     );

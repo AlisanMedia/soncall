@@ -1,6 +1,7 @@
 import { createClient } from '@/lib/supabase/server';
 import { redirect } from 'next/navigation';
 import AgentDashboard from '@/components/agent/AgentDashboard';
+import styles from './page.module.css';
 
 export default async function AgentPage() {
     const supabase = await createClient();
@@ -26,5 +27,9 @@ export default async function AgentPage() {
         redirect('/manager');
     }
 
-    return <AgentDashboard profile={profile} />;
+    return (
+        <div className={styles.shell} data-dashboard-shell="agent">
+            <AgentDashboard profile={profile} />
+        </div>
+    );
 }

@@ -17,8 +17,8 @@ export default function ErrorToast() {
 
     // Simple event listener pattern to trigger toasts globally
     useEffect(() => {
-        const handleToast = (event: any) => {
-            const { message, type = 'error' } = event.detail;
+        const handleToast = (event: Event) => {
+            const { message, type = 'error' } = (event as CustomEvent<{ message: string; type?: ToastType }>).detail;
             const id = Math.random().toString(36).substring(2, 9);
 
             setToasts(prev => [...prev, { id, message, type }]);
@@ -39,24 +39,24 @@ export default function ErrorToast() {
 
     const getIcon = (type: ToastType) => {
         switch (type) {
-            case 'error': return <AlertTriangle className="w-5 h-5 text-red-400" />;
-            case 'warning': return <AlertTriangle className="w-5 h-5 text-yellow-400" />;
-            case 'success': return <CheckCircle className="w-5 h-5 text-green-400" />;
-            default: return <Info className="w-5 h-5 text-blue-400" />;
+            case 'error': return <AlertTriangle className="w-5 h-5 ui-tone-danger" />;
+            case 'warning': return <AlertTriangle className="w-5 h-5 ui-tone-warning" />;
+            case 'success': return <CheckCircle className="w-5 h-5 ui-tone-success" />;
+            default: return <Info className="w-5 h-5 ui-tone-info" />;
         }
     };
 
     const getStyle = (type: ToastType) => {
         switch (type) {
-            case 'error': return 'bg-red-500/10 border-red-500/30';
-            case 'warning': return 'bg-yellow-500/10 border-yellow-500/30';
-            case 'success': return 'bg-green-500/10 border-green-500/30';
-            default: return 'bg-blue-500/10 border-blue-500/30';
+            case 'error': return 'ui-status-danger';
+            case 'warning': return 'ui-status-warning';
+            case 'success': return 'ui-status-success';
+            default: return 'ui-status-info';
         }
     };
 
     return (
-        <div className="fixed bottom-24 left-6 z-[9999] flex flex-col gap-3 pointer-events-none">
+        <div className="fixed bottom-6 left-6 z-[9999] flex flex-col gap-3 pointer-events-none" aria-live="polite">
             <AnimatePresence>
                 {toasts.map((toast) => (
                     <motion.div
@@ -64,13 +64,14 @@ export default function ErrorToast() {
                         initial={{ opacity: 0, x: -50, scale: 0.8 }}
                         animate={{ opacity: 1, x: 0, scale: 1 }}
                         exit={{ opacity: 0, x: -20, scale: 0.5 }}
-                        className={`pointer-events-auto flex items-center gap-3 px-4 py-3 rounded-xl border backdrop-blur-md shadow-2xl min-w-[300px] max-w-md ${getStyle(toast.type)}`}
+                        className={`pointer-events-auto flex items-center gap-3 px-4 py-3 rounded-lg border shadow-lg min-w-[300px] max-w-md ${getStyle(toast.type)}`}
                     >
                         {getIcon(toast.type)}
                         <p className="flex-1 text-sm text-white font-medium">{toast.message}</p>
                         <button
                             onClick={() => removeToast(toast.id)}
-                            className="p-1 hover:bg-white/10 rounded-lg transition-colors"
+                            className="p-1 rounded-md text-white/60 transition-colors hover:bg-white/10 hover:text-white focus-visible:outline-none"
+                            aria-label="Bildirimi kapat"
                         >
                             <X className="w-4 h-4 text-white/50" />
                         </button>

@@ -1,7 +1,7 @@
 'use client';
 
 import { motion } from 'framer-motion';
-import { Calendar, ExternalLink, Sparkles, Phone, Copy, CheckCircle2 } from 'lucide-react';
+import { Calendar, Sparkles, Phone, Copy, CheckCircle2 } from 'lucide-react';
 import { useState } from 'react';
 import { toast } from 'sonner';
 
@@ -94,13 +94,13 @@ export default function SmartActions({ analysis, leadPhone, className = '' }: Sm
 
                     window.open(calendarUrl, '_blank');
                     toast.success('Google Calendar açıldı');
-                } catch (e) {
+                } catch {
                     toast.error('Tarih formatı hatalı');
                 }
                 break;
 
             case 'call':
-                window.location.href = `tel:${action.data}`;
+                window.location.assign(`tel:${action.data}`);
                 break;
 
             case 'copy':
@@ -114,31 +114,26 @@ export default function SmartActions({ analysis, leadPhone, className = '' }: Sm
 
     return (
         <div className={`space-y-2 ${className}`}>
-            <div className="flex items-center gap-2 mb-2">
-                <span className="text-xs text-gray-400 uppercase tracking-wider font-semibold">⚡ Hızlı Aksiyonlar</span>
+            <div className="mb-2 flex items-center gap-2">
+                <span className="text-xs font-semibold uppercase tracking-wider text-slate-400">Hızlı aksiyonlar</span>
             </div>
             <div className="grid grid-cols-2 gap-2">
                 {actions.map((action, index) => (
                     <motion.button
                         key={index}
                         onClick={() => handleAction(action)}
-                        className={`
-                            flex items-center justify-center gap-2 px-3 py-2.5 rounded-lg
-                            text-xs font-medium transition-all
-                            ${action.type === 'whatsapp'
-                                ? 'bg-gradient-to-r from-green-500/10 to-emerald-500/10 border border-green-500/30 text-green-300 hover:from-green-500/20 hover:to-emerald-500/20'
-                                : action.type === 'calendar'
-                                    ? 'bg-gradient-to-r from-purple-500/10 to-indigo-500/10 border border-purple-500/30 text-purple-300 hover:from-purple-500/20 hover:to-indigo-500/20'
-                                    : action.type === 'call'
-                                        ? 'bg-gradient-to-r from-blue-500/10 to-cyan-500/10 border border-blue-500/30 text-blue-300 hover:from-blue-500/20 hover:to-cyan-500/20'
-                                        : 'bg-gradient-to-r from-gray-500/10 to-slate-500/10 border border-gray-500/30 text-gray-300 hover:from-gray-500/20 hover:to-slate-500/20'
-                            }
-                        `}
+                        className={`ui-action-button ${action.type === 'whatsapp'
+                            ? 'ui-action-whatsapp'
+                            : action.type === 'calendar'
+                                ? 'ui-action-calendar'
+                                : action.type === 'call'
+                                    ? 'ui-action-call'
+                                    : 'ui-action-copy'
+                            }`}
                         initial={{ opacity: 0, y: 10 }}
                         animate={{ opacity: 1, y: 0 }}
                         transition={{ delay: index * 0.1 }}
-                        whileHover={{ scale: 1.05 }}
-                        whileTap={{ scale: 0.95 }}
+                        whileTap={{ scale: 0.98 }}
                     >
                         {action.icon}
                         {action.label}
