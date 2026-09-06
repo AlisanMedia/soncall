@@ -15,8 +15,17 @@ function loadAnalytics() {
         require(name) {
             // Analytics must not initialize the service-role client merely to
             // read rank labels. No credentials exist in this isolated module.
-            assert.equal(name, './gamification-utils');
-            return { getRankInfo: () => ({ title: 'Test rank' }) };
+            if (name === './gamification-utils') return { getRankInfo: () => ({ title: 'Test rank' }) };
+            if (name === './timezone') return {
+                getAppDayStart: () => new Date(0),
+                formatAppDate: value => new Date(value).toISOString().slice(0, 10),
+            };
+            if (name === 'date-fns-tz') return {
+                formatInTimeZone: (value, _zone, format) => format === 'H'
+                    ? String(new Date(value).getUTCHours())
+                    : new Date(value).toISOString().slice(0, 10),
+            };
+            throw new Error(name);
         },
     };
     vm.runInNewContext(code, context);
@@ -39,6 +48,7 @@ function database({ failPage = false } = {}) {
                 eq(key, value) { this.filters.push([key, value]); return this; },
                 in() { return this; },
                 gte() { return this; },
+                lt() { return this; },
                 order() { return this; },
                 filteredRows() {
                     if (!['leads', 'lead_activity_log'].includes(table)) return [];
