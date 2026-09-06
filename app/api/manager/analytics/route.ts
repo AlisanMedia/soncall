@@ -2,6 +2,7 @@ import { createClient } from '@/lib/supabase/server';
 import { NextRequest, NextResponse } from 'next/server';
 import { fetchManagerAnalytics } from '@/lib/analytics';
 import { resolveRequestedMarketId } from '@/lib/market-access';
+import { createAdminClient } from '@/lib/supabase/admin';
 
 export async function GET(request: NextRequest) {
     try {
@@ -28,7 +29,11 @@ export async function GET(request: NextRequest) {
 
         // Fetch analytics using shared logic
         const effectiveMarketId = resolveRequestedMarketId(profile, request.nextUrl.searchParams.get('marketId'));
-        const analyticsData = await fetchManagerAnalytics(supabase, effectiveMarketId);
+        // The session client can hide nested lead rows through child-table RLS,
+        // causing empty charts or a 500. Authentication/market authorization is
+        // complete above; the analytics helper applies the market filter to every
+        // aggregate query, so use the admin client for reliable joins.
+        const analyticsData = await fetchManagerAnalytics(createAdminClient(), effectiveMarketId);
 
         return NextResponse.json(analyticsData);
 
