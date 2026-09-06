@@ -26,6 +26,7 @@ async function run({ market = 'tr', requestedAgent = 'self', signedIn = true, fa
             select() { return query; }, order() { return query; }, or() { return query; },
             eq(key, value) { filters.push(row => row[key] === value); return query; },
             gte(key, value) { filters.push(row => row[key] >= value); return query; },
+            not() { return query; },
             in(key, values) { filters.push(row => values.includes(row[key])); return query; },
             range(start, end) { range = [start, end]; return query; },
             then(resolve, reject) {
@@ -45,6 +46,9 @@ async function run({ market = 'tr', requestedAgent = 'self', signedIn = true, fa
     vm.runInNewContext(source, { exports, console, Date, URL, require(name) {
         if (name === 'next/server') return { NextResponse };
         if (name === 'date-fns-tz') return require(name);
+        if (name === '@/lib/timezone') return {
+            getAppDayStart: () => new Date(0),
+        };
         if (name.endsWith('/server')) return { createClient: async () => session };
         if (name.endsWith('/admin')) return { createAdminClient: () => { adminCreated = true; return { from }; } };
         if (name.endsWith('/market-access')) return { isGlobalRole: role => ['founder', 'admin'].includes(role) };
