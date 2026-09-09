@@ -83,11 +83,11 @@ export default function ScheduledReportsManager({ managerId }: { managerId: stri
         }
     };
 
-    if (loading) return <div className="p-8 text-center text-purple-200">Yükleniyor...</div>;
+    if (loading) return <div className="p-4 sm:p-8 text-center text-purple-200">Yükleniyor...</div>;
 
     return (
-        <div className="space-y-6">
-            <div className="flex justify-between items-center mb-6">
+        <div className="space-y-3 sm:space-y-6">
+            <div className="flex justify-between items-center mb-3 sm:mb-6">
                 <div>
                     <h3 className="text-xl font-bold text-white">Otomatik Raporlar</h3>
                     <p className="text-purple-300 text-sm">Düzenli e-posta raporlarını yönetin</p>
@@ -101,7 +101,7 @@ export default function ScheduledReportsManager({ managerId }: { managerId: stri
             </div>
 
             {isCreating && (
-                <div className="bg-white/10 border border-white/20 rounded-xl p-6 mb-6">
+                <div className="bg-white/10 border border-white/20 rounded-xl p-3 sm:p-6 mb-3 sm:mb-6">
                     <h4 className="text-lg font-semibold text-white mb-4">Yeni Rapor Planla</h4>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
                         <div>
@@ -150,7 +150,7 @@ export default function ScheduledReportsManager({ managerId }: { managerId: stri
 
             <div className="grid gap-4">
                 {reports.map((report: any) => (
-                    <div key={report.id} className="bg-white/5 border border-white/10 rounded-xl p-6 flex flex-col md:flex-row justify-between gap-4">
+                    <div key={report.id} className="bg-white/5 border border-white/10 rounded-xl p-3 sm:p-6 flex flex-col md:flex-row justify-between gap-4">
                         <div className="flex items-start gap-4">
                             <div className="p-3 bg-purple-500/20 text-purple-300 rounded-lg"><Clock className="w-6 h-6" /></div>
                             <div>

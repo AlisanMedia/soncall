@@ -78,8 +78,8 @@ export default function SystemMaintenance() {
     ];
 
     return (
-        <div className="space-y-6">
-            <div className="bg-red-500/10 border border-red-500/30 rounded-xl p-6 flex items-start gap-4">
+        <div className="space-y-3 sm:space-y-6">
+            <div className="bg-red-500/10 border border-red-500/30 rounded-xl p-3 sm:p-6 flex items-start gap-4">
                 <div className="p-3 bg-red-500/20 rounded-lg text-red-400">
                     <AlertTriangle className="w-6 h-6" />
                 </div>
@@ -124,8 +124,8 @@ export default function SystemMaintenance() {
             {/* Confirmation Modal */}
             {confirmAction && (
                 <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-4">
-                    <div className="bg-slate-900 border border-red-500/50 rounded-2xl p-6 w-full max-w-md shadow-2xl relative">
-                        <div className="text-center mb-6">
+                    <div className="bg-slate-900 border border-red-500/50 rounded-2xl p-3 sm:p-6 w-full max-w-md shadow-2xl relative">
+                        <div className="text-center mb-3 sm:mb-6">
                             <div className="w-16 h-16 bg-red-500/20 rounded-full flex items-center justify-center mx-auto mb-4 text-red-500">
                                 <AlertTriangle className="w-8 h-8" />
                             </div>

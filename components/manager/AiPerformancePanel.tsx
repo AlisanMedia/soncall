@@ -92,7 +92,7 @@ export default function AiPerformancePanel({ selectedMarketId }: { selectedMarke
     }, [selectedMarketId]);
 
     if (loading) return (
-        <div className="bg-gradient-to-br from-slate-900 via-purple-900/20 to-slate-900 rounded-2xl p-6 border border-cyan-500/30 min-h-[220px] flex items-center justify-center">
+        <div className="bg-gradient-to-br from-slate-900 via-purple-900/20 to-slate-900 rounded-2xl p-3 sm:p-6 border border-cyan-500/30 min-h-[220px] flex items-center justify-center">
             <div className="text-center">
                 <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-cyan-400 mx-auto mb-4" />
                 <p className="text-cyan-300 text-sm animate-pulse">AI performans verisi yükleniyor...</p>
@@ -101,7 +101,7 @@ export default function AiPerformancePanel({ selectedMarketId }: { selectedMarke
     );
 
     if (!data) return (
-        <div className="bg-white/5 rounded-2xl p-6 border border-white/10">
+        <div className="bg-white/5 rounded-2xl p-3 sm:p-6 border border-white/10">
             <div className="flex items-center gap-3">
                 <ShieldCheck className="w-5 h-5 text-cyan-300" />
                 <div>
@@ -151,12 +151,12 @@ export default function AiPerformancePanel({ selectedMarketId }: { selectedMarke
     const aiCost = data.aiCost;
 
     return (
-        <div className="space-y-6">
+        <div className="space-y-3 sm:space-y-6">
             {/* Header: Cortex Status */}
             <motion.div
                 initial={{ opacity: 0, y: -20 }}
                 animate={{ opacity: 1, y: 0 }}
-                className="bg-gradient-to-br from-slate-900 via-purple-900/20 to-slate-900 rounded-2xl p-6 border border-cyan-500/30 relative overflow-hidden"
+                className="bg-gradient-to-br from-slate-900 via-purple-900/20 to-slate-900 rounded-2xl p-3 sm:p-6 border border-cyan-500/30 relative overflow-hidden"
             >
                 {/* Animated background grid */}
                 <div className="absolute inset-0 opacity-10">
@@ -182,7 +182,7 @@ export default function AiPerformancePanel({ selectedMarketId }: { selectedMarke
                             <Brain className="w-8 h-8 text-cyan-400" />
                         </motion.div>
                         <div>
-                            <h2 className="text-2xl font-bold text-white flex items-center gap-2">
+                            <h2 className="text-xl sm:text-2xl font-bold text-white flex items-center gap-2">
                                 CORTEX
                                 <span className="text-xs px-2 py-1 bg-cyan-500/20 text-cyan-300 rounded-full border border-cyan-400/30">
                                     v2.0
@@ -245,19 +245,19 @@ export default function AiPerformancePanel({ selectedMarketId }: { selectedMarke
                 <div className="mt-5 grid grid-cols-2 lg:grid-cols-4 gap-3">
                     <div className="rounded-xl border border-white/10 bg-black/20 p-4">
                         <p className="text-xs text-emerald-200/70">Bugün</p>
-                        <p className="mt-1 text-2xl font-bold text-white">{formatUsd(aiCost?.today || 0)}</p>
+                        <p className="mt-1 text-xl sm:text-2xl font-bold text-white">{formatUsd(aiCost?.today || 0)}</p>
                     </div>
                     <div className="rounded-xl border border-white/10 bg-black/20 p-4">
                         <p className="text-xs text-cyan-200/70">Son 7 Gün</p>
-                        <p className="mt-1 text-2xl font-bold text-white">{formatUsd(aiCost?.week || 0)}</p>
+                        <p className="mt-1 text-xl sm:text-2xl font-bold text-white">{formatUsd(aiCost?.week || 0)}</p>
                     </div>
                     <div className="rounded-xl border border-white/10 bg-black/20 p-4">
                         <p className="text-xs text-purple-200/70">Bu Ay</p>
-                        <p className="mt-1 text-2xl font-bold text-white">{formatUsd(aiCost?.month || 0)}</p>
+                        <p className="mt-1 text-xl sm:text-2xl font-bold text-white">{formatUsd(aiCost?.month || 0)}</p>
                     </div>
                     <div className="rounded-xl border border-white/10 bg-black/20 p-4">
                         <p className="text-xs text-orange-200/70">Ses Dakikası</p>
-                        <p className="mt-1 text-2xl font-bold text-white">{aiCost?.transcriptionMinutes || 0}</p>
+                        <p className="mt-1 text-xl sm:text-2xl font-bold text-white">{aiCost?.transcriptionMinutes || 0}</p>
                     </div>
                 </div>
 
@@ -319,13 +319,13 @@ export default function AiPerformancePanel({ selectedMarketId }: { selectedMarke
             </motion.div>
 
             {/* Main Grid */}
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-3 sm:gap-6">
                 {/* Oracle Accuracy */}
                 <motion.div
                     initial={{ opacity: 0, x: -20 }}
                     animate={{ opacity: 1, x: 0 }}
                     transition={{ delay: 0.1 }}
-                    className="bg-white/5 backdrop-blur-lg rounded-2xl p-6 border border-purple-500/30"
+                    className="bg-white/5 backdrop-blur-lg rounded-2xl p-3 sm:p-6 border border-purple-500/30"
                 >
                     <div className="flex items-center gap-3 mb-4">
                         <div className="p-2 bg-purple-500/20 rounded-lg">
@@ -339,9 +339,9 @@ export default function AiPerformancePanel({ selectedMarketId }: { selectedMarke
                     </div>
 
                     <div className="text-center mb-4">
-                        <div className="text-4xl font-bold text-purple-400 mb-1">
+                        <div className="text-2xl sm:text-4xl font-bold text-purple-400 mb-1">
                             {data.oracle.totalPredictions < 5 ? (
-                                <span className="text-2xl text-purple-300 animate-pulse">Veri Toplanıyor...</span>
+                                <span className="text-xl sm:text-2xl text-purple-300 animate-pulse">Veri Toplanıyor...</span>
                             ) : (
                                 `${data.oracle.accuracy}%`
                             )}
@@ -385,7 +385,7 @@ export default function AiPerformancePanel({ selectedMarketId }: { selectedMarke
                     initial={{ opacity: 0, y: 20 }}
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ delay: 0.2 }}
-                    className="bg-white/5 backdrop-blur-lg rounded-2xl p-6 border border-cyan-500/30 w-full min-w-0"
+                    className="bg-white/5 backdrop-blur-lg rounded-2xl p-3 sm:p-6 border border-cyan-500/30 w-full min-w-0"
                 >
                     <div className="flex items-center gap-3 mb-4">
                         <div className="p-2 bg-cyan-500/20 rounded-lg">
@@ -442,7 +442,7 @@ export default function AiPerformancePanel({ selectedMarketId }: { selectedMarke
                     initial={{ opacity: 0, x: 20 }}
                     animate={{ opacity: 1, x: 0 }}
                     transition={{ delay: 0.3 }}
-                    className="bg-white/5 backdrop-blur-lg rounded-2xl p-6 border border-emerald-500/30"
+                    className="bg-white/5 backdrop-blur-lg rounded-2xl p-3 sm:p-6 border border-emerald-500/30"
                 >
                     <div className="flex items-center gap-3 mb-4">
                         <div className="p-2 bg-emerald-500/20 rounded-lg">
@@ -456,7 +456,7 @@ export default function AiPerformancePanel({ selectedMarketId }: { selectedMarke
                     </div>
 
                     <div className="text-center mb-4">
-                        <div className="text-4xl font-bold text-emerald-400 mb-1">
+                        <div className="text-2xl sm:text-4xl font-bold text-emerald-400 mb-1">
                             {data.synergy.score}%
                         </div>
                         <p className="text-xs text-emerald-200">
@@ -499,13 +499,13 @@ export default function AiPerformancePanel({ selectedMarketId }: { selectedMarke
             </div>
 
             {/* Secondary Metrics */}
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-3 sm:gap-6">
                 {/* Appointment Verification */}
                 <motion.div
                     initial={{ opacity: 0, y: 20 }}
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ delay: 0.4 }}
-                    className="bg-white/5 backdrop-blur-lg rounded-2xl p-6 border border-orange-500/30"
+                    className="bg-white/5 backdrop-blur-lg rounded-2xl p-3 sm:p-6 border border-orange-500/30"
                 >
                     <div className="flex items-center justify-between mb-4">
                         <div className="flex items-center gap-3">
@@ -519,7 +519,7 @@ export default function AiPerformancePanel({ selectedMarketId }: { selectedMarke
                             <SectionInfo text="Sadece AI loglarında kanıtı bulunan (tarih/kelime eşleşen) randevuları sayar." />
                         </div>
                         <div className="text-right">
-                            <div className="text-2xl font-bold text-orange-400">{data.appointmentDetection.rate}%</div>
+                            <div className="text-xl sm:text-2xl font-bold text-orange-400">{data.appointmentDetection.rate}%</div>
                             <div className="text-xs text-orange-200">{data.appointmentDetection.total} verified</div>
                         </div>
                     </div>
@@ -543,7 +543,7 @@ export default function AiPerformancePanel({ selectedMarketId }: { selectedMarke
                     initial={{ opacity: 0, y: 20 }}
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ delay: 0.5 }}
-                    className="bg-white/5 backdrop-blur-lg rounded-2xl p-6 border border-pink-500/30 w-full min-w-0"
+                    className="bg-white/5 backdrop-blur-lg rounded-2xl p-3 sm:p-6 border border-pink-500/30 w-full min-w-0"
                 >
                     <div className="flex items-center gap-3 mb-4">
                         <div className="p-2 bg-pink-500/20 rounded-lg">

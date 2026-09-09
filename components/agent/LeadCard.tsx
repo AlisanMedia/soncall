@@ -521,7 +521,7 @@ export default function LeadCard({ agentId, profile, onLeadProcessed, refreshKey
 
     if (loading) {
         return (
-            <div className="glass-card flex min-h-[360px] items-center justify-center p-6 sm:min-h-[500px] sm:p-12 animate-scale-in">
+            <div className="glass-card flex min-h-[220px] items-center justify-center p-6 sm:min-h-[500px] sm:p-12 animate-scale-in">
                 <div className="text-center">
                     <img src="/loading-logo.png" alt="Loading" className="w-24 h-8 animate-pulse mx-auto mb-4 object-contain" />
                     <p className="text-zinc-400">Sistem Hazırlanıyor...</p>
@@ -532,7 +532,7 @@ export default function LeadCard({ agentId, profile, onLeadProcessed, refreshKey
 
     if (!currentLead) {
         return (
-            <div className="glass-card flex min-h-[360px] items-center justify-center p-8 text-center animate-scale-in sm:min-h-[500px] sm:p-12">
+            <div className="glass-card flex min-h-[220px] items-center justify-center p-8 text-center animate-scale-in sm:min-h-[500px] sm:p-12">
                 <div className="text-center">
                     <CheckCircle2 className="mx-auto mb-4 h-14 w-14 text-green-400 sm:h-16 sm:w-16" aria-hidden="true" />
                     <h3 className="mb-2 text-xl font-bold text-white sm:text-2xl">
@@ -547,13 +547,13 @@ export default function LeadCard({ agentId, profile, onLeadProcessed, refreshKey
     }
 
     return (
-        <div className="glass-card glass-card-hover relative space-y-4 p-4 sm:space-y-6 sm:p-8 animate-fade-in-up">
+        <div className="glass-card glass-card-hover relative space-y-3 p-3 sm:space-y-6 sm:p-8 animate-fade-in-up">
             <GlowingEffect spread={40} glow={true} disabled={false} proximity={64} borderWidth={3} />
             {/* Header */}
             <div className="flex min-w-0 items-start justify-between">
                 <div className="min-w-0">
                     <div className="flex flex-wrap items-center gap-3 mb-2">
-                        <h2 className="min-w-0 break-words text-2xl font-bold leading-tight text-white sm:text-3xl">{currentLead.business_name}</h2>
+                        <h2 className="min-w-0 break-words text-xl font-bold leading-tight text-white sm:text-3xl">{currentLead.business_name}</h2>
                         {leadCodeLabel && (
                             <button
                                 type="button"
@@ -848,7 +848,7 @@ export default function LeadCard({ agentId, profile, onLeadProcessed, refreshKey
                 onClick={handleNextLead}
                 disabled={!isFormValid() || processing || isAiProcessing}
                 className="w-full shadow-lg hover:shadow-xl transform hover:scale-[1.02] active:scale-95 transition-smooth disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none touch-target-large"
-                contentClassName="flex items-center justify-center gap-3 py-4 sm:py-5 px-6 font-bold text-base sm:text-lg text-white"
+                contentClassName="flex items-center justify-center gap-2 py-3 sm:py-5 px-4 sm:px-6 font-bold text-base sm:text-lg text-white"
                 size="lg"
             >
                 {processing ? (

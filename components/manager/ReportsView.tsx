@@ -109,11 +109,11 @@ export default function ReportsView({ managerId }: ReportsViewProps) {
     );
 
     return (
-        <div className="space-y-6">
+        <div className="space-y-3 sm:space-y-6">
             {/* Header & Tabs */}
             <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
                 <div>
-                    <h2 className="text-2xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-white to-purple-200">
+                    <h2 className="text-xl sm:text-2xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-white to-purple-200">
                         Raporlar ve Analizler
                     </h2>
                     <p className="text-purple-300/60 text-sm mt-1">
@@ -146,7 +146,7 @@ export default function ReportsView({ managerId }: ReportsViewProps) {
             </div>
 
             {/* Content Area */}
-            <div className="bg-white/5 border border-white/10 rounded-2xl p-6 backdrop-blur-xl">
+            <div className="bg-white/5 border border-white/10 rounded-2xl p-3 sm:p-6 backdrop-blur-xl">
 
                 {activeTab === 'scheduled' ? (
                     managerId ? (
@@ -159,7 +159,7 @@ export default function ReportsView({ managerId }: ReportsViewProps) {
                     )
                 ) : (
                     /* Existing Lead List View */
-                    <div className="space-y-6">
+                    <div className="space-y-3 sm:space-y-6">
                         {/* Filters */}
                         <div className="flex flex-col md:flex-row gap-4 justify-between">
                             <div className="relative flex-1 max-w-md">
@@ -269,7 +269,7 @@ export default function ReportsView({ managerId }: ReportsViewProps) {
             {selectedLead && (
                 <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4" onClick={() => setSelectedLead(null)}>
                     <div className="bg-[#1a1a2e] border border-white/10 w-full max-w-2xl rounded-2xl shadow-2xl overflow-hidden" onClick={e => e.stopPropagation()}>
-                        <div className="p-6 border-b border-white/10 flex justify-between items-start">
+                        <div className="p-3 sm:p-6 border-b border-white/10 flex justify-between items-start">
                             <div>
                                 <h3 className="text-xl font-bold text-white">{selectedLead.business_name}</h3>
                                 <p className="text-purple-300 text-sm mt-1">{selectedLead.phone_number}</p>
@@ -280,7 +280,7 @@ export default function ReportsView({ managerId }: ReportsViewProps) {
                             </span>
                         </div>
 
-                        <div className="p-6 max-h-[60vh] overflow-y-auto space-y-6">
+                        <div className="p-3 sm:p-6 max-h-[60vh] overflow-y-auto space-y-3 sm:space-y-6">
                             {/* Lead Details */}
                             <div className="grid grid-cols-2 gap-4">
                                 <div className="bg-white/5 p-4 rounded-xl">

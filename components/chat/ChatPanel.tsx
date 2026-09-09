@@ -135,9 +135,9 @@ export default function ChatPanel({ userId, isOpen, onClose, leadId, receiverId,
     if (!isOpen) return null;
 
     return (
-        <div className="fixed inset-0 sm:inset-y-0 sm:right-0 sm:left-auto w-full sm:w-96 md:w-[420px] glass-card backdrop-blur-2xl shadow-2xl z-50 flex flex-col border-l border-white/20">
+        <div className="fixed inset-x-0 top-0 h-dvh sm:inset-y-0 sm:right-0 sm:left-auto w-full sm:w-96 md:w-[420px] glass-card backdrop-blur-2xl shadow-2xl z-50 flex flex-col border-l border-white/20">
             {/* Header */}
-            <div className="glass-nav p-4 flex items-center justify-between relative shadow-lg">
+            <div className="glass-nav shrink-0 p-3 sm:p-4 flex items-center justify-between relative shadow-lg">
 
                 <div className="flex items-center gap-3">
                     <div className="p-2 bg-gradient-to-br from-purple-500/20 to-blue-500/20 rounded-lg border border-white/10">
@@ -196,7 +196,7 @@ export default function ChatPanel({ userId, isOpen, onClose, leadId, receiverId,
             {/* Messages */}
 
             <div
-                className="flex-1 overflow-y-auto p-4 space-y-4 scrollbar-thin scrollbar-thumb-white/10 scrollbar-track-transparent"
+                className="min-h-0 flex-1 overflow-y-auto p-3 sm:p-4 space-y-3 sm:space-y-4 scrollbar-thin scrollbar-thumb-white/10 scrollbar-track-transparent"
                 onScroll={handleScroll}
             >
                 {loading ? (

@@ -247,9 +247,9 @@ export default function AgentSettings({
     };
 
     return (
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 p-4">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-3 p-0 sm:gap-8 sm:p-4">
             {/* LEFT: Edit Form */}
-            <div className="bg-slate-950/20 border border-white/10 rounded-2xl p-6 backdrop-blur-xl shadow-2xl shadow-black/20">
+            <div className="bg-slate-950/20 border border-white/10 rounded-2xl p-3 sm:p-6 backdrop-blur-xl shadow-2xl shadow-black/20">
                 <h2 className="text-xl font-bold text-white mb-6 flex items-center gap-2">
                     <User className="w-5 h-5 text-purple-400" />
                     Profil Düzenle
@@ -502,7 +502,7 @@ export default function AgentSettings({
                         <div className="absolute inset-0 blur-xl bg-black/20 -z-10 rounded-2xl"></div>
 
                         {/* Card Content (Glass) */}
-                        <div className="bg-slate-900/90 backdrop-blur-md rounded-2xl p-6 h-full border-t border-white/10 relative overflow-hidden">
+                        <div className="bg-slate-900/90 backdrop-blur-md rounded-2xl p-3 sm:p-6 h-full border-t border-white/10 relative overflow-hidden">
                             {/* Decorative Elements */}
                             <div className="absolute top-0 right-0 w-32 h-32 bg-white/[0.04] rounded-bl-full"></div>
                             <div className="absolute bottom-0 left-0 w-24 h-24 bg-white/5 rounded-tr-full"></div>

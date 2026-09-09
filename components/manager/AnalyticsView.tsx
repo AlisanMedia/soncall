@@ -90,7 +90,7 @@ export default function AnalyticsView({ selectedMarketId }: { selectedMarketId?:
     const bestConverter = [...data.agentPerformance].sort((a, b) => b.conversion_rate - a.conversion_rate)[0];
 
     return (
-        <div className="space-y-6">
+        <div className="space-y-3 sm:space-y-6">
             {error && <p role="alert" className="text-amber-300">{error} Son başarılı sonuçlar gösteriliyor.</p>}
             {/* Summary Cards */}
             <div className="grid grid-cols-2 md:grid-cols-4 gap-3 sm:gap-4">
@@ -211,9 +211,9 @@ export default function AnalyticsView({ selectedMarketId }: { selectedMarketId?:
             </div>
 
             {/* Charts Row 1 */}
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-3 sm:gap-6">
                 {/* Hourly Activity Chart */}
-                <div className="bg-white/10 backdrop-blur-lg rounded-2xl shadow-2xl p-6 border border-white/20 w-full min-w-0">
+                <div className="bg-white/10 backdrop-blur-lg rounded-2xl shadow-2xl p-3 sm:p-6 border border-white/20 w-full min-w-0">
                     <h3 className="text-base sm:text-xl font-bold text-white mb-4 flex items-center gap-2">
                         <Clock className="w-4 h-4 sm:w-5 sm:h-5 text-purple-400" />
                         <span className="truncate">Saatlik Aktivite</span>
@@ -246,7 +246,7 @@ export default function AnalyticsView({ selectedMarketId }: { selectedMarketId?:
                 </div>
 
                 {/* Daily Trend Chart */}
-                <div className="bg-white/10 backdrop-blur-lg rounded-2xl shadow-2xl p-6 border border-white/20 w-full min-w-0">
+                <div className="bg-white/10 backdrop-blur-lg rounded-2xl shadow-2xl p-3 sm:p-6 border border-white/20 w-full min-w-0">
                     <h3 className="text-base sm:text-xl font-bold text-white mb-4 flex items-center gap-2">
                         <TrendingUp className="w-4 h-4 sm:w-5 sm:h-5 text-green-400" />
                         <span className="truncate">Günlük Trend</span>
@@ -282,14 +282,14 @@ export default function AnalyticsView({ selectedMarketId }: { selectedMarketId?:
             </div>
 
             {/* Charts Row 2 */}
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-3 sm:gap-6">
                 {/* Conversion Funnel */}
                 <div className="lg:col-span-1">
                     <ConversionFunnel />
                 </div>
 
                 {/* Category Breakdown */}
-                <div className="bg-white/10 backdrop-blur-lg rounded-2xl shadow-2xl p-6 border border-white/20 w-full min-w-0">
+                <div className="bg-white/10 backdrop-blur-lg rounded-2xl shadow-2xl p-3 sm:p-6 border border-white/20 w-full min-w-0">
                     <div className="flex items-center gap-2 mb-4">
                         <h3 className="text-xl font-bold text-white">Top Kategoriler</h3>
                         <SectionInfo text="İşlenen leadlerin sektörel veya kategorik dağılımı." />

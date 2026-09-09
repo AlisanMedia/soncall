@@ -31,7 +31,7 @@ export default function GhostBusterPanel({ appointments, onReassign, onReschedul
     if (ghosts.length === 0) return null;
 
     return (
-        <div className="mb-8">
+        <div className="mb-4 sm:mb-8">
             <motion.div
                 initial={{ opacity: 0, y: -20 }}
                 animate={{ opacity: 1, y: 0 }}

@@ -9,7 +9,7 @@ import Image from 'next/image';
 function ManagerPanelLoading({ label = 'Panel yükleniyor...' }: { label?: string }) {
     return (
         <div
-            className="mb-6 flex min-h-40 items-center justify-center rounded-2xl border border-white/10 bg-white/[0.04] p-6 text-sm text-slate-300"
+            className="mb-3 sm:mb-6 flex min-h-40 items-center justify-center rounded-2xl border border-white/10 bg-white/[0.04] p-3 sm:p-6 text-sm text-slate-300"
             role="status"
             aria-live="polite"
         >
@@ -40,7 +40,7 @@ import TeamMonitoring from '@/components/manager/TeamMonitoring';
 import TopSellers from './TopSellers';
 import SalesApprovals from './SalesApprovals';
 
-import { LogOut, Upload, Users, BarChart3, Activity, TrendingUp, Trophy, Sparkles, AlertTriangle, Target, Calendar, Briefcase, Settings, MessageSquare, ShieldAlert, Globe2, Lock, PanelLeftClose, PanelLeftOpen } from 'lucide-react';
+import { LogOut, Upload, Users, BarChart3, Activity, TrendingUp, Trophy, Sparkles, AlertTriangle, Target, Calendar, Briefcase, Settings, MessageSquare, ShieldAlert, Globe2, Lock, PanelLeftClose, PanelLeftOpen, MoreHorizontal } from 'lucide-react';
 import { createClient } from '@/lib/supabase/client';
 import { useRouter } from 'next/navigation';
 import ChatPanel from '../chat/ChatPanel';
@@ -139,7 +139,7 @@ export default function ManagerDashboard({ profile }: ManagerDashboardProps) {
     const operationLabel = selectedMarket?.name || t('manager.market.defaultOperation');
 
     return (
-        <div className="min-h-screen pb-20 relative overflow-hidden isolate animate-fade-in">
+        <div className="min-h-screen relative overflow-hidden isolate animate-fade-in">
             {/* Animated Background Grid */}
             <div className="fixed inset-0 -z-10">
                 <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top_right,_rgba(168,85,247,0.15)_0%,_transparent_50%)]" />
@@ -251,10 +251,10 @@ export default function ManagerDashboard({ profile }: ManagerDashboardProps) {
             </aside>
 
             {/* Tab Content */}
-            <main className={`min-h-screen px-3 py-4 pb-28 transition-all duration-300 sm:px-6 sm:py-6 md:pb-10 lg:px-8 ${sidebarCollapsed ? 'md:ml-20' : 'md:ml-72'}`}>
+            <main className={`min-h-screen px-3 py-3 pb-24 transition-all duration-300 sm:px-6 sm:py-6 md:pb-10 lg:px-8 ${sidebarCollapsed ? 'md:ml-20' : 'md:ml-72'}`}>
                 <div className="mx-auto max-w-[1680px]">
-                <div className="mb-4 flex items-center justify-between rounded-xl border border-white/10 bg-white/5 p-3 lg:hidden" aria-label={t('manager.sidebar.operation')}>
-                    <div className="flex items-center gap-2 text-sm text-white">
+                <div className="mb-2 flex min-w-0 items-center justify-between gap-2 rounded-xl border border-white/10 bg-white/5 px-3 py-1.5 md:hidden" aria-label={t('manager.sidebar.operation')}>
+                    <div className="flex min-w-0 items-center gap-2 text-xs text-white">
                         <Globe2 className="w-4 h-4 text-cyan-300" />
                         <span className="truncate">{marketsLoading ? 'Operasyon yükleniyor…' : operationLabel}</span>
                     </div>
@@ -264,7 +264,7 @@ export default function ManagerDashboard({ profile }: ManagerDashboardProps) {
                             onChange={(event) => setSelectedMarketId(event.target.value || null)}
                             aria-label={t('manager.sidebar.operation')}
                             disabled={marketsLoading || markets.length === 0}
-                            className="max-w-[170px] rounded-lg border border-white/10 bg-slate-950 px-2 py-1 text-sm text-white outline-none focus-visible:ring-2 focus-visible:ring-cyan-300 disabled:cursor-wait disabled:opacity-60"
+                            className="max-w-[50%] rounded-lg border border-white/10 bg-slate-950 px-2 py-1 text-sm text-white outline-none focus-visible:ring-2 focus-visible:ring-cyan-300 disabled:cursor-wait disabled:opacity-60"
                         >
                             {markets.map((market) => (
                                 <option key={market.id} value={market.id}>
@@ -274,19 +274,19 @@ export default function ManagerDashboard({ profile }: ManagerDashboardProps) {
                         </select>
                     )}
                 </div>
-                <header className="mb-6 flex flex-col gap-4 rounded-2xl border border-white/10 bg-gradient-to-br from-white/[0.09] via-white/[0.04] to-purple-500/[0.07] p-4 shadow-xl shadow-black/10 backdrop-blur-md sm:flex-row sm:items-end sm:justify-between sm:p-6">
+                <header className="mb-3 sm:mb-6 flex flex-row items-center justify-between gap-2 sm:gap-4 rounded-2xl border border-white/10 bg-gradient-to-br from-white/[0.09] via-white/[0.04] to-purple-500/[0.07] p-4 shadow-xl shadow-black/10 backdrop-blur-md sm:flex-row sm:items-end sm:justify-between sm:p-6">
                     <div className="min-w-0">
-                        <p className="mb-1 text-xs font-bold uppercase tracking-[0.18em] text-cyan-200/80">{t('manager.panelSubtitle')}</p>
-                        <h2 className="truncate text-2xl font-bold tracking-tight text-white sm:text-3xl">{currentTabLabel}</h2>
-                        <p className="mt-2 text-sm text-slate-400">{operationLabel}</p>
+                        <p className="mb-1 hidden sm:block text-xs font-bold uppercase tracking-[0.18em] text-cyan-200/80">{t('manager.panelSubtitle')}</p>
+                        <h2 className="truncate text-xl font-bold tracking-tight text-white sm:text-3xl">{currentTabLabel}</h2>
+                        <p className="mt-1 hidden sm:block text-sm text-slate-400">{operationLabel}</p>
                     </div>
-                    <div className="flex shrink-0 items-center gap-2 self-start rounded-full border border-emerald-300/20 bg-emerald-400/10 px-3 py-1.5 text-xs font-semibold text-emerald-200 sm:self-auto">
+                    <div className="flex shrink-0 items-center gap-2 self-start rounded-full border border-emerald-300/20 bg-emerald-400/10 px-3 py-1.5 text-xs font-semibold text-emerald-200 self-center sm:self-auto">
                         <span className="h-2 w-2 animate-pulse rounded-full bg-emerald-300" aria-hidden="true" />
                         Canlı panel
                     </div>
                 </header>
                 {marketLoadError && (
-                    <div className="mb-6 flex items-start gap-3 rounded-xl border border-amber-300/30 bg-amber-500/10 px-4 py-3 text-sm text-amber-100" role="status" aria-live="polite">
+                    <div className="mb-3 sm:mb-6 flex items-start gap-3 rounded-xl border border-amber-300/30 bg-amber-500/10 px-4 py-3 text-sm text-amber-100" role="status" aria-live="polite">
                         <Globe2 className="mt-0.5 h-4 w-4 shrink-0 text-amber-200" aria-hidden="true" />
                         <p>Operasyon listesi yüklenemedi. Varsayılan görünüm gösteriliyor.</p>
                     </div>
@@ -295,7 +295,7 @@ export default function ManagerDashboard({ profile }: ManagerDashboardProps) {
                     <>
                         <ManagerAlertsCenter selectedMarketId={selectedMarketId} />
                         <SalesApprovals />
-                        <div className="mb-8">
+                        <div className="mb-4 sm:mb-8">
                             <TopSellers />
                         </div>
                         <TeamMonitoring selectedMarketId={selectedMarketId} />
@@ -316,7 +316,7 @@ export default function ManagerDashboard({ profile }: ManagerDashboardProps) {
                 {currentTab === 'upload' && (
                     <>
                         {/* Responsive Step Indicator */}
-                        <div className="mb-8 overflow-x-auto">
+                        <div className="mb-4 sm:mb-8 overflow-x-auto">
                             <div className="flex items-center sm:justify-center gap-4 min-w-max">
                                 <div className={`flex items-center gap-2 px-4 py-2 rounded-lg transition-colors ${currentStep === 'upload'
                                     ? 'bg-purple-600 text-white'
@@ -358,43 +358,55 @@ export default function ManagerDashboard({ profile }: ManagerDashboardProps) {
                 </div>
             </main>
 
-            <nav className="fixed inset-x-0 bottom-0 z-50 border-t border-white/10 bg-slate-950/90 px-2 py-2 shadow-2xl shadow-black/40 backdrop-blur-xl md:hidden safe-bottom" aria-label={t('manager.dashboardTitle')}>
-                <div className="flex items-center gap-2 overflow-x-auto pb-1">
-                    {navigationItems.map((item) => {
+            <nav className="fixed inset-x-0 bottom-0 z-50 border-t border-white/10 bg-slate-950/95 px-1 py-1 shadow-2xl shadow-black/40 backdrop-blur-xl md:hidden safe-bottom" aria-label={t('manager.dashboardTitle')}>
+                <div className="grid grid-cols-5 gap-1">
+                    {navigationItems.filter((item) => ['monitor', 'leads', 'calendar', 'team'].includes(item.id)).map((item) => {
                         const Icon = item.icon;
                         const isActive = currentTab === item.id;
                         const label = t(item.labelKey);
-
                         return (
-                            <button
-                                key={item.id}
-                                onClick={() => setCurrentTab(item.id)}
-                                aria-current={isActive ? 'page' : undefined}
-                                className={`flex min-w-[76px] flex-col items-center justify-center gap-1 rounded-xl border px-2 py-2 text-[10px] font-semibold transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-purple-300 focus-visible:ring-offset-2 focus-visible:ring-offset-slate-950 ${isActive
-                                    ? 'border-purple-400/40 bg-purple-600/25 text-white'
-                                    : 'border-transparent text-slate-300 hover:bg-white/10 hover:text-white'
-                                    }`}
-                                title={label}
-                                aria-label={label}
-                            >
-                                <Icon className="h-5 w-5 flex-shrink-0" />
+                            <button key={item.id} onClick={() => setCurrentTab(item.id)} aria-current={isActive ? 'page' : undefined}
+                                className={`flex min-h-12 min-w-0 flex-col items-center justify-center gap-1 rounded-lg px-1 py-1 text-[10px] font-semibold focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-purple-300 ${isActive ? 'bg-purple-600/25 text-white' : 'text-slate-300'}`}
+                                title={label} aria-label={label}>
+                                <Icon className="h-[18px] w-[18px] shrink-0" />
                                 <span className="w-full truncate text-center leading-tight">{label}</span>
                             </button>
                         );
                     })}
+                    <details className="group" onKeyDown={(event) => { if (event.key === 'Escape') { event.currentTarget.open = false; event.currentTarget.querySelector('summary')?.focus(); } }}>
+                        <summary className="flex min-h-12 cursor-pointer list-none flex-col items-center justify-center gap-1 rounded-lg px-1 py-1 text-[10px] font-semibold text-slate-300 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-purple-300 group-open:bg-white/10 [&::-webkit-details-marker]:hidden">
+                            <MoreHorizontal className="h-[18px] w-[18px]" />
+                            Diğer
+                        </summary>
+                        <div className="absolute inset-x-2 bottom-full mb-2 max-h-[65dvh] overflow-y-auto rounded-xl border border-white/15 bg-slate-950 p-2 shadow-2xl">
+                            <div className="grid grid-cols-2 gap-1">
+                                {navigationItems.filter((item) => !['monitor', 'leads', 'calendar', 'team'].includes(item.id)).map((item) => {
+                                    const Icon = item.icon;
+                                    return <button key={item.id} onClick={(event) => { setCurrentTab(item.id); event.currentTarget.closest('details')?.removeAttribute('open'); }}
+                                        aria-current={currentTab === item.id ? 'page' : undefined}
+                                        className={`flex min-h-11 min-w-0 items-center gap-2 rounded-lg px-3 py-2 text-left text-xs focus-visible:ring-2 focus-visible:ring-purple-300 ${currentTab === item.id ? 'bg-purple-600/25 text-white' : 'text-slate-300 hover:bg-white/10'}`}>
+                                        <Icon className="h-4 w-4 shrink-0" /><span className="break-words">{t(item.labelKey)}</span>
+                                    </button>;
+                                })}
+                                <button onClick={handleLogout} className="flex min-h-11 items-center gap-2 rounded-lg px-3 py-2 text-left text-xs text-slate-300 hover:bg-white/10 focus-visible:ring-2 focus-visible:ring-purple-300">
+                                    <LogOut className="h-4 w-4 shrink-0" />{t('common.logout')}
+                                </button>
+                            </div>
+                        </div>
+                    </details>
                 </div>
             </nav>
 
             {/* Floating Action Buttons - Mobile Optimized */}
-            <div className="fixed bottom-24 right-4 z-50 flex flex-col gap-3 safe-bottom safe-right md:bottom-6 md:right-6 md:gap-4">
+            <div className="fixed bottom-20 right-3 z-50 flex flex-col gap-3 safe-bottom safe-right md:bottom-6 md:right-6 md:gap-4">
                 {/* Chat Button */}
                 <button
                     onClick={() => setChatOpen(!chatOpen)}
-                    className="bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 text-white w-14 h-14 md:w-16 md:h-16 rounded-full shadow-2xl flex items-center justify-center transition-all hover:scale-110 active:scale-95 relative touch-target-large"
+                    className="bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 text-white w-11 h-11 md:w-16 md:h-16 rounded-full shadow-2xl flex items-center justify-center transition-all hover:scale-110 active:scale-95 relative"
                     title="Open Chat"
                     aria-label="Open Chat"
                 >
-                    <Sparkles className="w-6 h-6 md:w-7 md:h-7" />
+                    <Sparkles className="w-5 h-5 md:w-7 md:h-7" />
                     <ChatNotificationBadge userId={profile.id} />
                 </button>
             </div>

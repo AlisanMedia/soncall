@@ -199,7 +199,7 @@ export default function AgentOnboarding({ profile }: { profile: Profile }) {
                     </button>
                 </div>
 
-                <div className="max-h-[62vh] overflow-y-auto p-5">
+                <div className="max-h-[62dvh] overflow-y-auto p-5">
                     {setupRequired && (
                         <div className="mb-4 rounded-xl border border-amber-500/30 bg-amber-500/10 p-3 text-xs text-amber-100">
                             Supabase onboarding tablosu uygulanana kadar ilerleme bu cihazda saklanır.

@@ -346,11 +346,11 @@ export default function TeamMonitoring({ selectedMarketId }: { selectedMarketId?
 
 
     return (
-        <div className="space-y-6">
+        <div className="space-y-3 sm:space-y-6">
             {/* Overview Cards */}
             {overview && (
-                <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-                    <div className="glass-card glass-card-hover p-6 relative">
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-2 sm:gap-4">
+                    <div className="glass-card glass-card-hover p-3 sm:p-6 relative">
                         <GlowingEffect spread={30} glow={true} disabled={false} proximity={80} borderWidth={2} />
                         <div className="flex items-center justify-between">
                             <div>
@@ -358,7 +358,7 @@ export default function TeamMonitoring({ selectedMarketId }: { selectedMarketId?
                                     <p className="text-purple-200 text-sm">Toplam Lead</p>
                                     <SectionInfo text="Sisteme yüklenen ve işlenmeyi bekleyen tüm potansiyel müşteri datalarının toplam sayısı." />
                                 </div>
-                                <p className="text-3xl font-bold text-white mt-1">{overview.total_leads}</p>
+                                <p className="text-2xl sm:text-3xl font-bold text-white mt-1">{overview.total_leads}</p>
                             </div>
                             <motion.div
                                 key={overview.total_leads}
@@ -366,19 +366,19 @@ export default function TeamMonitoring({ selectedMarketId }: { selectedMarketId?
                                 animate={{ scale: [1, 1.4, 1], rotate: [0, 10, -10, 0] }}
                                 transition={{ duration: 0.5 }}
                             >
-                                <Package className="w-10 h-10 text-purple-400" />
+                                <Package className="w-6 h-6 sm:w-10 sm:h-10 text-purple-400" />
                             </motion.div>
                         </div>
                     </div>
 
-                    <div className="bg-yellow-500/10 backdrop-blur-lg rounded-xl p-6 border border-yellow-500/30">
+                    <div className="bg-yellow-500/10 backdrop-blur-lg rounded-xl p-3 sm:p-6 border border-yellow-500/30">
                         <div className="flex items-center justify-between">
                             <div>
                                 <div className="flex items-center gap-2">
                                     <p className="text-yellow-200 text-sm">Bekleyen</p>
                                     <SectionInfo text="Henüz aranmamış veya işlem yapılmamış lead sayısı. Temsilcilerinizin öncelikli olarak arayacağı data havuzudur." />
                                 </div>
-                                <p className="text-3xl font-bold text-yellow-300 mt-1">{overview.pending_leads}</p>
+                                <p className="text-2xl sm:text-3xl font-bold text-yellow-300 mt-1">{overview.pending_leads}</p>
                             </div>
                             <motion.div
                                 key={overview.pending_leads}
@@ -389,19 +389,19 @@ export default function TeamMonitoring({ selectedMarketId }: { selectedMarketId?
                                 }}
                                 transition={{ duration: 0.8, ease: "easeInOut" }}
                             >
-                                <Activity className="w-10 h-10 text-yellow-400" />
+                                <Activity className="w-6 h-6 sm:w-10 sm:h-10 text-yellow-400" />
                             </motion.div>
                         </div>
                     </div>
 
-                    <div className="bg-green-500/10 backdrop-blur-lg rounded-xl p-6 border border-green-500/30">
+                    <div className="bg-green-500/10 backdrop-blur-lg rounded-xl p-3 sm:p-6 border border-green-500/30">
                         <div className="flex items-center justify-between">
                             <div>
                                 <div className="flex items-center gap-2">
-                                    <p className="text-green-200 text-sm">Bugün İşlenen</p>
+                                    <p className="text-green-200 text-xs sm:text-sm">Bugün İşlenen</p>
                                     <SectionInfo text="Bugün içerisinde başarılı veya başarısız sonuçlandırılan toplam arama/işlem sayısı." />
                                 </div>
-                                <p className="text-3xl font-bold text-green-300 mt-1">{overview.completed_today}</p>
+                                <p className="text-2xl sm:text-3xl font-bold text-green-300 mt-1">{overview.completed_today}</p>
                             </div>
                             <motion.div
                                 key={overview.completed_today}
@@ -409,19 +409,19 @@ export default function TeamMonitoring({ selectedMarketId }: { selectedMarketId?
                                 animate={{ scale: [1, 1.3, 1] }}
                                 transition={{ duration: 0.4 }}
                             >
-                                <CheckCircle2 className="w-10 h-10 text-green-400" />
+                                <CheckCircle2 className="w-6 h-6 sm:w-10 sm:h-10 text-green-400" />
                             </motion.div>
                         </div>
                     </div>
 
-                    <div className="bg-purple-500/10 backdrop-blur-lg rounded-xl p-6 border border-purple-500/30">
+                    <div className="bg-purple-500/10 backdrop-blur-lg rounded-xl p-3 sm:p-6 border border-purple-500/30">
                         <div className="flex items-center justify-between">
                             <div>
                                 <div className="flex items-center gap-2">
-                                    <p className="text-purple-200 text-sm">Bugün Randevu</p>
+                                    <p className="text-purple-200 text-xs sm:text-sm">Bugün Randevu</p>
                                     <SectionInfo text="Bugün için oluşturulan onaylı satış görüşmesi ve toplantı randevularının sayısı." />
                                 </div>
-                                <p className="text-3xl font-bold text-purple-300 mt-1">{overview.appointments_today}</p>
+                                <p className="text-2xl sm:text-3xl font-bold text-purple-300 mt-1">{overview.appointments_today}</p>
                             </div>
                             <motion.div
                                 key={overview.appointments_today}
@@ -429,25 +429,25 @@ export default function TeamMonitoring({ selectedMarketId }: { selectedMarketId?
                                 animate={{ y: [0, -10, 0] }}
                                 transition={{ duration: 0.5 }}
                             >
-                                <Calendar className="w-10 h-10 text-purple-400" />
+                                <Calendar className="w-6 h-6 sm:w-10 sm:h-10 text-purple-400" />
                             </motion.div>
                         </div>
                     </div>
                 </div>
             )}
 
-            <div className="space-y-6">
+            <div className="space-y-3 sm:space-y-6">
                 {/* Live Activity Feed */}
                 <div className="glass-card glass-card-hover p-0 overflow-hidden relative border border-purple-500/20 shadow-2xl">
                     {/* Header */}
-                    <div className="p-6 border-b border-white/5 bg-white/5 backdrop-blur-md sticky top-0 z-20 flex flex-col md:flex-row md:items-center justify-between gap-4">
+                    <div className="p-3 sm:p-6 border-b border-white/5 bg-white/5 backdrop-blur-md sticky top-0 z-20 flex flex-col md:flex-row md:items-center justify-between gap-4">
                         <div className="flex items-center gap-2">
                             <div className="relative">
                                 <div className="absolute inset-0 bg-green-500 blur-md opacity-20 animate-pulse"></div>
                                 <Activity className="w-6 h-6 text-green-400 relative z-10" />
                             </div>
                             <div>
-                                <h2 className="text-xl font-bold text-white flex items-center gap-2">
+                                <h2 className="text-base sm:text-xl font-bold text-white flex flex-wrap items-center gap-2">
                                     Canlı Aktivite Akışı
                                     <span className="text-[10px] bg-green-500/20 text-green-400 px-2 py-0.5 rounded-full border border-green-500/30 animate-pulse">
                                         LIVE
@@ -491,11 +491,11 @@ export default function TeamMonitoring({ selectedMarketId }: { selectedMarketId?
                     <div
                         ref={scrollContainerRef}
                         onScroll={handleScroll}
-                        className="overflow-y-auto custom-scrollbar h-[600px] relative bg-black/20"
+                        className="overflow-y-auto custom-scrollbar h-[min(52dvh,380px)] md:h-[600px] relative bg-black/20"
                     >
                         <div className="p-4 space-y-3">
                             {loading && activities.length === 0 && (
-                                <div className="flex flex-col items-center justify-center py-20 space-y-4">
+                                <div className="flex flex-col items-center justify-center py-8 sm:py-20 space-y-4">
                                     <Loader2 className="w-10 h-10 animate-spin text-purple-500" />
                                     <p className="text-purple-300 text-sm animate-pulse">Aktiviteler Yükleniyor...</p>
                                 </div>
@@ -515,10 +515,10 @@ export default function TeamMonitoring({ selectedMarketId }: { selectedMarketId?
                                                 <img
                                                     src={activity.profiles.avatar_url}
                                                     alt={activity.profiles.full_name || 'Agent'}
-                                                    className="w-12 h-12 rounded-full object-cover border-2 border-white/10 group-hover:border-purple-500/50 transition-colors"
+                                                    className="w-9 h-9 sm:w-12 sm:h-12 rounded-full object-cover border-2 border-white/10 group-hover:border-purple-500/50 transition-colors"
                                                 />
                                             ) : (
-                                                <div className="w-12 h-12 rounded-full bg-gradient-to-br from-gray-800 to-gray-700 flex items-center justify-center text-white font-bold border-2 border-white/10 group-hover:border-purple-500/50 transition-colors">
+                                                <div className="w-9 h-9 sm:w-12 sm:h-12 rounded-full bg-gradient-to-br from-gray-800 to-gray-700 flex items-center justify-center text-white font-bold border-2 border-white/10 group-hover:border-purple-500/50 transition-colors">
                                                     {(activity.profiles?.full_name || '?').charAt(0)}
                                                 </div>
                                             )}
@@ -588,7 +588,7 @@ export default function TeamMonitoring({ selectedMarketId }: { selectedMarketId?
 
                             {error && (
                                 <div className="text-center py-10 bg-red-500/10 rounded-xl border border-red-500/20 m-4">
-                                    <XCircle className="w-10 h-10 text-red-500 mx-auto mb-3" />
+                                    <XCircle className="w-6 h-6 sm:w-10 sm:h-10 text-red-500 mx-auto mb-3" />
                                     <p className="text-red-300 font-medium">{error}</p>
                                     <button
                                         onClick={() => loadInitialData()}
@@ -600,7 +600,7 @@ export default function TeamMonitoring({ selectedMarketId }: { selectedMarketId?
                             )}
 
                             {activities.length === 0 && !loading && !error && (
-                                <div className="text-center py-20 bg-white/5 rounded-xl border border-dashed border-white/10">
+                                <div className="text-center py-8 sm:py-20 bg-white/5 rounded-xl border border-dashed border-white/10">
                                     <Activity className="w-12 h-12 text-gray-600 mx-auto mb-4" />
                                     <p className="text-gray-400 font-medium">Henüz bir aktivite kaydı bulunmuyor.</p>
                                 </div>
@@ -610,8 +610,8 @@ export default function TeamMonitoring({ selectedMarketId }: { selectedMarketId?
                 </div>
 
                 {/* Agent Stats */}
-                <div className="glass-card glass-card-hover p-6">
-                    <div className="flex items-center gap-2 mb-6">
+                <div className="glass-card glass-card-hover p-3 sm:p-6">
+                    <div className="flex items-center gap-2 mb-3 sm:mb-6">
                         <TrendingUp className="w-6 h-6 text-purple-400" />
                         <h2 className="text-xl font-bold text-white">SDR / Closer Performansı</h2>
                         <SectionInfo
@@ -688,8 +688,8 @@ export default function TeamMonitoring({ selectedMarketId }: { selectedMarketId?
             </div>
 
             {/* Batch Progress */}
-            <div className="bg-white/10 backdrop-blur-lg rounded-2xl shadow-2xl p-6 border border-white/20">
-                <div className="flex items-center justify-between mb-6">
+            <div className="bg-white/10 backdrop-blur-lg rounded-2xl shadow-2xl p-3 sm:p-6 border border-white/20">
+                <div className="flex items-center justify-between mb-3 sm:mb-6">
                     <div className="flex items-center gap-2">
                         <Package className="w-6 h-6 text-purple-400" />
                         <h2 className="text-xl font-bold text-white">Batch İlerlemesi</h2>
@@ -763,7 +763,7 @@ export default function TeamMonitoring({ selectedMarketId }: { selectedMarketId?
                     ))}
 
                     {batches.length === 0 && (
-                        <div className="col-span-full text-center py-12 text-purple-300">
+                        <div className="col-span-full text-center py-6 sm:py-12 text-purple-300">
                             Henüz batch yüklenmedi
                         </div>
                     )}

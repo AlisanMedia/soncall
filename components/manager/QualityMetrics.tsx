@@ -50,7 +50,7 @@ export default function QualityMetrics() {
     };
 
     if (loading) return (
-        <div className="flex justify-center p-8">
+        <div className="flex justify-center p-4 sm:p-8">
             <Loader2 className="w-8 h-8 text-purple-400 animate-spin" />
         </div>
     );
@@ -64,7 +64,7 @@ export default function QualityMetrics() {
     };
 
     return (
-        <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
+        <div className="space-y-3 sm:space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
 
             {/* Header */}
             <div className="flex items-center gap-2 mb-4">
@@ -192,7 +192,7 @@ export default function QualityMetrics() {
 
                             {data.metrics.length === 0 && (
                                 <tr>
-                                    <td colSpan={6} className="p-8 text-center text-white/40">
+                                    <td colSpan={6} className="p-4 sm:p-8 text-center text-white/40">
                                         Henüz veri bulunmuyor.
                                     </td>
                                 </tr>

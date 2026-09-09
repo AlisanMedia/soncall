@@ -83,6 +83,8 @@ const parseJsonResponse = async (response: Response, label: string) => {
 };
 
 export default function AgentDashboard({ profile: initialProfile }: AgentDashboardProps) {
+    const [showProgress, setShowProgress] = useState(false);
+    const [showTeam, setShowTeam] = useState(false);
     const [profile, setProfile] = useState<Profile>(initialProfile);
     const [activeTab, setActiveTab] = useState<'work' | 'history' | 'sales' | 'appointments' | 'settings'>('work');
     const [refreshKey, setRefreshKey] = useState(0);
@@ -286,7 +288,7 @@ export default function AgentDashboard({ profile: initialProfile }: AgentDashboa
             </div>
             {/* Header */}
             <header className="glass-nav sticky top-0 z-50">
-                <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3 sm:py-4">
+                <div className="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 py-2 sm:py-4">
                     <div className="flex flex-wrap items-center justify-between gap-2 sm:flex-nowrap">
                         {/* Logo & Brand - Hidden on very small screens if needed, or simplified */}
                         <div className="flex min-w-0 items-center gap-2 sm:gap-6 flex-shrink-0">
@@ -344,14 +346,14 @@ export default function AgentDashboard({ profile: initialProfile }: AgentDashboa
                             </button>
                         )}
                         {/* Mobile Fallback - Simplified */}
-                        <nav aria-label="Agent dashboard navigation" className="order-3 flex w-full items-stretch gap-1 overflow-x-auto rounded-lg border border-white/5 bg-black/20 p-1 sm:hidden">
+                        <nav aria-label="Agent dashboard navigation" className="order-3 flex w-full items-stretch gap-0.5 rounded-lg border border-white/5 bg-black/20 p-1 sm:hidden">
                             <button
                                 type="button"
                                 onClick={() => setActiveTab('work')}
                                 aria-label={isCloser ? t('agent.nav.meeting') : t('agent.nav.call')}
                                 title={isCloser ? t('agent.nav.meeting') : t('agent.nav.call')}
                                 aria-current={activeTab === 'work' ? 'page' : undefined}
-                                className={`min-h-11 min-w-[58px] rounded-md px-2 py-1.5 transition-all ${activeTab === 'work' ? 'bg-purple-600 text-white' : 'text-gray-300'}`}
+                                className={`min-h-11 min-w-0 flex-1 rounded-md px-0.5 py-1.5 transition-all ${activeTab === 'work' ? 'bg-purple-600 text-white' : 'text-gray-300'}`}
                             >
                                 <Phone className="mx-auto h-5 w-5" aria-hidden="true" />
                                 <span className="mt-1 block text-[10px] leading-none">{isCloser ? 'Toplantı' : 'Ara'}</span>
@@ -362,7 +364,7 @@ export default function AgentDashboard({ profile: initialProfile }: AgentDashboa
                                 aria-label={t('agent.nav.appointments')}
                                 title={t('agent.nav.appointments')}
                                 aria-current={activeTab === 'appointments' ? 'page' : undefined}
-                                className={`min-h-11 min-w-[58px] rounded-md px-2 py-1.5 transition-all ${activeTab === 'appointments' ? 'bg-purple-600 text-white' : 'text-gray-300'}`}
+                                className={`min-h-11 min-w-0 flex-1 rounded-md px-0.5 py-1.5 transition-all ${activeTab === 'appointments' ? 'bg-purple-600 text-white' : 'text-gray-300'}`}
                             >
                                 <Calendar className="mx-auto h-5 w-5" aria-hidden="true" />
                                 <span className="mt-1 block text-[10px] leading-none">Randevu</span>
@@ -373,7 +375,7 @@ export default function AgentDashboard({ profile: initialProfile }: AgentDashboa
                                     onClick={() => setManualLeadOpen(true)}
                                     aria-label={t('agent.manual.add')}
                                     title={t('agent.manual.add')}
-                                    className="min-h-11 min-w-[58px] rounded-md px-2 py-1.5 text-purple-400 transition-all hover:bg-white/5 active:scale-95"
+                                    className="min-h-11 min-w-0 flex-1 rounded-md px-0.5 py-1.5 text-purple-400 transition-all hover:bg-white/5 active:scale-95"
                                 >
                                     <UserPlus className="mx-auto h-5 w-5" aria-hidden="true" />
                                     <span className="mt-1 block text-[10px] leading-none">Ekle</span>
@@ -385,7 +387,7 @@ export default function AgentDashboard({ profile: initialProfile }: AgentDashboa
                                 aria-label={t('agent.nav.leadSearch')}
                                 title={t('agent.nav.leadSearch')}
                                 aria-current={activeTab === 'history' ? 'page' : undefined}
-                                className={`min-h-11 min-w-[58px] rounded-md px-2 py-1.5 transition-all ${activeTab === 'history' ? 'bg-purple-600 text-white' : 'text-gray-300'}`}
+                                className={`min-h-11 min-w-0 flex-1 rounded-md px-0.5 py-1.5 transition-all ${activeTab === 'history' ? 'bg-purple-600 text-white' : 'text-gray-300'}`}
                             >
                                 <List className="mx-auto h-5 w-5" aria-hidden="true" />
                                 <span className="mt-1 block text-[10px] leading-none">Leadler</span>
@@ -396,7 +398,7 @@ export default function AgentDashboard({ profile: initialProfile }: AgentDashboa
                                 aria-label={t('agent.nav.mySales')}
                                 title={t('agent.nav.mySales')}
                                 aria-current={activeTab === 'sales' ? 'page' : undefined}
-                                className={`min-h-11 min-w-[58px] rounded-md px-2 py-1.5 transition-all ${activeTab === 'sales' ? 'bg-purple-600 text-white' : 'text-gray-300'}`}
+                                className={`min-h-11 min-w-0 flex-1 rounded-md px-0.5 py-1.5 transition-all ${activeTab === 'sales' ? 'bg-purple-600 text-white' : 'text-gray-300'}`}
                             >
                                 <DollarSign className="mx-auto h-5 w-5" aria-hidden="true" />
                                 <span className="mt-1 block text-[10px] leading-none">Satış</span>
@@ -407,7 +409,7 @@ export default function AgentDashboard({ profile: initialProfile }: AgentDashboa
                                 aria-label={t('agent.nav.settings')}
                                 title={t('agent.nav.settings')}
                                 aria-current={activeTab === 'settings' ? 'page' : undefined}
-                                className={`min-h-11 min-w-[58px] rounded-md px-2 py-1.5 transition-all ${activeTab === 'settings' ? 'bg-purple-600 text-white' : 'text-gray-300'}`}
+                                className={`min-h-11 min-w-0 flex-1 rounded-md px-0.5 py-1.5 transition-all ${activeTab === 'settings' ? 'bg-purple-600 text-white' : 'text-gray-300'}`}
                             >
                                 <Settings className="mx-auto h-5 w-5" aria-hidden="true" />
                                 <span className="mt-1 block text-[10px] leading-none">Ayarlar</span>
@@ -468,15 +470,20 @@ export default function AgentDashboard({ profile: initialProfile }: AgentDashboa
             }
 
             {/* Main Content */}
-            <main className="mx-auto max-w-7xl px-3 py-4 sm:px-6 sm:py-8 lg:px-8">
+            <main className="mx-auto max-w-7xl px-3 py-3 sm:px-6 sm:py-8 lg:px-8">
                 {/* Work Tab - Keep mounted to preserve state */}
-                <div className={`space-y-6 ${activeTab !== 'work' ? 'hidden' : ''}`}>
+                <div className={`flex flex-col gap-3 sm:gap-6 ${activeTab !== 'work' ? 'hidden' : ''}`}>
                     {/* Gamification Bar */}
-                    <div className="w-full">
-                        <GamificationBar agentId={profile.id} />
-                    </div>
+                    <section className="order-2 min-w-0 sm:order-1">
+                        <button type="button" aria-expanded={showProgress} aria-controls="agent-progress-content" onClick={() => setShowProgress(value => !value)} className="flex min-h-11 w-full items-center justify-between rounded-xl border border-white/10 bg-white/5 px-3 text-sm font-medium text-white sm:hidden">
+                            <span>Seviye ve başarılar</span><span aria-hidden="true">{showProgress ? '−' : '+'}</span>
+                        </button>
+                        <div id="agent-progress-content" className={`${showProgress ? 'mt-2 block' : 'hidden'} sm:mt-0 sm:block`}>
+                            <GamificationBar agentId={profile.id} />
+                        </div>
+                    </section>
 
-                    <div className="flex flex-col gap-4 lg:grid lg:grid-cols-4 lg:gap-6">
+                    <div className="order-1 flex min-w-0 flex-col gap-3 sm:order-2 lg:grid lg:grid-cols-4 lg:gap-6">
                         {/* Lead Card - Main Work Area (First on Mobile) */}
                         <div className="order-1 min-w-0 space-y-4 lg:order-2 lg:col-span-3 lg:space-y-6">
                             <LeadCard
@@ -500,7 +507,12 @@ export default function AgentDashboard({ profile: initialProfile }: AgentDashboa
 
                         {/* Leaderboard Sidebar */}
                         <div className="order-2 min-w-0 lg:order-1 lg:col-span-1">
-                            <Leaderboard agentId={profile.id} refreshKey={refreshKey} />
+                            <button type="button" aria-expanded={showTeam} aria-controls="agent-team-content" onClick={() => setShowTeam(value => !value)} className="flex min-h-11 w-full items-center justify-between rounded-xl border border-white/10 bg-white/5 px-3 text-sm font-medium text-white sm:hidden">
+                                <span>Takım performansı</span><span aria-hidden="true">{showTeam ? '−' : '+'}</span>
+                            </button>
+                            <div id="agent-team-content" className={`${showTeam ? 'mt-2 block' : 'hidden'} sm:mt-0 sm:block`}>
+                                <Leaderboard agentId={profile.id} refreshKey={refreshKey} />
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -537,7 +549,7 @@ export default function AgentDashboard({ profile: initialProfile }: AgentDashboa
                     <button
                         type="button"
                         onClick={() => setChatOpen(!chatOpen)}
-                        className="fixed bottom-4 right-4 z-40 flex h-14 w-14 items-center justify-center rounded-full bg-gradient-to-r from-purple-600 to-indigo-600 text-white shadow-2xl transition-all hover:scale-110 hover:from-purple-700 hover:to-indigo-700 active:scale-95 safe-bottom safe-right touch-target-large md:bottom-6 md:right-6 md:h-16 md:w-16"
+                        className="fixed bottom-4 right-4 z-40 flex h-11 w-11 items-center justify-center rounded-full bg-gradient-to-r from-purple-600 to-indigo-600 text-white shadow-2xl transition-all hover:scale-110 hover:from-purple-700 hover:to-indigo-700 active:scale-95 safe-bottom safe-right md:bottom-6 md:right-6 md:h-16 md:w-16"
                         title="Open Chat"
                         aria-label="Open Chat"
                         aria-expanded={chatOpen}

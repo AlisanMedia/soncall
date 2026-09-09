@@ -42,7 +42,7 @@ export default function StuckLeadsPanel({ onActionComplete }: StuckLeadsPanelPro
     };
 
     return (
-        <div className="bg-red-500/10 border border-red-500/20 rounded-xl p-6">
+        <div className="bg-red-500/10 border border-red-500/20 rounded-xl p-3 sm:p-6">
             <h3 className="text-lg font-bold text-white flex items-center gap-2 mb-2">
                 <AlertOctagon className="w-5 h-5 text-red-500" />
                 Stuck Lead Monitor

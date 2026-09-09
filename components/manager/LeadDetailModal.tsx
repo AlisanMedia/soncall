@@ -106,9 +106,9 @@ export default function LeadDetailModal({ isOpen, onClose, lead }: LeadDetailMod
                         </button>
                     </div>
 
-                    <div className="p-4 sm:p-6 grid grid-cols-1 md:grid-cols-2 gap-6 sm:gap-8 overflow-y-auto">
+                    <div className="p-4 sm:p-6 grid grid-cols-1 md:grid-cols-2 gap-3 sm:gap-8 overflow-y-auto">
                         {/* Left Column: Contact Info */}
-                        <div className="space-y-6">
+                        <div className="space-y-3 sm:space-y-6">
                             <h3 className="text-sm font-bold text-gray-400 uppercase tracking-wider mb-4">İletişim Bilgileri</h3>
 
                             <div className="space-y-4">
@@ -150,7 +150,7 @@ export default function LeadDetailModal({ isOpen, onClose, lead }: LeadDetailMod
                         </div>
 
                         {/* Right Column: AI Enrichment */}
-                        <div className="space-y-6">
+                        <div className="space-y-3 sm:space-y-6">
                             <div className="flex items-center justify-between mb-4">
                                 <h3 className="text-sm font-bold text-gray-400 uppercase tracking-wider flex items-center gap-2">
                                     <BrainCircuit className="w-4 h-4 text-blue-400" />
@@ -159,9 +159,9 @@ export default function LeadDetailModal({ isOpen, onClose, lead }: LeadDetailMod
                             </div>
 
                             {!enrichedData ? (
-                                <div className="bg-blue-500/5 border border-blue-500/20 rounded-xl p-6 text-center">
+                                <div className="bg-blue-500/5 border border-blue-500/20 rounded-xl p-3 sm:p-6 text-center">
                                     <Sparkles className="w-12 h-12 text-blue-400 mx-auto mb-4 opacity-50" />
-                                    <p className="text-blue-200 mb-6 text-sm">
+                                    <p className="text-blue-200 mb-3 sm:mb-6 text-sm">
                                         İşletmenin sosyal medya hesaplarını, web sitesini ve dijital puanını yapay zeka ile analiz etmek için tıklayın.
                                     </p>
                                     <button

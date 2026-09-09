@@ -134,11 +134,11 @@ export default function SalesApprovals() {
     if (requests.length === 0) return null;
 
     return (
-        <div className="mb-8 animate-in slide-in-from-top duration-500">
+        <div className="mb-4 sm:mb-8 animate-in slide-in-from-top duration-500">
             <div className="bg-gradient-to-r from-orange-900/40 to-red-900/40 border border-orange-500/30 rounded-xl overflow-hidden shadow-2xl relative">
                 <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-orange-500 to-red-500 animate-pulse"></div>
 
-                <div className="p-6 border-b border-white/10 flex items-center justify-between">
+                <div className="p-3 sm:p-6 border-b border-white/10 flex items-center justify-between">
                     <div className="flex items-center gap-3">
                         <div className="bg-orange-500/20 p-2 rounded-lg">
                             <AlertCircle className="w-6 h-6 text-orange-400" />
@@ -159,9 +159,9 @@ export default function SalesApprovals() {
                                 animate={{ opacity: 1, height: 'auto' }}
                                 exit={{ opacity: 0, height: 0 }}
                                 transition={{ duration: 0.3 }}
-                                className="p-6 hover:bg-white/5 transition-colors overflow-hidden"
+                                className="p-3 sm:p-6 hover:bg-white/5 transition-colors overflow-hidden"
                             >
-                                <div className="flex flex-col md:flex-row md:items-center gap-6">
+                                <div className="flex flex-col md:flex-row md:items-center gap-3 sm:gap-6">
                                     {/* Agent Info */}
                                     <div className="flex items-center gap-3 md:w-1/4">
                                         <div className="w-10 h-10 rounded-full bg-slate-700 flex items-center justify-center overflow-hidden border border-white/10">
@@ -270,7 +270,7 @@ export default function SalesApprovals() {
                             </p>
                         </div>
 
-                        <div className="p-6 space-y-4">
+                        <div className="p-3 sm:p-6 space-y-4">
                             {actionType === 'approve' && (
                                 <div>
                                     <label className="block text-sm font-medium text-gray-300 mb-2">Temsilci Primi (Commission)</label>

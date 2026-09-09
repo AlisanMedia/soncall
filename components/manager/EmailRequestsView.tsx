@@ -83,7 +83,7 @@ export default function EmailRequestsView() {
         }
     };
 
-    if (loading) return <div className="p-8 text-center text-white"><Loader2 className="w-8 h-8 animate-spin mx-auto mb-2" /> Yükleniyor...</div>;
+    if (loading) return <div className="p-4 sm:p-8 text-center text-white"><Loader2 className="w-8 h-8 animate-spin mx-auto mb-2" /> Yükleniyor...</div>;
 
     if (requests.length === 0) {
         return (
@@ -95,7 +95,7 @@ export default function EmailRequestsView() {
     }
 
     return (
-        <div className="space-y-6">
+        <div className="space-y-3 sm:space-y-6">
             <h2 className="text-xl font-bold text-white flex items-center gap-2">
                 <AlertTriangle className="w-5 h-5 text-yellow-500" />
                 Onay Bekleyen Email Değişiklikleri
@@ -103,7 +103,7 @@ export default function EmailRequestsView() {
 
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                 {requests.map((request) => (
-                    <div key={request.id} className="bg-white/10 backdrop-blur-md border border-white/20 p-6 rounded-xl flex flex-col gap-4">
+                    <div key={request.id} className="bg-white/10 backdrop-blur-md border border-white/20 p-3 sm:p-6 rounded-xl flex flex-col gap-4">
                         <div className="flex items-center gap-3">
                             <div className="w-10 h-10 rounded-full bg-purple-600 flex items-center justify-center text-white font-bold">
                                 {request.full_name.substring(0, 1)}

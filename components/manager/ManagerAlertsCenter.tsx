@@ -205,7 +205,7 @@ export default function ManagerAlertsCenter({ selectedMarketId }: { selectedMark
     };
 
     return (
-        <section className="mb-8 rounded-2xl border border-white/10 bg-white/[0.04] p-4 shadow-2xl shadow-black/20 backdrop-blur-md sm:p-5">
+        <section className="mb-4 sm:mb-8 rounded-2xl border border-white/10 bg-white/[0.04] p-4 shadow-2xl shadow-black/20 backdrop-blur-md sm:p-5">
             <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
                 <div className="flex items-start gap-3">
                     <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl border border-red-400/30 bg-red-500/10">

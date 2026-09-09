@@ -411,3 +411,34 @@ button,
   html { scroll-behavior: auto; }
   *, *::before, *::after { animation-duration: 0.01ms !important; animation-iteration-count: 1 !important; transition-duration: 0.01ms !important; }
 }
+
+/* Medium mobile density: readable content, compact surfaces, full touch targets.
+ * Keep root rem and browser zoom intact; input text stays 16px on phones.
+ */
+@media (max-width: 767px) {
+  body { font-size: 0.875rem; line-height: 1.45; }
+  .app-body {
+    --radius-lg: 0.75rem;
+    --radius-xl: 0.875rem;
+  }
+  [data-dashboard-shell] :where(main, section, article, form, fieldset) { min-width: 0; }
+  [data-dashboard-shell] :where(h1, h2, h3, p, label, td) { overflow-wrap: anywhere; }
+  [data-dashboard-shell] :where(.grid > *, .flex > *) { min-width: 0; }
+  [data-dashboard-shell] :where(button, a) > svg { flex-shrink: 0; }
+  .ui-card-title { font-size: 1rem; line-height: 1.4; }
+  .ui-card-description { font-size: 0.8125rem; }
+  .ui-card-content, .ui-card-footer { padding-top: 0.75rem; }
+  .ui-button, .ui-action-button, .ui-tab, .dashboard-switcher-link {
+    min-height: 44px;
+  }
+  .ui-input, input:not([type="checkbox"]):not([type="radio"]), select, textarea {
+    font-size: 16px;
+    max-width: 100%;
+    scroll-margin-block: 5rem;
+  }
+  .ui-info-button { min-width: 44px; min-height: 44px; }
+  .ui-tabs { gap: 0.125rem; padding: 0.125rem; }
+  .dashboard-switcher { max-width: 100%; flex-wrap: wrap; }
+  .dashboard-switcher-link { padding-inline: 0.625rem; }
+  [role="dialog"] { overscroll-behavior: contain; }
+}

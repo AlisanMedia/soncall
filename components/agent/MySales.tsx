@@ -136,50 +136,50 @@ export default function MySales() {
     return (
         <div className="space-y-6">
             {/* Stats Cards */}
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-                <div className="bg-gradient-to-br from-purple-500/20 to-purple-600/10 rounded-xl p-5 border border-purple-500/30">
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-2 sm:gap-4">
+                <div className="bg-gradient-to-br from-purple-500/20 to-purple-600/10 min-w-0 rounded-xl p-3 sm:p-5 border border-purple-500/30">
                     <div className="flex items-center justify-between">
                         <div>
                             <p className="text-purple-200 text-sm font-medium">Toplam Satış</p>
-                            <p className="text-3xl font-bold text-white mt-1">{stats.total_sales}</p>
+                            <p className="break-words text-xl sm:text-3xl font-bold text-white mt-1">{stats.total_sales}</p>
                         </div>
-                        <Package className="w-10 h-10 text-purple-400" />
+                        <Package className="hidden sm:block shrink-0 w-10 h-10 text-purple-400" />
                     </div>
                 </div>
 
-                <div className="bg-gradient-to-br from-green-500/20 to-green-600/10 rounded-xl p-5 border border-green-500/30">
+                <div className="bg-gradient-to-br from-green-500/20 to-green-600/10 min-w-0 rounded-xl p-3 sm:p-5 border border-green-500/30">
                     <div className="flex items-center justify-between">
                         <div>
                             <p className="text-green-200 text-sm font-medium">Onaylandı</p>
-                            <p className="text-3xl font-bold text-white mt-1">{stats.approved_sales}</p>
+                            <p className="break-words text-xl sm:text-3xl font-bold text-white mt-1">{stats.approved_sales}</p>
                         </div>
-                        <CheckCircle className="w-10 h-10 text-green-400" />
+                        <CheckCircle className="hidden sm:block shrink-0 w-10 h-10 text-green-400" />
                     </div>
                 </div>
 
-                <div className="bg-gradient-to-br from-blue-500/20 to-blue-600/10 rounded-xl p-5 border border-blue-500/30">
+                <div className="bg-gradient-to-br from-blue-500/20 to-blue-600/10 min-w-0 rounded-xl p-3 sm:p-5 border border-blue-500/30">
                     <div className="flex items-center justify-between">
                         <div>
                             <p className="text-blue-200 text-sm font-medium">Toplam Ciro</p>
-                            <p className="text-2xl font-bold text-white mt-1">${stats.approved_revenue.toLocaleString()}</p>
+                            <p className="break-words text-lg sm:text-2xl font-bold text-white mt-1">${stats.approved_revenue.toLocaleString()}</p>
                         </div>
-                        <TrendingUp className="w-10 h-10 text-blue-400" />
+                        <TrendingUp className="hidden sm:block shrink-0 w-10 h-10 text-blue-400" />
                     </div>
                 </div>
 
-                <div className="bg-gradient-to-br from-yellow-500/20 to-yellow-600/10 rounded-xl p-5 border border-yellow-500/30">
+                <div className="bg-gradient-to-br from-yellow-500/20 to-yellow-600/10 min-w-0 rounded-xl p-3 sm:p-5 border border-yellow-500/30">
                     <div className="flex items-center justify-between">
                         <div>
                             <p className="text-yellow-200 text-sm font-medium">Kazandığım Prim</p>
-                            <p className="text-2xl font-bold text-white mt-1">${stats.approved_commission.toLocaleString()}</p>
+                            <p className="break-words text-lg sm:text-2xl font-bold text-white mt-1">${stats.approved_commission.toLocaleString()}</p>
                         </div>
-                        <DollarSign className="w-10 h-10 text-yellow-400" />
+                        <DollarSign className="hidden sm:block shrink-0 w-10 h-10 text-yellow-400" />
                     </div>
                 </div>
             </div>
 
             {/* Sales List */}
-            <div className="bg-white/10 backdrop-blur-lg rounded-2xl shadow-2xl p-6 border border-white/20">
+            <div className="bg-white/10 backdrop-blur-lg rounded-2xl shadow-2xl p-3 sm:p-6 border border-white/20">
                 <div className="flex items-center gap-2 mb-6">
                     <Package className="w-6 h-6 text-purple-400" />
                     <h2 className="text-xl font-bold text-white">Satış Geçmişim</h2>
@@ -197,13 +197,13 @@ export default function MySales() {
                                 key={sale.id}
                                 className="bg-white/5 rounded-lg p-4 border border-white/10 hover:bg-white/10 transition-colors"
                             >
-                                <div className="flex items-start justify-between mb-3">
+                                <div className="flex flex-wrap items-start justify-between gap-2 mb-3">
                                     <div className="flex items-center gap-3">
                                         <div className="p-2 bg-purple-500/20 rounded-lg">
                                             <Building2 className="w-5 h-5 text-purple-400" />
                                         </div>
                                         <div>
-                                            <h3 className="text-white font-semibold">{sale.lead.business_name}</h3>
+                                            <h3 className="break-words text-white font-semibold">{sale.lead.business_name}</h3>
                                             <p className="text-sm text-purple-300">{sale.lead.phone_number}</p>
                                         </div>
                                     </div>
@@ -213,11 +213,11 @@ export default function MySales() {
                                 <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-3">
                                     <div className="bg-blue-500/10 rounded-lg p-2 border border-blue-500/20">
                                         <p className="text-xs text-blue-300 mb-1">Satış Tutarı</p>
-                                        <p className="text-lg font-bold text-blue-200">${parseFloat(String(sale.amount)).toLocaleString()}</p>
+                                        <p className="break-words text-base sm:text-lg font-bold text-blue-200">${parseFloat(String(sale.amount)).toLocaleString()}</p>
                                     </div>
                                     <div className="bg-yellow-500/10 rounded-lg p-2 border border-yellow-500/20">
                                         <p className="text-xs text-yellow-300 mb-1">Prim</p>
-                                        <p className="text-lg font-bold text-yellow-200">+${parseFloat(String(sale.commission || 0)).toLocaleString()}</p>
+                                        <p className="break-words text-base sm:text-lg font-bold text-yellow-200">+${parseFloat(String(sale.commission || 0)).toLocaleString()}</p>
                                     </div>
                                     <div className="bg-purple-500/10 rounded-lg p-2 border border-purple-500/20">
                                         <p className="text-xs text-purple-300 mb-1">Tarih</p>

@@ -20,10 +20,10 @@
 }
 
 .shell :global(button),
-.shell :global(a),
 .shell :global(select),
-.shell :global(input),
-.shell :global(textarea) {
+.shell :global(input:not([type="checkbox"]):not([type="radio"])),
+.shell :global(textarea),
+.shell :global(a[role="button"]) {
   min-height: 44px;
 }
 

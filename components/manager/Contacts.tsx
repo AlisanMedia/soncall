@@ -114,9 +114,9 @@ export default function Contacts() {
     );
 
     return (
-        <div className="space-y-6 relative">
-            <div className="bg-white/10 backdrop-blur-lg rounded-2xl shadow-2xl p-6 border border-white/20">
-                <div className="flex flex-col md:flex-row md:items-center justify-between mb-6 gap-4">
+        <div className="space-y-3 sm:space-y-6 relative">
+            <div className="bg-white/10 backdrop-blur-lg rounded-2xl shadow-2xl p-3 sm:p-6 border border-white/20">
+                <div className="flex flex-col md:flex-row md:items-center justify-between mb-3 sm:mb-6 gap-4">
                     <div className="flex items-center gap-2">
                         <User className="w-6 h-6 text-blue-400" />
                         <h2 className="text-xl font-bold text-white">VIP Kişiler</h2>
@@ -144,12 +144,12 @@ export default function Contacts() {
 
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                     {loading ? (
-                        <div className="col-span-full py-12 text-center text-gray-400">
+                        <div className="col-span-full py-6 sm:py-12 text-center text-gray-400">
                             <Loader2 className="w-8 h-8 animate-spin mx-auto mb-2" />
                             Yükleniyor...
                         </div>
                     ) : filteredContacts.length === 0 ? (
-                        <div className="col-span-full py-12 text-center text-gray-500 bg-white/5 rounded-xl border border-white/5 border-dashed">
+                        <div className="col-span-full py-6 sm:py-12 text-center text-gray-500 bg-white/5 rounded-xl border border-white/5 border-dashed">
                             Kayıtlı kişi bulunamadı.
                         </div>
                     ) : (
@@ -199,7 +199,7 @@ export default function Contacts() {
             {/* ADD/EDIT MODAL */}
             {isModalOpen && (
                 <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-200">
-                    <div className="bg-[#1a1a2e] border border-white/10 rounded-2xl shadow-2xl w-full max-w-md p-6 relative animate-in zoom-in-95 duration-200">
+                    <div className="bg-[#1a1a2e] border border-white/10 rounded-2xl shadow-2xl w-full max-w-md p-3 sm:p-6 relative animate-in zoom-in-95 duration-200">
                         <button
                             onClick={() => setIsModalOpen(false)}
                             className="absolute top-4 right-4 text-gray-400 hover:text-white"
@@ -207,7 +207,7 @@ export default function Contacts() {
                             <X className="w-5 h-5" />
                         </button>
 
-                        <h3 className="text-xl font-bold text-white mb-6">
+                        <h3 className="text-xl font-bold text-white mb-3 sm:mb-6">
                             {isEditing ? 'Kişiyi Düzenle' : 'Yeni Kişi Ekle'}
                         </h3>
 

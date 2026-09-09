@@ -77,7 +77,7 @@ export default function InsightsPanel() {
     if (!insights || insights.length === 0) return null;
 
     return (
-        <div className="mb-8 space-y-4">
+        <div className="mb-4 sm:mb-8 space-y-4">
             <div className="flex items-center gap-2 mb-2">
                 <Zap className="w-5 h-5 text-yellow-400" />
                 <h3 className="font-bold text-white text-lg">Smart Insights</h3>

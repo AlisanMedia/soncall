@@ -122,7 +122,7 @@ export default function AgentSchedule({ agentId, salesRole, onStartMission }: Ag
 
     if (loading) {
         return (
-            <div role="status" aria-live="polite" className="rounded-2xl border border-white/10 bg-white/5 p-8 text-center text-purple-200">
+            <div role="status" aria-live="polite" className="rounded-2xl border border-white/10 bg-white/5 p-4 sm:p-8 text-center text-purple-200">
                 <div className="mx-auto mb-3 h-8 w-8 animate-spin rounded-full border-2 border-purple-300/30 border-t-purple-300" />
                 <p className="animate-pulse">Operasyon verileri yükleniyor…</p>
             </div>
@@ -131,7 +131,7 @@ export default function AgentSchedule({ agentId, salesRole, onStartMission }: Ag
 
     if (loadError && appointments.length === 0) {
         return (
-            <div role="alert" className="rounded-2xl border border-red-400/30 bg-red-500/10 p-8 text-center">
+            <div role="alert" className="rounded-2xl border border-red-400/30 bg-red-500/10 p-4 sm:p-8 text-center">
                 <AlertTriangle className="mx-auto mb-3 h-10 w-10 text-red-300" aria-hidden="true" />
                 <h3 className="text-lg font-bold text-white">Randevular yüklenemedi</h3>
                 <p className="mt-2 text-sm text-red-100/80">Bağlantıyı kontrol edip tekrar deneyin.</p>
@@ -150,13 +150,13 @@ export default function AgentSchedule({ agentId, salesRole, onStartMission }: Ag
         <div className="space-y-6">
             {/* HERO MISSION CARD */}
             {nextMission ? (
-                <div className={`relative overflow-hidden rounded-2xl border-2 p-6 transition-all duration-500 ${urgencyLevel === 'critical' || nextMission.status === 'missed' ? 'bg-red-950/40 border-red-500 shadow-[0_0_30px_rgba(239,68,68,0.3)]' :
+                <div className={`relative overflow-hidden rounded-2xl border-2 p-3 sm:p-6 transition-all duration-500 ${urgencyLevel === 'critical' || nextMission.status === 'missed' ? 'bg-red-950/40 border-red-500 shadow-[0_0_30px_rgba(239,68,68,0.3)]' :
                     urgencyLevel === 'warning' ? 'bg-amber-950/40 border-amber-500 shadow-[0_0_20px_rgba(245,158,11,0.2)]' :
                         'bg-emerald-950/40 border-emerald-500 shadow-[0_0_20px_rgba(16,185,129,0.2)]'
                     }`}>
                     <GlowingEffect spread={40} glow={true} disabled={false} proximity={64} borderWidth={3} />
 
-                    <div className="relative z-10 flex flex-col md:flex-row items-center justify-between gap-6">
+                    <div className="relative z-10 flex flex-col md:flex-row items-center justify-between gap-3 sm:gap-6">
                         {/* Timer Section */}
                         <div className="text-center md:text-left">
                             <div className="flex items-center gap-2 mb-2 justify-center md:justify-start">
@@ -169,7 +169,7 @@ export default function AgentSchedule({ agentId, salesRole, onStartMission }: Ag
                                     {nextMission.status === 'missed' ? '🚨 KRİTİK: GECİKMİŞ GÖREV' : 'SIRADAKİ HEDEF'}
                                 </span>
                             </div>
-                            <div className="text-5xl md:text-6xl font-black font-mono tracking-tighter text-white tabular-nums">
+                            <div className="text-3xl sm:text-5xl md:text-6xl font-black font-mono tracking-tighter text-white tabular-nums">
                                 {nextMission.status === 'missed' ? 'GECİKTİ' : timeLeft}
                             </div>
                             <div className="text-sm text-purple-200 mt-2 font-medium">
@@ -184,7 +184,7 @@ export default function AgentSchedule({ agentId, salesRole, onStartMission }: Ag
                             aria-label={`${nextMission.business_name || 'Lead'} görev detaylarını aç`}
                             className="flex-1 w-full cursor-pointer rounded-xl border border-white/10 bg-black/40 p-4 text-left backdrop-blur-sm transition-colors hover:bg-white/5 focus:outline-none focus:ring-2 focus:ring-purple-300/70 md:w-auto"
                         >
-                            <h3 className="text-2xl font-bold text-white mb-2">{nextMission.business_name}</h3>
+                            <h3 className="text-xl sm:text-2xl font-bold text-white mb-2">{nextMission.business_name}</h3>
                             <div className="space-y-2">
                                 <div className="flex items-center gap-2 text-purple-200">
                                     <Phone className="w-4 h-4" />
@@ -207,7 +207,7 @@ export default function AgentSchedule({ agentId, salesRole, onStartMission }: Ag
                         <div className="w-full md:w-auto">
                             <GlassButton
                                 onClick={() => handleLockAndLoad(nextMission)}
-                                className={`w-full md:w-auto min-w-[200px] h-16 text-lg font-bold group ${urgencyLevel === 'critical' || nextMission.status === 'missed' ? '[&>.glass-button]:!bg-red-600 hover:[&>.glass-button]:!bg-red-500' :
+                                className={`w-full md:w-auto min-w-0 md:min-w-[200px] h-11 sm:h-16 text-sm sm:text-lg font-bold group ${urgencyLevel === 'critical' || nextMission.status === 'missed' ? '[&>.glass-button]:!bg-red-600 hover:[&>.glass-button]:!bg-red-500' :
                                     urgencyLevel === 'warning' ? '[&>.glass-button]:!bg-amber-600 hover:[&>.glass-button]:!bg-amber-500' :
                                         '[&>.glass-button]:!bg-emerald-600 hover:[&>.glass-button]:!bg-emerald-500'
                                     }`}
@@ -220,9 +220,9 @@ export default function AgentSchedule({ agentId, salesRole, onStartMission }: Ag
                     </div>
                 </div>
             ) : (
-                <div className="rounded-2xl border border-white/10 bg-white/5 p-8 text-center">
+                <div className="rounded-2xl border border-white/10 bg-white/5 p-4 sm:p-8 text-center">
                     <Shield className="w-16 h-16 text-emerald-500/50 mx-auto mb-4" />
-                    <h3 className="text-2xl font-bold text-white">Bugün randevu yok</h3>
+                    <h3 className="text-xl sm:text-2xl font-bold text-white">Bugün randevu yok</h3>
                     <p className="text-purple-300 mt-2">Takip etmen gereken yeni bir randevu görünmüyor.</p>
                 </div>
             )}

@@ -62,7 +62,7 @@ export default function ActivityDetailModal({ isOpen, onClose, activity }: Activ
                     className="bg-[#1a1a2e] border border-white/10 w-full max-w-lg rounded-2xl shadow-2xl overflow-hidden"
                 >
                     {/* Header */}
-                    <div className="p-6 border-b border-white/10 flex justify-between items-start bg-white/5">
+                    <div className="p-3 sm:p-6 border-b border-white/10 flex justify-between items-start bg-white/5">
                         <div className="flex items-center gap-4">
                             {activity.profiles?.avatar_url ? (
                                 <img
@@ -93,7 +93,7 @@ export default function ActivityDetailModal({ isOpen, onClose, activity }: Activ
                     </div>
 
                     {/* Body */}
-                    <div className="p-6 space-y-6">
+                    <div className="p-3 sm:p-6 space-y-3 sm:space-y-6">
                         {/* Lead Info */}
                         <div className="bg-white/5 rounded-xl p-4 border border-white/5">
                             <h4 className="text-xs text-purple-300/70 uppercase mb-3 font-semibold tracking-wider">İlgili Müşteri / Lead</h4>

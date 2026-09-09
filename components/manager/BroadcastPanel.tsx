@@ -51,7 +51,7 @@ export default function BroadcastPanel({ managerId, onClose }: BroadcastPanelPro
     };
 
     return (
-        <div className="bg-white/10 backdrop-blur-lg rounded-xl border border-white/20 p-6 space-y-4">
+        <div className="bg-white/10 backdrop-blur-lg rounded-xl border border-white/20 p-3 sm:p-6 space-y-4">
             <div className="flex items-center justify-between">
                 <h3 className="text-lg font-bold text-white flex items-center gap-2">
                     📢 Broadcast Message

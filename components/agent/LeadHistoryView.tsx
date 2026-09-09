@@ -906,7 +906,7 @@ export default function LeadHistoryView() {
                         </div>
 
                         {/* Modal Body */}
-                        <div className="p-6 overflow-y-auto space-y-6 custom-scrollbar">
+                        <div className="min-h-0 p-3 sm:p-6 overflow-y-auto space-y-3 sm:space-y-6 custom-scrollbar">
                             {detailLoading && (
                                 <div className="rounded-xl border border-white/10 bg-white/5 p-4 text-sm text-purple-200 flex items-center gap-2">
                                     <Loader2 className="w-4 h-4 animate-spin" />
@@ -1171,7 +1171,7 @@ export default function LeadHistoryView() {
             {/* Sale Report Modal */}
             {showSaleModal && (
                 <div className="fixed inset-0 bg-black/90 backdrop-blur-md z-[60] flex items-center justify-center p-4">
-                    <div role="dialog" aria-modal="true" aria-labelledby="sale-dialog-title" className="w-full max-w-sm overflow-hidden rounded-2xl border border-purple-500/30 bg-gradient-to-br from-purple-900 to-slate-900 shadow-[0_0_50px_rgba(168,85,247,0.2)]">
+                    <div role="dialog" aria-modal="true" aria-labelledby="sale-dialog-title" className="w-full max-w-sm max-h-[calc(100dvh-2rem)] overflow-y-auto rounded-2xl border border-purple-500/30 bg-gradient-to-br from-purple-900 to-slate-900 shadow-[0_0_50px_rgba(168,85,247,0.2)]">
                         <div className="p-6 text-center">
                             <div className="w-16 h-16 bg-gradient-to-br from-yellow-400 to-orange-500 rounded-full mx-auto mb-4 flex items-center justify-center shadow-lg animate-bounce">
                                 <DollarSign className="w-8 h-8 text-white" />

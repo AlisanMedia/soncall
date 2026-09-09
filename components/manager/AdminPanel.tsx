@@ -9,7 +9,7 @@ export default function AdminPanel() {
     const [subTab, setSubTab] = useState<'requests' | 'system'>('requests');
 
     return (
-        <div className="space-y-6">
+        <div className="space-y-3 sm:space-y-6">
             {/* Admin Header */}
             <div className="bg-white/5 border border-white/10 rounded-xl p-1 flex p-1 inline-flex">
                 <button

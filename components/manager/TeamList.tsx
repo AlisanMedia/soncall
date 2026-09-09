@@ -52,7 +52,7 @@ export default function TeamList({
     };
 
     return (
-        <div className="space-y-6">
+        <div className="space-y-3 sm:space-y-6">
             {/* Header / Tools */}
             <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
                 <div>
@@ -101,9 +101,9 @@ export default function TeamList({
                         </thead>
                         <tbody className="divide-y divide-white/5">
                             {loading ? (
-                                <tr><td colSpan={9} className="p-8 text-center text-gray-400">Yükleniyor...</td></tr>
+                                <tr><td colSpan={9} className="p-4 sm:p-8 text-center text-gray-400">Yükleniyor...</td></tr>
                             ) : filteredTeam.length === 0 ? (
-                                <tr><td colSpan={9} className="p-8 text-center text-gray-400">Kayıt bulunamadı.</td></tr>
+                                <tr><td colSpan={9} className="p-4 sm:p-8 text-center text-gray-400">Kayıt bulunamadı.</td></tr>
                             ) : (
                                 filteredTeam.map(member => (
                                     <tr key={member.id} className="hover:bg-white/5 transition-colors group">

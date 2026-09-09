@@ -82,7 +82,7 @@ export default function LeadProfileModal({ leadId, isOpen, onClose }: LeadProfil
             />
 
             {/* Slide-over panel */}
-            <div className={`fixed inset-y-0 right-0 z-50 w-full max-w-md bg-slate-900 border-l border-white/10 shadow-2xl flex flex-col transform transition-transform duration-300 ease-in-out ${isOpen ? 'translate-x-0' : 'translate-x-full'}`}>
+            <div className={`fixed top-0 right-0 h-dvh z-[80] w-full max-w-md bg-slate-900 border-l border-white/10 shadow-2xl flex flex-col transform transition-transform duration-300 ease-in-out ${isOpen ? 'translate-x-0' : 'translate-x-full'}`}>
 
                 {loading ? (
                     <div className="flex-1 flex items-center justify-center">
@@ -91,18 +91,18 @@ export default function LeadProfileModal({ leadId, isOpen, onClose }: LeadProfil
                 ) : lead ? (
                     <>
                         {/* Header */}
-                        <div className="p-6 border-b border-white/10 bg-black/20 sticky top-0 z-10">
+                        <div className="p-3 sm:p-6 border-b border-white/10 bg-black/20 sticky top-0 z-10">
                             <div className="flex justify-between items-start mb-4">
                                 <div>
-                                    <div className="flex items-center gap-2 mb-1">
-                                        <h2 className="text-xl font-bold text-white">{lead.business_name}</h2>
+                                    <div className="flex flex-wrap items-center gap-2 mb-1">
+                                        <h2 className="text-lg sm:text-xl break-words font-bold text-white">{lead.business_name}</h2>
                                         <span className={`px-2 py-0.5 rounded text-[10px] font-bold uppercase ${getPotentialColor(lead.potential_level)}`}>
                                             {lead.potential_level === 'not_assessed' ? 'Belirsiz' : lead.potential_level}
                                         </span>
                                     </div>
                                     <div className="text-purple-300 text-sm">{lead.category || 'Sektör Belirtilmemiş'}</div>
                                 </div>
-                                <button onClick={onClose} className="text-gray-400 hover:text-white p-1 rounded-full hover:bg-white/10 transition">
+                                <button onClick={onClose} aria-label="Müşteri detayını kapat" className="flex h-11 w-11 shrink-0 items-center justify-center text-gray-400 hover:text-white p-1 rounded-full hover:bg-white/10 transition">
                                     <X className="w-5 h-5" />
                                 </button>
                             </div>
@@ -126,7 +126,7 @@ export default function LeadProfileModal({ leadId, isOpen, onClose }: LeadProfil
                         </div>
 
                         {/* Content Scroll */}
-                        <div className="flex-1 overflow-y-auto p-6 space-y-6">
+                        <div className="min-h-0 flex-1 overflow-y-auto p-3 sm:p-6 space-y-4 sm:space-y-6">
 
                             {/* AI Summary Banner if exists */}
                             {lead.ai_summary && (
