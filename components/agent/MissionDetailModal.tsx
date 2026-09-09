@@ -64,7 +64,7 @@ export default function MissionDetailModal({ isOpen, onClose, appointment, onAct
                             <GlowingEffect spread={40} glow={true} disabled={false} proximity={64} borderWidth={2} />
 
                             {/* Header */}
-                            <div className="relative p-6 border-b border-white/10 bg-white/5">
+                            <div className="relative p-3 sm:p-6 border-b border-white/10 bg-white/5">
                                 <button
                                     onClick={onClose}
                                     type="button"
@@ -88,7 +88,7 @@ export default function MissionDetailModal({ isOpen, onClose, appointment, onAct
                             </div>
 
                             {/* Body */}
-                            <div className="space-y-6 overflow-y-auto p-4 sm:p-6">
+                            <div className="min-h-0 space-y-3 sm:space-y-6 overflow-y-auto p-4 sm:p-6">
                                 {/* Lead Info */}
                                 <div className="space-y-4">
                                     <div className="bg-white/5 p-4 rounded-xl border border-white/5">

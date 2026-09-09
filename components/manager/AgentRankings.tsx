@@ -106,7 +106,7 @@ export default function AgentRankings() {
 
     if (loading) {
         return (
-            <div className="flex items-center justify-center py-20">
+            <div className="flex items-center justify-center py-8 sm:py-20">
                 <div className="w-8 h-8 rounded-full border-2 border-purple-500 border-t-transparent animate-spin" />
             </div>
         );
@@ -115,7 +115,7 @@ export default function AgentRankings() {
     const comparedAgents = selectedAgents.map(id => agents.find(a => a.agent_id === id)).filter(Boolean) as AgentPerformance[];
 
     return (
-        <div className="space-y-6">
+        <div className="space-y-3 sm:space-y-6">
             {/* Header Controls */}
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-4 bg-white/5 backdrop-blur-xl rounded-2xl border border-white/10">
                 <div className="flex items-center gap-4">

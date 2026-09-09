@@ -238,7 +238,7 @@ export default function AppointmentCalendar() {
     const today = new Date().toDateString();
 
     return (
-        <div className="space-y-6">
+        <div className="space-y-3 sm:space-y-6">
             <GhostBusterPanel
                 appointments={appointments}
                 onReassign={(id) => {
@@ -254,7 +254,7 @@ export default function AppointmentCalendar() {
                         <Calendar className="w-6 h-6 text-purple-400" />
                     </div>
                     <div>
-                        <h2 className="text-2xl font-bold text-white">Randevu Takvimi</h2>
+                        <h2 className="text-xl sm:text-2xl font-bold text-white">Randevu Takvimi</h2>
                         <p className="text-purple-300 text-sm">
                             {filteredAppointments.length} randevu ·
                             <span className="text-red-400 ml-1">
@@ -321,13 +321,13 @@ export default function AppointmentCalendar() {
             {viewMode === 'heatmap' ? (
                 <HeatmapView appointments={appointments} />
             ) : loading ? (
-                <div className="grid grid-cols-7 gap-3">
+                <div className="grid grid-cols-1 gap-2 md:grid-cols-7 md:gap-3">
                     {Array.from({ length: viewMode === 'week' ? 7 : 35 }).map((_, i) => (
                         <div key={i} className="bg-white/5 rounded-xl p-4 border border-white/10 h-32 animate-pulse" />
                     ))}
                 </div>
             ) : (
-                <div className={`grid gap-3 ${viewMode === 'week' ? 'grid-cols-1 md:grid-cols-7' : 'grid-cols-7'}`}>
+                <div className={`grid gap-3 ${viewMode === 'week' ? 'grid-cols-1 md:grid-cols-7' : 'grid-cols-1 md:grid-cols-7'}`}>
                     {(viewMode === 'week' ? weekDays : getMonthDays()).map((day, index) => {
                         const dateStr = day.toDateString();
                         const dayAppointments = appointmentsByDate[dateStr] || [];
@@ -342,17 +342,17 @@ export default function AppointmentCalendar() {
                                 transition={{ delay: index * 0.01 }}
                                 className={`
                                     bg-white/5 rounded-xl border relative group overflow-hidden
-                                    ${viewMode === 'week' ? 'min-h-[300px] p-4' : 'min-h-[120px] p-2'}
+                                    ${viewMode === 'week' ? 'min-h-0 p-3 md:min-h-[300px] md:p-4' : 'min-h-0 p-2 md:min-h-[120px]'}
                                     ${isToday ? 'border-purple-500 ring-2 ring-purple-500/50' : 'border-white/10'}
-                                    ${!isSelectedMonth && viewMode === 'month' ? 'opacity-30' : 'opacity-100'}
+                                    ${!isSelectedMonth && viewMode === 'month' ? 'hidden md:block md:opacity-30' : 'opacity-100'}
                                 `}
                             >
                                 {/* Day Header */}
                                 <div className={`flex items-center justify-between mb-2 ${viewMode === 'week' ? '' : 'text-xs'}`}>
                                     <span className={`font-medium ${isToday ? 'text-purple-300' : 'text-purple-200'}`}>
-                                        {viewMode === 'week' ? day.toLocaleDateString('tr-TR', { weekday: 'short' }) : ''}
+                                        <span className={viewMode === 'month' ? 'md:hidden' : ''}>{day.toLocaleDateString('tr-TR', { weekday: 'short' })}</span>
                                     </span>
-                                    <span className={`font-bold ${isToday ? 'text-white' : 'text-purple-100'} ${viewMode === 'week' ? 'text-2xl' : 'text-sm'}`}>
+                                    <span className={`font-bold ${isToday ? 'text-white' : 'text-purple-100'} ${viewMode === 'week' ? 'text-lg md:text-2xl' : 'text-sm'}`}>
                                         {day.getDate()}
                                     </span>
                                 </div>
@@ -364,7 +364,7 @@ export default function AppointmentCalendar() {
                                             <div key={apt.id} className="relative group">
                                                 {/* Selection Checkbox (Visible on hover or selected) */}
                                                 <div
-                                                    className={`absolute top-2 right-2 z-20 transition-opacity ${selectedAppointments.has(apt.id) ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'
+                                                    className={`absolute top-2 right-2 z-20 transition-opacity ${selectedAppointments.has(apt.id) ? 'opacity-100' : 'opacity-100 md:opacity-0 md:group-hover:opacity-100'
                                                         }`}
                                                 >
                                                     <input
@@ -374,6 +374,7 @@ export default function AppointmentCalendar() {
                                                             e.stopPropagation();
                                                             toggleSelection(apt.id);
                                                         }}
+                                                        aria-label={`${apt.business_name} randevusunu seç`}
                                                         className="w-4 h-4 rounded border-white/30 bg-black/50 checked:bg-purple-600 focus:ring-purple-500 cursor-pointer"
                                                     />
                                                 </div>
@@ -389,7 +390,7 @@ export default function AppointmentCalendar() {
                                             <div
                                                 key={apt.id}
                                                 onClick={() => setSelectedAppointment(apt)}
-                                                className="cursor-pointer text-[10px] p-1.5 rounded bg-white/10 hover:bg-white/20 border border-white/5 truncate flex items-center gap-1 transition-colors"
+                                                className="cursor-pointer text-xs md:text-[10px] p-2 md:p-1.5 rounded bg-white/10 hover:bg-white/20 border border-white/5 truncate flex items-center gap-1 transition-colors"
                                                 style={{ borderLeftColor: apt.agent_color.from, borderLeftWidth: 3 }}
                                             >
                                                 <span className="truncate flex-1">{apt.business_name}</span>
@@ -408,7 +409,7 @@ export default function AppointmentCalendar() {
                 <motion.div
                     initial={{ opacity: 0, scale: 0.9 }}
                     animate={{ opacity: 1, scale: 1 }}
-                    className="text-center py-12"
+                    className="text-center py-6 sm:py-12"
                 >
                     <Calendar className="w-16 h-16 text-purple-400 mx-auto mb-4 opacity-40" />
                     <p className="text-purple-300 text-lg">Randevu bulunmuyor</p>
@@ -441,7 +442,7 @@ export default function AppointmentCalendar() {
                             initial={{ scale: 0.95, opacity: 0 }}
                             animate={{ scale: 1, opacity: 1 }}
                             exit={{ scale: 0.95, opacity: 0 }}
-                            className="bg-[#1a1b26] border border-white/20 rounded-2xl p-6 w-full max-w-md shadow-2xl relative"
+                            className="bg-[#1a1b26] border border-white/20 rounded-2xl p-3 sm:p-6 max-h-[85dvh] overflow-y-auto w-full max-w-md shadow-2xl relative"
                         >
                             <button
                                 onClick={() => setIsReassignModalOpen(false)}
@@ -455,7 +456,7 @@ export default function AppointmentCalendar() {
                                 Toplu Atama
                             </h3>
 
-                            <p className="text-zinc-400 mb-6 text-sm">
+                            <p className="text-zinc-400 mb-3 sm:mb-6 text-sm">
                                 Seçili {selectedAppointments.size} randevuyu atamak istediğiniz personeli seçin.
                             </p>
 
@@ -591,10 +592,10 @@ function AppointmentModal({ appointment, onClose }: {
                 exit={{ x: 300, opacity: 0 }}
                 transition={{ type: 'spring', damping: 25 }}
                 onClick={(e) => e.stopPropagation()}
-                className="bg-gradient-to-br from-slate-900 to-slate-800 rounded-2xl p-6 max-w-lg w-full border border-white/20 shadow-2xl"
+                className="bg-gradient-to-br from-slate-900 to-slate-800 rounded-2xl p-3 sm:p-6 max-h-[85dvh] overflow-y-auto max-w-lg w-full border border-white/20 shadow-2xl"
             >
                 {/* Header */}
-                <div className="flex items-start justify-between mb-6">
+                <div className="flex items-start justify-between mb-3 sm:mb-6">
                     <div className="flex items-center gap-3">
                         <div
                             className="w-12 h-12 rounded-full flex items-center justify-center font-bold text-white text-lg"
@@ -645,7 +646,7 @@ function AppointmentModal({ appointment, onClose }: {
                     )}
 
                     {/* Quick Actions */}
-                    <div className="flex gap-2 pt-4">
+                    <div className="flex flex-wrap gap-2 pt-4">
                         <motion.a
                             href={`tel:${appointment.phone_number}`}
                             className="flex-1 flex items-center justify-center gap-2 px-4 py-3 bg-green-500/20 hover:bg-green-500/30 border border-green-500/30 rounded-lg text-green-300 font-semibold transition-colors"

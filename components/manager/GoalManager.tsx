@@ -138,7 +138,7 @@ export default function GoalManager() {
     );
 
     return (
-        <div className="space-y-6">
+        <div className="space-y-3 sm:space-y-6">
             {/* Header */}
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-4 bg-white/5 backdrop-blur-xl rounded-2xl border border-white/10">
                 <div className="flex items-center gap-3">
@@ -168,7 +168,7 @@ export default function GoalManager() {
             </div>
 
             {/* Responsive Grid */}
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3 sm:gap-6">
                 {agents.map(agent => {
                     const goal = goals[agent.id] || { target_calls: 0, target_sales: 0 };
                     const isFlipped = flippedCards[agent.id];
@@ -188,7 +188,7 @@ export default function GoalManager() {
                             >
                                 {/* Front Face */}
                                 <div
-                                    className="absolute inset-0 backface-hidden bg-white/5 backdrop-blur-xl border border-white/10 rounded-2xl p-6 flex flex-col items-center justify-between cursor-pointer hover:border-purple-500/30 hover:shadow-lg hover:shadow-purple-500/10 transition-all"
+                                    className="absolute inset-0 backface-hidden bg-white/5 backdrop-blur-xl border border-white/10 rounded-2xl p-3 sm:p-6 flex flex-col items-center justify-between cursor-pointer hover:border-purple-500/30 hover:shadow-lg hover:shadow-purple-500/10 transition-all"
                                     onClick={() => toggleFlip(agent.id)}
                                 >
                                     {/* Agent Header */}
@@ -213,7 +213,7 @@ export default function GoalManager() {
                                     </div>
 
                                     {/* Progress Rings */}
-                                    <div className="flex items-center justify-center gap-6 w-full">
+                                    <div className="flex items-center justify-center gap-3 sm:gap-6 w-full">
                                         {/* Calls Ring */}
                                         <div className="flex flex-col items-center gap-1">
                                             <div className="relative w-16 h-16">
@@ -274,7 +274,7 @@ export default function GoalManager() {
 
                                 {/* Back Face (Edit Form) */}
                                 <div
-                                    className="absolute inset-0 backface-hidden rotate-y-180 bg-slate-900 border border-purple-500/30 rounded-2xl p-6 flex flex-col justify-center gap-4 shadow-2xl"
+                                    className="absolute inset-0 backface-hidden rotate-y-180 bg-slate-900 border border-purple-500/30 rounded-2xl p-3 sm:p-6 flex flex-col justify-center gap-4 shadow-2xl"
                                     onClick={(e) => e.stopPropagation()}
                                 >
                                     <div className="text-center mb-2">
@@ -333,7 +333,7 @@ export default function GoalManager() {
                 })}
 
                 {/* Info Card / Placeholder */}
-                <div className="h-[280px] bg-white/5 border border-dashed border-white/10 rounded-2xl flex flex-col items-center justify-center text-center p-6 text-white/20 hover:text-white/40 hover:border-white/20 transition-all cursor-default">
+                <div className="h-[280px] bg-white/5 border border-dashed border-white/10 rounded-2xl flex flex-col items-center justify-center text-center p-3 sm:p-6 text-white/20 hover:text-white/40 hover:border-white/20 transition-all cursor-default">
                     <Target className="w-12 h-12 mb-4 opacity-50" />
                     <p className="text-sm font-medium">Yeni Temsilci Ekle</p>
                     <p className="text-xs mt-1 max-w-[150px]">Ayarlar sayfasından yeni takım arkadaşları davet edebilirsiniz.</p>

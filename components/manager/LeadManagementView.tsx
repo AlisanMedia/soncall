@@ -1,11 +1,13 @@
 
 'use client';
 
-import { useState, useEffect } from 'react';
-import { ShieldAlert, ArrowRightLeft, CheckSquare, Square } from 'lucide-react';
+import { useState, useEffect, useRef } from 'react';
+import { ShieldAlert, ArrowRightLeft, CheckSquare, Square, Shuffle } from 'lucide-react';
 import { toast } from 'sonner';
 
 import TransferModal from './TransferModal';
+import AgentLeadInventory from './AgentLeadInventory';
+import SelectedLeadDistribution from './SelectedLeadDistribution';
 import { GlassButton } from '@/components/ui/glass-button';
 import StuckLeadsPanel from './StuckLeadsPanel';
 import { createClient } from '@/lib/supabase/client';
@@ -16,11 +18,19 @@ import type { Profile } from '@/types';
 import * as XLSX from 'xlsx';
 
 export default function LeadManagementView({ selectedMarketId }: { selectedMarketId?: string | null }) {
-    const [viewMode, setViewMode] = useState<'table' | 'kanban'>('kanban');
+    const [viewMode, setViewMode] = useState<'table' | 'kanban'>('table');
     const [leads, setLeads] = useState<KanbanLead[]>([]);
     const [loading, setLoading] = useState(true);
     const [selectedLeads, setSelectedLeads] = useState<string[]>([]);
     const [activeLeadId, setActiveLeadId] = useState<string | null>(null);
+    const [page, setPage] = useState(1);
+    const [total, setTotal] = useState(0);
+    const [loadError, setLoadError] = useState('');
+    const [distributionOpen, setDistributionOpen] = useState(false);
+    const [inventoryVersion, setInventoryVersion] = useState(0);
+    const requestVersion = useRef(0);
+    const metadataVersion = useRef(0);
+    const pageSize = 100;
 
     const [agentFilter, setAgentFilter] = useState('all');
     const [statusFilter, setStatusFilter] = useState('all');
@@ -42,15 +52,30 @@ export default function LeadManagementView({ selectedMarketId }: { selectedMarke
     useEffect(() => {
         loadData();
         // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [agentFilter, statusFilter, categoryFilter, dateFilter, selectedMarketId]);
+    }, [agentFilter, statusFilter, categoryFilter, dateFilter, selectedMarketId, page]);
 
-    const loadMetadata = async () => {
+    useEffect(() => {
+        /* eslint-disable react-hooks/set-state-in-effect */
+        setSelectedLeads([]);
+        setPage(1);
+        setAgentFilter('all');
+        setStatusFilter('all');
+        setCategoryFilter('all');
+        setDateFilter('all');
+        setAgents([]);
+        setCategories([]);
+        /* eslint-enable react-hooks/set-state-in-effect */
+    }, [selectedMarketId]);
+
+    async function loadMetadata() {
+        const version = ++metadataVersion.current;
         try {
             const [agentsRes, categoriesRes] = await Promise.all([
                 fetch(`/api/manager/team/list-all${selectedMarketId ? `?marketId=${encodeURIComponent(selectedMarketId)}` : ''}`),
                 fetch(`/api/manager/leads/categories${selectedMarketId ? `?marketId=${encodeURIComponent(selectedMarketId)}` : ''}`),
             ]);
 
+            if (version !== metadataVersion.current) return;
             if (agentsRes.ok) {
                 const agentsData = await agentsRes.json();
                 if (agentsData.agents) setAgents(agentsData.agents);
@@ -64,76 +89,35 @@ export default function LeadManagementView({ selectedMarketId }: { selectedMarke
         } catch (e) {
             console.error('Failed to load lead metadata', e);
         }
-    };
+    }
 
-    const loadData = async () => {
+    async function loadData() {
+        const version = ++requestVersion.current;
         setLoading(true);
-        // Load Leads
-        let query = supabase
-            .from('leads')
-            .select(`
-                id, business_name, phone_number, status, assigned_to, created_at, category, batch_id, potential_level, ai_summary,
-                profiles:assigned_to (full_name)
-            `);
-
-        if (selectedMarketId) {
-            query = query.eq('market_id', selectedMarketId);
-        }
-
-        // Apply Status Filter
-        if (statusFilter !== 'all') {
-            query = query.eq('status', statusFilter);
-        }
-
-        // Apply Agent Filter
-        if (agentFilter !== 'all') {
-            if (agentFilter === 'unassigned') {
-                query = query.is('assigned_to', null);
-            } else {
-                query = query.eq('assigned_to', agentFilter);
-            }
-        }
-
-        // Apply Category Filter
-        if (categoryFilter !== 'all') {
-            if (categoryFilter === 'Belirsiz') {
-                query = query.or('category.is.null,category.eq.""');
-            } else {
-                query = query.eq('category', categoryFilter);
-            }
-        }
-
-        // Apply Date Filter
-        const now = new Date();
-        if (dateFilter === 'today') {
-            const startOfDay = new Date(now.setHours(0, 0, 0, 0)).toISOString();
-            query = query.gte('created_at', startOfDay);
-        } else if (dateFilter === 'yesterday') {
-            const yesterday = new Date(now);
-            yesterday.setDate(yesterday.getDate() - 1);
-            const startOfYesterday = new Date(yesterday.setHours(0, 0, 0, 0)).toISOString();
-            const endOfYesterday = new Date(yesterday.setHours(23, 59, 59, 999)).toISOString();
-            query = query.gte('created_at', startOfYesterday).lte('created_at', endOfYesterday);
-        } else if (dateFilter === 'this_week') {
-            const weekAgo = new Date(now);
-            weekAgo.setDate(weekAgo.getDate() - 7);
-            query = query.gte('created_at', weekAgo.toISOString());
-        }
-
-        const { data: leadsData, error } = await query.order('created_at', { ascending: false }).limit(500);
-
-        if (error) {
+        setSelectedLeads([]);
+        setLoadError('');
+        const params = new URLSearchParams({ view: 'inventory', page: String(page), pageSize: String(pageSize) });
+        if (selectedMarketId) params.set('marketId', selectedMarketId);
+        if (agentFilter !== 'all') params.set('agentId', agentFilter);
+        if (statusFilter !== 'all') params.set('status', statusFilter);
+        if (categoryFilter !== 'all') params.set('category', categoryFilter);
+        if (dateFilter !== 'all') params.set('dateFilter', dateFilter);
+        try {
+            const response = await fetch(`/api/manager/leads?${params}`, { cache: 'no-store' });
+            const data = await response.json();
+            if (version !== requestVersion.current) return;
+            if (!response.ok) throw new Error(data.error || data.message || 'Leadler yüklenemedi');
+            setLeads(data.leads || []);
+            setTotal(data.total || 0);
+        } catch (error) {
+            if (version !== requestVersion.current) return;
             setLeads([]);
-            setLoading(false);
-            toast.error("Veri çekilirken hata oluştu!");
-            return;
+            setTotal(0);
+            setLoadError(error instanceof Error ? error.message : 'Leadler yüklenemedi');
+        } finally {
+            if (version === requestVersion.current) setLoading(false);
         }
-
-        if (!error) {
-            setLeads((leadsData || []) as unknown as KanbanLead[]);
-        }
-        setLoading(false);
-    };
+    }
 
     const toggleSelect = (id: string) => {
         setSelectedLeads(prev =>
@@ -201,38 +185,17 @@ export default function LeadManagementView({ selectedMarketId }: { selectedMarke
         }
     };
 
-    const handleBulkDelete = async () => {
-        if (!confirm(`${selectedLeads.length} adet lead kalıcı olarak silinecek. Bu işlem geri alınamaz! Emin misiniz?`)) return;
-
-        setLoading(true);
-        try {
-            const { error } = await supabase
-                .from('leads')
-                .delete()
-                .in('id', selectedLeads);
-
-            if (error) throw error;
-
-            toast.success(`${selectedLeads.length} lead başarıyla silindi.`);
-            setSelectedLeads([]);
-            loadData();
-        } catch (error: unknown) {
-            const message = error instanceof Error ? error.message : 'Silme işlemi başarısız';
-            console.error('Delete error:', error);
-            toast.error('Silme işlemi başarısız: ' + message);
-            setLoading(false);
-        }
-    };
-
     return (
-        <div className="space-y-6 animate-in fade-in duration-500 relative">
+        <div className="space-y-3 sm:space-y-6 animate-in fade-in duration-500 relative">
+
+            <AgentLeadInventory marketId={selectedMarketId} refreshVersion={inventoryVersion} />
 
             {/* View Toggle & Export */}
-            <div className="flex justify-between items-center bg-black/20 p-2 rounded-xl border border-white/5">
-                <div className="flex gap-2">
+            <div className="flex flex-col justify-between gap-2 rounded-xl border border-white/5 bg-black/20 p-2 sm:flex-row sm:items-center">
+                <div className="grid grid-cols-2 gap-2">
                     <button
                         onClick={() => setViewMode('kanban')}
-                        className={`px-4 py-2 rounded-lg text-sm font-bold transition-all ${
+                        className={`min-h-10 rounded-lg px-2 py-2 text-xs font-bold transition-all sm:px-4 sm:text-sm ${
                             viewMode === 'kanban' ? 'bg-purple-500 text-white shadow-lg' : 'text-gray-400 hover:text-white hover:bg-white/5'
                         }`}
                     >
@@ -240,7 +203,7 @@ export default function LeadManagementView({ selectedMarketId }: { selectedMarke
                     </button>
                     <button
                         onClick={() => setViewMode('table')}
-                        className={`px-4 py-2 rounded-lg text-sm font-bold transition-all ${
+                        className={`min-h-10 rounded-lg px-2 py-2 text-xs font-bold transition-all sm:px-4 sm:text-sm ${
                             viewMode === 'table' ? 'bg-purple-500 text-white shadow-lg' : 'text-gray-400 hover:text-white hover:bg-white/5'
                         }`}
                     >
@@ -258,10 +221,10 @@ export default function LeadManagementView({ selectedMarketId }: { selectedMarke
             </div>
 
             {/* Top Stats / Tools */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3 sm:gap-6">
                 <StuckLeadsPanel onActionComplete={loadData} />
 
-                <div className="bg-white/5 border border-white/10 rounded-xl p-6">
+                <div className="bg-white/5 border border-white/10 rounded-xl p-3 sm:p-6">
                     <div className="flex items-center gap-2 mb-2">
                         <h3 className="text-lg font-bold text-white">Hızlı Filtre</h3>
                         <SectionInfo text="Belirli bir satış temsilcisine atanmış veya havuzda bekleyen leadleri buradan filtreleyebilirsiniz." />
@@ -271,7 +234,7 @@ export default function LeadManagementView({ selectedMarketId }: { selectedMarke
                             <select
                                 className="bg-black/20 border border-white/10 rounded-lg p-3 sm:p-2 text-white text-sm flex-1 touch-target"
                                 value={agentFilter}
-                                onChange={e => { setAgentFilter(e.target.value); setSelectedLeads([]); }}
+                                onChange={e => { setAgentFilter(e.target.value); setSelectedLeads([]); setPage(1); }}
                             >
                                 <option value="all">Tüm Agentlar</option>
                                 <option value="unassigned">Atanmamış (Havuz)</option>
@@ -282,22 +245,22 @@ export default function LeadManagementView({ selectedMarketId }: { selectedMarke
                             <select
                                 className="bg-black/20 border border-white/10 rounded-lg p-3 sm:p-2 text-white text-sm flex-1 touch-target"
                                 value={statusFilter}
-                                onChange={e => { setStatusFilter(e.target.value); setSelectedLeads([]); }}
+                                onChange={e => { setStatusFilter(e.target.value); setSelectedLeads([]); setPage(1); }}
                             >
                                 <option value="all">Tüm Durumlar</option>
                                 <option value="pending">Beklemede</option>
-                                <option value="called">Arandı</option>
+                                <option value="in_progress">İşlemde</option>
+                                <option value="contacted">Arandı</option>
+                                <option value="callback">Geri Arama</option>
                                 <option value="appointment">Randevu</option>
-                                <option value="completed">Tamamlandı</option>
-                                <option value="rejected">Reddedildi</option>
-                                <option value="unreachable">Ulaşılamadı</option>
+                                <option value="not_interested">İlgilenmiyor</option>
                             </select>
                         </div>
                         <div className="flex flex-col sm:flex-row gap-2">
                             <select
                                 className="bg-black/20 border border-white/10 rounded-lg p-3 sm:p-2 text-white text-sm flex-1 touch-target"
                                 value={categoryFilter}
-                                onChange={e => { setCategoryFilter(e.target.value); setSelectedLeads([]); }}
+                                onChange={e => { setCategoryFilter(e.target.value); setSelectedLeads([]); setPage(1); }}
                             >
                                 <option value="all">Tüm Sektörler (Kategoriler)</option>
                                 {categories.map(c => (
@@ -307,7 +270,7 @@ export default function LeadManagementView({ selectedMarketId }: { selectedMarke
                             <select
                                 className="bg-black/20 border border-white/10 rounded-lg p-3 sm:p-2 text-white text-sm flex-1 touch-target"
                                 value={dateFilter}
-                                onChange={e => { setDateFilter(e.target.value); setSelectedLeads([]); }}
+                                onChange={e => { setDateFilter(e.target.value); setSelectedLeads([]); setPage(1); }}
                             >
                                 <option value="all">Tüm Zamanlar</option>
                                 <option value="today">Bugün</option>
@@ -360,9 +323,16 @@ export default function LeadManagementView({ selectedMarketId }: { selectedMarke
                         <span className="text-white font-bold ml-2 text-sm">{selectedLeads.length} lead seçildi</span>
                         <div className="flex gap-2 w-full sm:w-auto">
                             <GlassButton
+                                onClick={() => setDistributionOpen(true)}
+                                className="flex-1 sm:flex-none [&>.glass-button]:!bg-cyan-100 hover:[&>.glass-button]:!bg-white"
+                                contentClassName="text-cyan-900 !px-3 !py-2 font-bold text-xs sm:text-sm flex items-center justify-center gap-2"
+                            >
+                                <Shuffle className="w-4 h-4" /> Eşit Dağıt
+                            </GlassButton>
+                            <GlassButton
                                 onClick={() => setTransferModalOpen(true)}
                                 className="flex-1 sm:flex-none [&>.glass-button]:!bg-white hover:[&>.glass-button]:!bg-gray-100"
-                                contentClassName="text-purple-600 !px-4 !py-2 font-bold text-sm flex items-center justify-center gap-2"
+                                contentClassName="text-purple-600 !px-3 !py-2 font-bold text-xs sm:text-sm flex items-center justify-center gap-2"
                             >
                                 <ArrowRightLeft className="w-4 h-4" /> Transfer Et
                             </GlassButton>
@@ -377,6 +347,7 @@ export default function LeadManagementView({ selectedMarketId }: { selectedMarke
                     </div>
                 )}
 
+                {loadError && <div className="m-3 rounded-lg border border-red-500/30 bg-red-500/10 p-3 text-sm text-red-200">{loadError}</div>}
                 <div className="overflow-x-auto">
                     <table className="w-full text-left">
                         <thead className="bg-white/5 text-purple-200 text-[10px] sm:text-xs uppercase sticky top-0 z-10">
@@ -422,9 +393,9 @@ export default function LeadManagementView({ selectedMarketId }: { selectedMarke
                         </thead>
                         <tbody className="divide-y divide-white/5">
                             {loading ? (
-                                <tr><td colSpan={6} className="p-8 text-center text-gray-400">Yükleniyor...</td></tr>
+                                <tr><td colSpan={6} className="p-4 sm:p-8 text-center text-gray-400">Yükleniyor...</td></tr>
                             ) : leads.length === 0 ? (
-                                <tr><td colSpan={6} className="p-8 text-center text-gray-400">Gösterilecek lead bulunamadı.</td></tr>
+                                <tr><td colSpan={6} className="p-4 sm:p-8 text-center text-gray-400">Gösterilecek lead bulunamadı.</td></tr>
                             ) : (
                                 leads.map(lead => (
                                     <tr
@@ -467,6 +438,15 @@ export default function LeadManagementView({ selectedMarketId }: { selectedMarke
                         </tbody>
                     </table>
                 </div>
+                {total > pageSize && (
+                    <div className="flex flex-wrap items-center justify-between gap-2 border-t border-white/10 p-3 text-xs text-slate-400">
+                        <span>{total} kayıttan {(page - 1) * pageSize + 1}–{Math.min(page * pageSize, total)}</span>
+                        <div className="flex gap-2">
+                            <button type="button" onClick={() => setPage((current) => Math.max(1, current - 1))} disabled={page === 1} className="min-h-10 rounded-lg border border-white/10 px-3 text-white disabled:opacity-40">Önceki</button>
+                            <button type="button" onClick={() => setPage((current) => current + 1)} disabled={page * pageSize >= total} className="min-h-10 rounded-lg border border-white/10 px-3 text-white disabled:opacity-40">Sonraki</button>
+                        </div>
+                    </div>
+                )}
             </div>
             )}
 
@@ -483,6 +463,18 @@ export default function LeadManagementView({ selectedMarketId }: { selectedMarke
                 leadIds={selectedLeads}
                 onSuccess={() => {
                     setSelectedLeads([]);
+                    loadData();
+                }}
+            />
+            <SelectedLeadDistribution
+                isOpen={distributionOpen}
+                onClose={() => setDistributionOpen(false)}
+                leadIds={selectedLeads}
+                agents={agents}
+                marketId={selectedMarketId}
+                onSuccess={() => {
+                    setSelectedLeads([]);
+                    setInventoryVersion((version) => version + 1);
                     loadData();
                 }}
             />

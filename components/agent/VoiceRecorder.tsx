@@ -301,7 +301,7 @@ export default function VoiceRecorder({ leadId, onRecordingComplete, isProcessin
     // ... existing logic functions ...
 
     return (
-        <div className="bg-white/5 border border-white/10 rounded-xl p-4 sm:p-6 flex flex-col items-center gap-4 sm:gap-6">
+        <div className="bg-white/5 border border-white/10 rounded-xl p-3 sm:p-6 flex flex-col items-center gap-3 sm:gap-6">
             <div className="flex w-full items-center justify-between gap-3 border-b border-white/10 pb-3">
                 <h4 className="text-sm font-bold text-white flex items-center gap-2">
                 <FileAudio className="w-4 h-4 text-purple-400" />

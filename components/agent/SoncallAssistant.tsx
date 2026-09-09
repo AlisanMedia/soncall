@@ -308,7 +308,7 @@ export default function SoncallAssistant({ profile }: AssistantPanelProps) {
                 <div className="fixed inset-0 z-[70] pointer-events-none">
                     <div className="absolute inset-0 bg-black/40 backdrop-blur-[2px] pointer-events-auto" onClick={() => setOpen(false)} />
 
-                    <section className="absolute bottom-3 left-3 right-3 flex max-h-[calc(100vh-2rem)] flex-col overflow-hidden rounded-2xl border border-white/10 bg-slate-950/95 shadow-2xl shadow-black/60 pointer-events-auto sm:bottom-24 sm:left-6 sm:right-auto sm:w-[470px]">
+                    <section className="absolute bottom-3 left-3 right-3 flex max-h-[calc(100dvh-2rem)] flex-col overflow-hidden rounded-2xl border border-white/10 bg-slate-950/95 shadow-2xl shadow-black/60 pointer-events-auto sm:bottom-24 sm:left-6 sm:right-auto sm:w-[470px]">
                         <header className="flex items-center justify-between gap-3 border-b border-white/10 px-4 py-3">
                             <div className="flex min-w-0 items-center gap-3">
                                 <div className="flex h-10 w-10 items-center justify-center rounded-lg border border-cyan-400/30 bg-cyan-500/15">

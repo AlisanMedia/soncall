@@ -33,7 +33,7 @@ export default function SmsLogs() {
     const [activeTab, setActiveTab] = useState<'logs' | 'chat' | 'contacts'>('logs');
 
     return (
-        <div className="space-y-6">
+        <div className="space-y-3 sm:space-y-6">
             {/* Tab Navigation */}
             <div className="flex bg-white/5 p-1 rounded-xl border border-white/10 w-fit">
                 <button
@@ -291,9 +291,9 @@ function LogsContent() {
     };
 
     return (
-        <div className="space-y-6 relative">
-            <div className="bg-white/10 backdrop-blur-lg rounded-2xl shadow-2xl p-6 border border-white/20">
-                <div className="flex flex-col md:flex-row md:items-center justify-between mb-6 gap-4">
+        <div className="space-y-3 sm:space-y-6 relative">
+            <div className="bg-white/10 backdrop-blur-lg rounded-2xl shadow-2xl p-3 sm:p-6 border border-white/20">
+                <div className="flex flex-col md:flex-row md:items-center justify-between mb-3 sm:mb-6 gap-4">
                     <div className="flex items-center gap-2">
                         <MessageSquare className="w-6 h-6 text-purple-400" />
                         <h2 className="text-xl font-bold text-white">SMS Geçmişi</h2>
@@ -447,7 +447,7 @@ function LogsContent() {
                             <X className="w-5 h-5" />
                         </button>
 
-                        <div className="p-6 pb-2 shrink-0">
+                        <div className="p-3 sm:p-6 pb-2 shrink-0">
                             <h3 className="text-xl font-bold text-white mb-1 flex items-center gap-2">
                                 <MessageSquare className="w-5 h-5 text-purple-400" />
                                 Toplu SMS Gönder
@@ -536,7 +536,7 @@ function LogsContent() {
                         </div>
 
                         {/* Actions */}
-                        <div className="p-6 pt-2 shrink-0 flex justify-end gap-3">
+                        <div className="p-3 sm:p-6 pt-2 shrink-0 flex justify-end gap-3">
                             <button
                                 onClick={() => setIsModalOpen(false)}
                                 className="px-4 py-2 text-sm font-medium text-gray-400 hover:text-white transition-colors"

@@ -125,7 +125,7 @@ export default function LeadDistribution({ batchId, totalLeads, onComplete }: Le
 
     if (loading) {
         return (
-            <div className="flex items-center justify-center py-12">
+            <div className="flex items-center justify-center py-6 sm:py-12">
                 <img src="/loading-logo.png" alt="Loading" className="w-16 h-8 animate-pulse object-contain" />
             </div>
         );
@@ -133,7 +133,7 @@ export default function LeadDistribution({ batchId, totalLeads, onComplete }: Le
 
     if (agents.length === 0) {
         return (
-            <div className="text-center py-12">
+            <div className="text-center py-6 sm:py-12">
                 <AlertCircle className="w-12 h-12 text-yellow-400 mx-auto mb-4" />
                 <h3 className="text-xl font-semibold text-white mb-2">Henüz SDR Yok</h3>
                 <p className="text-purple-200">
@@ -147,10 +147,10 @@ export default function LeadDistribution({ batchId, totalLeads, onComplete }: Le
     const remaining = totalLeads - totalAssigned;
 
     return (
-        <div className="space-y-6">
+        <div className="space-y-3 sm:space-y-6">
             <div className="flex items-center justify-between">
                 <div>
-                    <h2 className="text-2xl font-semibold text-white">Cold Lead Dağıtımı</h2>
+                    <h2 className="text-xl sm:text-2xl font-semibold text-white">Cold Lead Dağıtımı</h2>
                     <p className="text-purple-200 mt-1">
                         {totalLeads} lead&apos;i {agents.length} SDR arasında dağıtın
                     </p>
@@ -175,7 +175,7 @@ export default function LeadDistribution({ batchId, totalLeads, onComplete }: Le
             <div className="grid grid-cols-3 gap-4">
                 <div className="bg-white/5 rounded-lg p-4 border border-white/10">
                     <div className="text-purple-300 text-sm mb-1">Toplam Lead</div>
-                    <div className="text-2xl font-bold text-white">{totalLeads}</div>
+                    <div className="text-xl sm:text-2xl font-bold text-white">{totalLeads}</div>
                 </div>
                 <div className="bg-white/5 rounded-lg p-4 border border-white/10">
                     <div className="text-purple-300 text-sm mb-1">Atanan</div>

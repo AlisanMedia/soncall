@@ -56,7 +56,7 @@ export default function AppointmentFilters({
                         transition={{ type: 'spring', damping: 25, stiffness: 200 }}
                         className="fixed right-0 top-0 bottom-0 w-80 bg-[#1a1b26] border-l border-white/10 z-50 shadow-2xl overflow-y-auto"
                     >
-                        <div className="p-6 space-y-8">
+                        <div className="p-3 sm:p-6 space-y-4 sm:space-y-8">
                             {/* Header */}
                             <div className="flex items-center justify-between">
                                 <h3 className="text-xl font-bold text-white flex items-center gap-2">

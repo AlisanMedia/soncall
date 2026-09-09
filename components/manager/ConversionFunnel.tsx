@@ -40,7 +40,7 @@ export default function ConversionFunnel() {
     }, []);
 
     if (loading) return (
-        <div className="bg-slate-900 rounded-xl p-6 border border-white/10 h-[400px] flex items-center justify-center">
+        <div className="bg-slate-900 rounded-xl p-3 sm:p-6 border border-white/10 h-[400px] flex items-center justify-center">
             <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-purple-500" />
         </div>
     );

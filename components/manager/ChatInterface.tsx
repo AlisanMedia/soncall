@@ -385,7 +385,7 @@ export default function ChatInterface() {
 
             {/* LEFT SIDEBAR: CONTACT LIST */}
             <div className={`w-full md:w-80 border-r border-white/5 flex flex-col bg-black/20 backdrop-blur-sm z-10 transition-all duration-300 ${!showSidebar ? 'hidden md:flex' : 'flex'}`}>
-                <div className="p-6 border-b border-white/5">
+                <div className="p-3 sm:p-6 border-b border-white/5">
                     <div className="flex items-center justify-between mb-4">
                         <h2 className="text-white font-bold text-lg flex items-center gap-3">
                             Mesajlar
@@ -520,9 +520,9 @@ export default function ChatInterface() {
 
                                 <div className="relative z-10 flex flex-col gap-2">
                                     {loadingMessages ? (
-                                        <div className="flex justify-center py-12"><Loader2 className="w-8 h-8 animate-spin text-purple-500" /></div>
+                                        <div className="flex justify-center py-6 sm:py-12"><Loader2 className="w-8 h-8 animate-spin text-purple-500" /></div>
                                     ) : messages.length === 0 ? (
-                                        <div className="text-center py-20">
+                                        <div className="text-center py-8 sm:py-20">
                                             <div className="w-20 h-20 bg-white/5 rounded-full flex items-center justify-center mx-auto mb-4 text-purple-500/50">
                                                 <MessageSquare className="w-10 h-10" />
                                             </div>
@@ -592,15 +592,15 @@ export default function ChatInterface() {
                             {/* RIGHT SIDEBAR: INFO PANEL (Telegram Style) */}
                             {showInfoPanel && (
                                 <div className="w-72 border-l border-white/5 bg-black/20 backdrop-blur-md flex flex-col z-20 animate-in slide-in-from-right duration-300">
-                                    <div className="p-6 flex flex-col items-center border-b border-white/5">
-                                        <div className="w-20 h-20 rounded-full bg-gradient-to-br from-purple-500 to-indigo-600 flex items-center justify-center text-white text-3xl font-bold shadow-xl mb-4">
+                                    <div className="p-3 sm:p-6 flex flex-col items-center border-b border-white/5">
+                                        <div className="w-20 h-20 rounded-full bg-gradient-to-br from-purple-500 to-indigo-600 flex items-center justify-center text-white text-2xl sm:text-3xl font-bold shadow-xl mb-4">
                                             {selectedContact.full_name.charAt(0)}
                                         </div>
                                         <div className="text-white font-bold text-lg text-center">{selectedContact.full_name}</div>
                                         <div className="text-gray-500 text-sm">{selectedContact.title || 'Müşteri'}</div>
                                     </div>
 
-                                    <div className="p-6 space-y-6 flex-1 overflow-y-auto custom-scrollbar">
+                                    <div className="p-3 sm:p-6 space-y-3 sm:space-y-6 flex-1 overflow-y-auto custom-scrollbar">
                                         <div className="space-y-4">
                                             <h4 className="text-[10px] font-bold text-purple-400 uppercase tracking-widest">İletişim Bilgileri</h4>
                                             <div className="flex items-center gap-3 text-gray-300">
@@ -632,7 +632,7 @@ export default function ChatInterface() {
                         </div>
 
                         {/* Input Area */}
-                        <div className="p-6 border-t border-white/5 bg-[#12121e]/50 backdrop-blur-md z-20">
+                        <div className="p-3 sm:p-6 border-t border-white/5 bg-[#12121e]/50 backdrop-blur-md z-20">
                             <div className="flex gap-4 items-center relative">
                                 <div className="flex-1 relative group">
                                     <input
@@ -676,12 +676,12 @@ export default function ChatInterface() {
                     </>
                 ) : (
                     /* Empty State */
-                    <div className="flex-1 flex flex-col items-center justify-center p-8 text-center relative overflow-hidden">
+                    <div className="flex-1 flex flex-col items-center justify-center p-4 sm:p-8 text-center relative overflow-hidden">
                         <div className="absolute inset-0 bg-gradient-to-b from-transparent to-purple-900/5 pointer-events-none" />
-                        <div className="w-24 h-24 bg-white/5 rounded-full flex items-center justify-center mb-6 shadow-[0_0_30px_rgba(255,255,255,0.05)] border border-white/5">
+                        <div className="w-24 h-24 bg-white/5 rounded-full flex items-center justify-center mb-3 sm:mb-6 shadow-[0_0_30px_rgba(255,255,255,0.05)] border border-white/5">
                             <MessageSquare className="w-10 h-10 text-gray-500 opacity-50" />
                         </div>
-                        <h3 className="text-2xl font-bold text-white mb-3">Sohbet Başlatın</h3>
+                        <h3 className="text-xl sm:text-2xl font-bold text-white mb-3">Sohbet Başlatın</h3>
                         <p className="max-w-xs mx-auto text-gray-400 leading-relaxed">
                             Mesajlaşmak için soldaki listeden bir kişi seçin veya yeni bir kişi ekleyin.
                         </p>

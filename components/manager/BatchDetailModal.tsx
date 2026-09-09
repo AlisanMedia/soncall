@@ -320,7 +320,7 @@ export default function BatchDetailModal({ batchId, isOpen, onClose }: BatchDeta
 
                                     {leads.length === 0 && !loading && (
                                         <tr>
-                                            <td colSpan={5} className="p-8 text-center text-slate-500">
+                                            <td colSpan={5} className="p-4 sm:p-8 text-center text-slate-500">
                                                 Kayıt bulunamadı.
                                             </td>
                                         </tr>
@@ -360,13 +360,13 @@ export default function BatchDetailModal({ batchId, isOpen, onClose }: BatchDeta
                         <motion.div
                             initial={{ opacity: 0, scale: 0.95 }}
                             animate={{ opacity: 1, scale: 1 }}
-                            className="bg-slate-900 border border-slate-700 rounded-xl p-6 max-w-md mx-4 shadow-2xl"
+                            className="bg-slate-900 border border-slate-700 rounded-xl p-3 sm:p-6 max-w-md mx-4 shadow-2xl"
                         >
                             <h3 className="text-xl font-bold text-white mb-4">Havuza Aktarma Onayı</h3>
-                            <p className="text-slate-300 mb-6">
+                            <p className="text-slate-300 mb-3 sm:mb-6">
                                 Seçili <span className="text-orange-400 font-bold">{selectedLeads.length} lead</span> havuza aktarılacak:
                             </p>
-                            <ul className="space-y-2 mb-6 text-sm text-slate-400">
+                            <ul className="space-y-2 mb-3 sm:mb-6 text-sm text-slate-400">
                                 <li className="flex items-center gap-2">
                                     <span className="text-green-400">✓</span> Status: <span className="text-yellow-300">pending</span>
                                 </li>

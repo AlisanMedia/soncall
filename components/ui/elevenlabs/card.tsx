@@ -1,4 +1,5 @@
 import React from 'react';
+import { cn } from '@/lib/utils';
 
 interface CardProps extends React.HTMLAttributes<HTMLDivElement> {
     variant?: 'default' | 'interactive' | 'highlighted';
@@ -7,7 +8,7 @@ interface CardProps extends React.HTMLAttributes<HTMLDivElement> {
 
 export const Card = React.forwardRef<HTMLDivElement, CardProps>(
     ({ variant = 'default', className = '', children, ...props }, ref) => {
-        const baseClasses = 'glass-card ui-card rounded-2xl p-6';
+        const baseClasses = 'glass-card ui-card rounded-2xl p-3 sm:p-6';
         const variantClasses = {
             default: '',
             interactive: 'glass-card-hover ui-card-interactive',
@@ -17,7 +18,7 @@ export const Card = React.forwardRef<HTMLDivElement, CardProps>(
         return (
             <div
                 ref={ref}
-                className={`${baseClasses} ${variantClasses[variant]} ${className}`}
+                className={cn(baseClasses, variantClasses[variant], className)}
                 {...props}
             >
                 {children}

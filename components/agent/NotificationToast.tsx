@@ -70,7 +70,7 @@ export default function NotificationToast({ notification, onClose }: Notificatio
                 }`}
         >
             <div
-                className={`flex items-start gap-4 p-4 rounded-xl shadow-2xl border backdrop-blur-md min-w-[320px] max-w-sm ${getStyle()}`}
+                className={`flex items-start gap-4 p-4 rounded-xl shadow-2xl border backdrop-blur-md min-w-0 w-full max-w-sm ${getStyle()}`}
             >
                 <div className="text-3xl animate-bounce">
                     {notification.icon}

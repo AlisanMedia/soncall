@@ -142,7 +142,7 @@ export default function TopSellers() {
 
     if (loading) {
         return (
-            <div className="flex items-center justify-center py-12">
+            <div className="flex items-center justify-center py-6 sm:py-12">
                 <img src="/loading-logo.png" alt="Loading" className="w-16 h-8 animate-pulse object-contain" />
             </div>
         );
@@ -153,7 +153,7 @@ export default function TopSellers() {
     }
 
     return (
-        <div className="space-y-6">
+        <div className="space-y-3 sm:space-y-6">
             {/* Header */}
             <div className="flex items-center justify-between">
                 <div className="flex items-center gap-3">
@@ -162,7 +162,7 @@ export default function TopSellers() {
                     </div>
                     <div>
                         <div className="flex items-center gap-2">
-                            <h2 className="text-2xl font-bold text-white">Satış Liderleri</h2>
+                            <h2 className="text-xl sm:text-2xl font-bold text-white">Satış Liderleri</h2>
                             <SectionInfo
                                 text="En yüksek ciroya ve satış adedine sahip temsilcilerin sıralaması. Performans primlerini ve satış trendlerini buradan takip edebilirsiniz."
                             />
@@ -187,7 +187,7 @@ export default function TopSellers() {
 
             {/* Podium */}
             {data.length >= 3 && (
-                <div className="grid grid-cols-3 gap-4 mb-8">
+                <div className="grid grid-cols-3 gap-4 mb-4 sm:mb-8">
                     {data.slice(0, 3).map((agent, index) => (
                         <div
                             key={agent.agent_id}
@@ -196,7 +196,7 @@ export default function TopSellers() {
                             style={{ order: index === 0 ? 2 : index === 1 ? 1 : 3 }}
                         >
                             <div className={`absolute -top-4 w-12 h-12 rounded-full bg-gradient-to-br ${getPodiumColor(index)} flex items-center justify-center shadow-2xl border-4 border-slate-900`}>
-                                <span className="text-2xl font-black text-white drop-shadow-lg">{index + 1}</span>
+                                <span className="text-xl sm:text-2xl font-black text-white drop-shadow-lg">{index + 1}</span>
                             </div>
 
                             <div className="mt-6 mb-3">

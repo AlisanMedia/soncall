@@ -117,7 +117,7 @@ export default function Leaderboard({ agentId, refreshKey }: LeaderboardProps) {
     }
 
     return (
-        <section aria-labelledby="team-performance-title" className="relative space-y-6 overflow-hidden rounded-2xl border border-white/20 bg-white/10 p-4 shadow-2xl backdrop-blur-lg sm:p-6">
+        <section aria-labelledby="team-performance-title" className="relative space-y-3 sm:space-y-6 overflow-hidden rounded-2xl border border-white/20 bg-white/10 p-4 shadow-2xl backdrop-blur-lg sm:p-6">
             <GlowingEffect spread={40} glow={true} disabled={false} proximity={64} borderWidth={3} />
             {/* Header with Online Status */}
             <div className="flex items-center justify-between border-b border-white/20 pb-4">

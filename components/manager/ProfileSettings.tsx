@@ -87,8 +87,8 @@ export default function ProfileSettings({ profile }: ProfileSettingsProps) {
     };
 
     return (
-        <div className="space-y-6">
-            <h2 className="text-2xl font-bold text-white flex items-center gap-2">
+        <div className="space-y-3 sm:space-y-6">
+            <h2 className="text-xl sm:text-2xl font-bold text-white flex items-center gap-2">
                 <User className="w-6 h-6 text-purple-400" />
                 Profil Ayarları
             </h2>
@@ -100,10 +100,10 @@ export default function ProfileSettings({ profile }: ProfileSettingsProps) {
                 </div>
             )}
 
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-8">
                 {/* Personal Info Card */}
-                <div className="bg-white/5 border border-white/10 rounded-2xl p-6 backdrop-blur-sm">
-                    <div className="flex items-center gap-3 mb-6 border-b border-white/10 pb-4">
+                <div className="bg-white/5 border border-white/10 rounded-2xl p-3 sm:p-6 backdrop-blur-sm">
+                    <div className="flex items-center gap-3 mb-3 sm:mb-6 border-b border-white/10 pb-4">
                         <div className="p-2 bg-purple-500/20 rounded-lg">
                             <User className="w-5 h-5 text-purple-300" />
                         </div>
@@ -186,8 +186,8 @@ export default function ProfileSettings({ profile }: ProfileSettingsProps) {
                 </div>
 
                 {/* Password Change Card */}
-                <div className="bg-white/5 border border-white/10 rounded-2xl p-6 backdrop-blur-sm h-fit">
-                    <div className="flex items-center gap-3 mb-6 border-b border-white/10 pb-4">
+                <div className="bg-white/5 border border-white/10 rounded-2xl p-3 sm:p-6 backdrop-blur-sm h-fit">
+                    <div className="flex items-center gap-3 mb-3 sm:mb-6 border-b border-white/10 pb-4">
                         <div className="p-2 bg-orange-500/20 rounded-lg">
                             <Lock className="w-5 h-5 text-orange-300" />
                         </div>

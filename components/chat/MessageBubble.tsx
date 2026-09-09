@@ -22,7 +22,7 @@ export default function MessageBubble({ message, isOwnMessage, currentUserId, sh
             animate={{ opacity: 1, y: 0, scale: 1 }}
             transition={{ type: "spring", stiffness: 300, damping: 20 }}
         >
-            <div className={`max-w-[70%] ${isOwnMessage ? 'items-end' : 'items-start'} flex flex-col`}>
+            <div className={`min-w-0 max-w-[88%] sm:max-w-[70%] ${isOwnMessage ? 'items-end' : 'items-start'} flex flex-col`}>
                 {/* Sender name (only for other's messages) */}
                 {!isOwnMessage && (
                     <div className="flex items-center gap-2 mb-1 px-2">

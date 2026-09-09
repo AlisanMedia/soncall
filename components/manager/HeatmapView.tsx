@@ -31,8 +31,8 @@ export default function HeatmapView({ appointments }: HeatmapViewProps) {
     const maxCount = Math.max(...matrix.flat(), 1);
 
     return (
-        <div className="bg-[#1a1b26] border border-white/10 rounded-2xl p-6">
-            <h3 className="text-lg font-bold text-white mb-6 flex items-center gap-2">
+        <div className="bg-[#1a1b26] border border-white/10 rounded-2xl p-3 sm:p-6">
+            <h3 className="text-lg font-bold text-white mb-3 sm:mb-6 flex items-center gap-2">
                 <span className="w-2 h-2 rounded-full bg-orange-500" />
                 Randevu Yoğunluk Haritası
             </h3>

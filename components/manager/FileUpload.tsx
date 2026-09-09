@@ -108,10 +108,10 @@ export default function FileUpload({ onUploadSuccess, selectedMarketId, selected
 
     if (previewMode && leads.length > 0) {
         return (
-            <div className="space-y-6">
+            <div className="space-y-3 sm:space-y-6">
                 <div className="flex items-center justify-between">
                     <div>
-                        <h2 className="text-2xl font-semibold text-white">Lead Önizleme</h2>
+                        <h2 className="text-xl sm:text-2xl font-semibold text-white">Lead Önizleme</h2>
                         <p className="text-purple-200 mt-1">
                             {file?.name} - {leads.length} lead bulundu
                         </p>
@@ -188,9 +188,9 @@ export default function FileUpload({ onUploadSuccess, selectedMarketId, selected
     }
 
     return (
-        <div className="space-y-6">
+        <div className="space-y-3 sm:space-y-6">
             <div>
-                <h2 className="text-2xl font-semibold text-white">CSV Dosyası Yükle</h2>
+                <h2 className="text-xl sm:text-2xl font-semibold text-white">CSV Dosyası Yükle</h2>
                 <p className="text-purple-200 mt-1">
                     Google Maps&apos;ten çekilen lead verilerinizi yükleyin
                 </p>

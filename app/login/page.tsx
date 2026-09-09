@@ -86,7 +86,7 @@ export default function LoginPage() {
     };
 
     return (
-        <div className={`${styles.shell} min-h-[100dvh] flex items-start justify-center px-4 py-8 sm:items-center sm:py-12 animate-fade-in`} style={{ background: '#000000' }}>
+        <div className={`${styles.shell} min-h-[100dvh] flex items-start justify-center px-3 py-4 sm:px-4 sm:items-center sm:py-12 animate-fade-in`} style={{ background: '#000000' }}>
             {/* Animated Background Grid */}
             <div className="fixed inset-0 -z-10 bg-black">
                 {/* Subtle spotlight to make grid pop */}
@@ -102,7 +102,7 @@ export default function LoginPage() {
 
             <div className="w-full max-w-md min-w-0 animate-fade-in-up">
                 {/* Logo/Brand */}
-                <div className="text-center mb-8 animate-scale-in">
+                <div className="text-center mb-4 sm:mb-8 animate-scale-in">
                     {/* Logo Image */}
                     <div className="flex justify-center mb-3">
                         <Image
@@ -110,20 +110,20 @@ export default function LoginPage() {
                             alt="ArtificAgent Logo"
                             width={96}
                             height={96}
-                            className="h-20 w-auto object-contain brightness-0 invert sm:h-24"
+                            className="h-14 w-auto object-contain brightness-0 invert sm:h-24"
                         />
                     </div>
-                    <h1 className="mb-2 break-words text-3xl font-black tracking-tight text-white sm:text-4xl">
+                    <h1 className="mb-2 break-words text-2xl font-black tracking-tight text-white sm:text-4xl">
                         ArtificAgent
                     </h1>
-                    <p className="break-words text-base text-zinc-400 sm:text-lg">Cold Calling Management System</p>
+                    <p className="break-words text-sm text-zinc-400 sm:text-lg">Cold Calling Management System</p>
                 </div>
 
                 {/* Login Card */}
                 <div className="relative">
                     <GlowingEffect spread={40} glow={true} disabled={false} proximity={64} borderWidth={3} />
-                    <Card className="relative !border-none !bg-transparent !shadow-none !backdrop-filter-none p-5 animate-scale-in sm:p-8">
-                        <h2 className="mb-6 text-center text-2xl font-bold text-white sm:mb-8 sm:text-3xl">Giriş Yap</h2>
+                    <Card className="relative !border-none !bg-transparent !shadow-none !backdrop-filter-none p-4 animate-scale-in sm:p-8">
+                        <h2 className="mb-4 text-center text-xl font-bold text-white sm:mb-8 sm:text-3xl">Giriş Yap</h2>
 
                         {error && (
                             <div role="alert" aria-live="assertive" className="mb-6 break-words rounded-xl border border-red-500/30 bg-red-500/10 px-4 py-3 text-red-200 backdrop-blur-sm animate-fade-in">
@@ -131,7 +131,7 @@ export default function LoginPage() {
                             </div>
                         )}
 
-                        <form onSubmit={handleLogin} aria-busy={loading} className="space-y-6">
+                        <form onSubmit={handleLogin} aria-busy={loading} className="space-y-4 sm:space-y-6">
                             {/* Email Input */}
                             <div>
                                 <label htmlFor="email" className="block text-sm font-semibold text-zinc-300 mb-2">
@@ -237,7 +237,7 @@ export default function LoginPage() {
                 </div>
 
                 {/* Footer */}
-                <p className="text-center text-zinc-500 text-sm mt-8">
+                <p className="text-center text-zinc-500 text-xs sm:text-sm mt-4 sm:mt-8">
                     © 2026 ArtificAgent. Tüm hakları saklıdır.
                 </p>
             </div>
